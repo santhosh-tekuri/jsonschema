@@ -1,0 +1,44 @@
+[
+  {
+    "description": "must be object",
+    "schema": 1
+  },
+  {
+    "description": "format must be string",
+    "schema": {
+      "format": 1
+    }
+  },
+  {
+    "description": "unknown format",
+    "schema": {
+      "format": "palindrome"
+    }
+  },
+  {
+    "description": "pattern must be string",
+    "schema": {
+      "pattern": 1
+    }
+  },
+  {
+    "description": "pattern must be regex",
+    "schema": {
+      "pattern": "("
+    }
+  },
+  {
+    "description": "$ref must be string",
+    "schema": {
+      "$ref": 1
+    }
+  },
+  {
+    "description": "patternProperties keys must be regex",
+    "schema": {
+      "patternProperties": {
+        "(": {}
+      }
+    }
+  }
+]
