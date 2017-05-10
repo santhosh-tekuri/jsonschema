@@ -22,8 +22,7 @@ type resource struct {
 
 func newResource(base string, data []byte) (*resource, error) {
 	var doc interface{}
-	err := json.Unmarshal(data, &doc)
-	if err != nil {
+	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, err
 	}
 	return &resource{normalize(base), doc, nil}, nil

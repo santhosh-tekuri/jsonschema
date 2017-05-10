@@ -65,6 +65,17 @@ func Compile(url string) (*Schema, error) {
 	return NewCompiler().Compile(url)
 }
 
+// MustCompile is like Compile but panics if the url cannot be compiled to *Schema.
+// It simplifies safe initialization of global variables holding compiled regular
+// expressions.
+func MustCompile(url string) *Schema {
+	s, err := Compile(url)
+	if err != nil {
+		panic(fmt.Sprintf("jsonschema: Compile(%q): %s", url, err))
+	}
+	return s
+}
+
 func (s *Schema) Validate(data []byte) error {
 	var doc interface{}
 	err := json.Unmarshal(data, &doc)
@@ -126,9 +137,9 @@ func (s *Schema) validate(v interface{}) error {
 				if len(s.enum) == 1 {
 					return validationError("enum", "value must be %v", s.enum[0])
 				}
-				strEnum := make([]string, 0, len(s.enum))
-				for _, item := range s.enum {
-					strEnum = append(strEnum, fmt.Sprintf("%v", item))
+				strEnum := make([]string, len(s.enum))
+				for i, item := range s.enum {
+					strEnum[i] = fmt.Sprintf("%v", item)
 				}
 				return validationError("enum", "value must be one of %s", strings.Join(strEnum, ", "))
 			}

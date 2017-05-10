@@ -76,9 +76,7 @@ func (c Compiler) compileResource(r *resource) error {
 			}
 		}
 		_, err := c.compile(url, ptr, r.doc.(map[string]interface{}))
-		if err != nil {
-			return err
-		}
+		return err
 	}
 	return nil
 }
@@ -108,11 +106,10 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 		case string:
 			s.types = []string{t}
 		case []interface{}:
-			types := make([]string, 0, len(t))
-			for _, v := range t {
-				types = append(types, v.(string))
+			s.types = make([]string, len(t))
+			for i, v := range t {
+				s.types[i] = v.(string)
 			}
-			s.types = types
 		}
 	}
 
@@ -130,28 +127,25 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 	loadSchemas := func(pname string) ([]*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
 			pvalue := pvalue.([]interface{})
-			schemas := make([]*Schema, 0, len(pvalue))
-			for _, v := range pvalue {
+			schemas := make([]*Schema, len(pvalue))
+			for i, v := range pvalue {
 				sch, err := c.compile(url, "", v.(map[string]interface{}))
 				if err != nil {
 					return nil, err
 				}
-				schemas = append(schemas, sch)
+				schemas[i] = sch
 			}
 			return schemas, nil
 		}
 		return nil, nil
 	}
-	s.allOf, err = loadSchemas("allOf")
-	if err != nil {
+	if s.allOf, err = loadSchemas("allOf"); err != nil {
 		return nil, err
 	}
-	s.anyOf, err = loadSchemas("anyOf")
-	if err != nil {
+	if s.anyOf, err = loadSchemas("anyOf"); err != nil {
 		return nil, err
 	}
-	s.oneOf, err = loadSchemas("oneOf")
-	if err != nil {
+	if s.oneOf, err = loadSchemas("oneOf"); err != nil {
 		return nil, err
 	}
 
@@ -161,16 +155,14 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 		}
 		return -1
 	}
-	s.minProperties = loadInt("minProperties")
-	s.maxProperties = loadInt("maxProperties")
+	s.minProperties, s.maxProperties = loadInt("minProperties"), loadInt("maxProperties")
 
 	if req, ok := m["required"]; ok {
 		req := req.([]interface{})
-		required := make([]string, 0, len(req))
-		for _, pname := range req {
-			required = append(required, pname.(string))
+		s.required = make([]string, len(req))
+		for i, pname := range req {
+			s.required[i] = pname.(string)
 		}
-		s.required = required
 	}
 
 	if props, ok := m["properties"]; ok {
@@ -224,17 +216,16 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 					return nil, err
 				}
 			case []interface{}:
-				props := make([]string, 0, len(pvalue))
-				for _, prop := range pvalue {
-					props = append(props, prop.(string))
+				props := make([]string, len(pvalue))
+				for i, prop := range pvalue {
+					props[i] = prop.(string)
 				}
 				s.dependencies[pname] = props
 			}
 		}
 	}
 
-	s.minItems = loadInt("minItems")
-	s.maxItems = loadInt("maxItems")
+	s.minItems, s.maxItems = loadInt("minItems"), loadInt("maxItems")
 
 	if unique, ok := m["uniqueItems"]; ok {
 		s.uniqueItems = unique.(bool)
@@ -274,8 +265,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 		}
 	}
 
-	s.minLength = loadInt("minLength")
-	s.maxLength = loadInt("maxLength")
+	s.minLength, s.maxLength = loadInt("minLength"), loadInt("maxLength")
 
 	if pattern, ok := m["pattern"]; ok {
 		s.pattern = regexp.MustCompile(pattern.(string))
