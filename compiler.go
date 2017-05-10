@@ -62,9 +62,8 @@ func (c *Compiler) compileRef(base, ref string) (*Schema, error) {
 		}
 		if ir == nil {
 			return c.Compile(url)
-		} else {
-			c.resources[ir.url] = ir
 		}
+		c.resources[ir.url] = ir
 	}
 	r := c.resources[url]
 	if err := c.compileResource(r); err != nil {

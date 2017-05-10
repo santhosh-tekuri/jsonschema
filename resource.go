@@ -47,15 +47,16 @@ func (r *resource) resolveURL(ref string) (string, error) {
 	}
 	if baseURL.IsAbs() {
 		return normalize(baseURL.ResolveReference(refURL).String()), nil
-	} else {
-		base, _ := split(r.url)
-		ref, fragment := split(ref)
-		if ref == "" {
-			return base + fragment, nil
-		}
-		dir, _ := filepath.Split(base)
-		return filepath.Join(dir, ref) + fragment, nil
 	}
+
+	// filepath resolving
+	base, _ := split(r.url)
+	ref, fragment := split(ref)
+	if ref == "" {
+		return base + fragment, nil
+	}
+	dir, _ := filepath.Split(base)
+	return filepath.Join(dir, ref) + fragment, nil
 }
 
 func (r *resource) resolveFromID(doc interface{}, url string) (interface{}, error) {
@@ -153,11 +154,11 @@ func (r *resource) resolveInternal(ref string) (*resource, error) {
 }
 
 func split(uri string) (string, string) {
-	if hash := strings.IndexByte(uri, '#'); hash == -1 {
+	hash := strings.IndexByte(uri, '#')
+	if hash == -1 {
 		return uri, "#"
-	} else {
-		return uri[0:hash], uri[hash:]
 	}
+	return uri[0:hash], uri[hash:]
 }
 
 func normalize(url string) string {

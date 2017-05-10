@@ -79,9 +79,8 @@ func get(s string) (Loader, error) {
 	}
 	if loader, ok := registry[u.Scheme]; ok {
 		return loader, nil
-	} else {
-		return nil, SchemeNotRegisteredError(u.Scheme)
 	}
+	return nil, SchemeNotRegisteredError(u.Scheme)
 }
 
 // Load loads the document at given url and returns []byte,

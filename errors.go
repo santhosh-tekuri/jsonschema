@@ -18,7 +18,7 @@ type SchemaError struct {
 	// Err is the error that occurred during compilation.
 	// It could be ValidationError, because compilation validates
 	// given schema against the json meta-schema
-	Err       error
+	Err error
 }
 
 func (se *SchemaError) Error() string {
@@ -28,7 +28,7 @@ func (se *SchemaError) Error() string {
 // ValidationError is the error type returned by Validate.
 type ValidationError struct {
 	// Message describes error
-	Message     string
+	Message string
 
 	// InstancePtr is json-pointer which refers to json-fragment in json instance
 	// that is not valid
@@ -36,14 +36,14 @@ type ValidationError struct {
 
 	// SchemaURL is the url to json-schema against which validation failed.
 	// This is helpful, if your schema refers to external schemas
-	SchemaURL   string
+	SchemaURL string
 
 	// SchemaPtr is json-pointer which refers to json-fragment in json schema
 	// that failed to satisfy
-	SchemaPtr   string
+	SchemaPtr string
 
 	// Causes details the nested validation errors
-	Causes      []*ValidationError
+	Causes []*ValidationError
 }
 
 func (ve *ValidationError) add(causes ...error) error {

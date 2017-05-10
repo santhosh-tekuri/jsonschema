@@ -47,5 +47,5 @@ Developers can define their own formats using package jsonschema/formats.
 
 The ValidationError returned by Validate method contains detailed context to understand why and where the error is.
 
- */
+*/
 package jsonschema
