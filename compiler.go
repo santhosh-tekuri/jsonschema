@@ -10,14 +10,17 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/loader"
 )
 
+// A Compiler represents a draft4 json-schema compiler.
 type Compiler struct {
 	resources map[string]*resource
 }
 
+// NewCompiler returns a draft4 json-schema Compiler object.
 func NewCompiler() *Compiler {
 	return &Compiler{make(map[string]*resource)}
 }
 
+// AddResource adds in-memory resource to the compiler.
 func (c *Compiler) AddResource(url string, data []byte) error {
 	r, err := newResource(url, data)
 	if err != nil {
@@ -27,6 +30,10 @@ func (c *Compiler) AddResource(url string, data []byte) error {
 	return nil
 }
 
+// Compile parses json-schema at given url returns, if successful,
+// a Schema object that can be used to match against json.
+//
+// The json-schema is validated with draft4 specification.
 func (c *Compiler) Compile(url string) (*Schema, error) {
 	return c.compileRef(split(url))
 }

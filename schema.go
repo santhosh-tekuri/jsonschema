@@ -17,6 +17,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/formats"
 )
 
+// A Schema represents compiled version of json-schema.
 type Schema struct {
 	url *string
 	ptr *string
@@ -61,13 +62,17 @@ type Schema struct {
 	multipleOf       *float64
 }
 
+// Compile parses json-schema at given url returns, if successful,
+// a Schema object that can be used to match against json.
+//
+// The json-schema is validated with draft4 specification.
+// Returned error can be *SchemaError
 func Compile(url string) (*Schema, error) {
 	return NewCompiler().Compile(url)
 }
 
 // MustCompile is like Compile but panics if the url cannot be compiled to *Schema.
-// It simplifies safe initialization of global variables holding compiled regular
-// expressions.
+// It simplifies safe initialization of global variables holding compiled Schemas.
 func MustCompile(url string) *Schema {
 	s, err := Compile(url)
 	if err != nil {
@@ -76,6 +81,9 @@ func MustCompile(url string) *Schema {
 	return s
 }
 
+// Validate validates the given json data, against the json-schema,
+//
+// Returned error can be *ValidationError.
 func (s *Schema) Validate(data []byte) error {
 	var doc interface{}
 	err := json.Unmarshal(data, &doc)

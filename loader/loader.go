@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package loader abstracts the reading document at given url.
+//
+// It allows developers to register loaders for different uri
+// schemes.
 package loader
 
 import (
@@ -14,6 +18,10 @@ import (
 	"sync"
 )
 
+// Loader is the interface that wraps the basic Load method.
+//
+// Load loads the document at given url and returns []byte,
+// if successful.
 type Loader interface {
 	Load(url string) ([]byte, error)
 }
@@ -40,18 +48,22 @@ func (fileURLLoader) Load(url string) ([]byte, error) {
 var registry = make(map[string]Loader)
 var mutex = sync.RWMutex{}
 
+// SchemeNotRegisteredError is the error type returned by Load function.
+// It tells that no Loader is registered for that URL Scheme.
 type SchemeNotRegisteredError string
 
 func (s SchemeNotRegisteredError) Error() string {
 	return fmt.Sprintf("no Loader registered for schema %s", s)
 }
 
+// Register registers given Loader for given URI Scheme.
 func Register(scheme string, loader Loader) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	registry[scheme] = loader
 }
 
+// UnRegister unregisters the registered loader(if any) for given URI Scheme.
 func UnRegister(scheme string) {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -72,6 +84,11 @@ func get(s string) (Loader, error) {
 	}
 }
 
+// Load loads the document at given url and returns []byte,
+// if successful.
+//
+// If no Loader is registered against the URI Scheme, then it
+// returns *SchemeNotRegisteredError
 func Load(url string) ([]byte, error) {
 	loader, err := get(url)
 	if err != nil {

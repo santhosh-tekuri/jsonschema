@@ -9,8 +9,15 @@ import (
 	"strings"
 )
 
+// SchemaError is the error type returned by Compile.
 type SchemaError struct {
+	// SchemaURL is the url to json-schema that filed to compile.
+	// This is helpful, if your schema refers to external schemas
 	SchemaURL string
+
+	// Err is the error that occurred during compilation.
+	// It could be ValidationError, because compilation validates
+	// given schema against the json meta-schema
 	Err       error
 }
 
@@ -18,11 +25,24 @@ func (se *SchemaError) Error() string {
 	return fmt.Sprintf("schemaURL: %s\n%s", se.SchemaURL, se.Err)
 }
 
+// ValidationError is the error type returned by Validate.
 type ValidationError struct {
+	// Message describes error
 	Message     string
+
+	// InstancePtr is json-pointer which refers to json-fragment in json instance
+	// that is not valid
 	InstancePtr string
+
+	// SchemaURL is the url to json-schema against which validation failed.
+	// This is helpful, if your schema refers to external schemas
 	SchemaURL   string
+
+	// SchemaPtr is json-pointer which refers to json-fragment in json schema
+	// that failed to satisfy
 	SchemaPtr   string
+
+	// Causes details the nested validation errors
 	Causes      []*ValidationError
 }
 

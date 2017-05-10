@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package formats provides functions to check string against format.
+//
+// It allows developers to register custom formats, that can be used
+// in json-schema for validation.
 package formats
 
 import (
@@ -13,6 +17,8 @@ import (
 	"time"
 )
 
+// The Format type is a function, to check
+// whether given string is in valid format.
 type Format func(string) bool
 
 var formats = map[string]Format{
@@ -34,15 +40,19 @@ func init() {
 	}
 }
 
+// Register registers Format object for given format name.
 func Register(name string, f Format) {
 	formats[name] = f
 }
 
+// Get returns Format object for given format name, if found
 func Get(name string) (Format, bool) {
 	f, ok := formats[name]
 	return f, ok
 }
 
+// IsDateTime tells whether given string is a valid date representation
+// as defined by RFC 3339, section 5.6.
 func IsDateTime(s string) bool {
 	if _, err := time.Parse(time.RFC3339, s); err == nil {
 		return true
@@ -53,7 +63,10 @@ func IsDateTime(s string) bool {
 	return false
 }
 
-// https://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names
+// IsHostname tells whether given string is a valid representation
+// for an Internet host name, as defined by RFC 1034, section 3.1.
+//
+// See https://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names, for details.
 func IsHostname(s string) bool {
 	// entire hostname (including the delimiting dots but not a trailing dot) has a maximum of 253 ASCII characters
 	strLen := len(s)
@@ -93,7 +106,10 @@ func IsHostname(s string) bool {
 	return true
 }
 
-// https://en.wikipedia.org/wiki/Email_address
+// IsEmail tells whether given string is a valid Internet email address
+// as defined by RFC 5322, section 3.4.1.
+//
+// See https://en.wikipedia.org/wiki/Email_address, for details.
 func IsEmail(s string) bool {
 	// entire email address to be no more than 254 characters long
 	if len(s) > 254 {
@@ -128,6 +144,8 @@ func IsEmail(s string) bool {
 	return true
 }
 
+// IsIPV4 tells whether given string is a valid representation of an IPv4 address
+// according to the "dotted-quad" ABNF syntax as defined in RFC 2673, section 3.2.
 func IsIPV4(s string) bool {
 	groups := strings.Split(s, ".")
 	if len(groups) != 4 {
@@ -145,6 +163,8 @@ func IsIPV4(s string) bool {
 	return true
 }
 
+// IsIPV6 tells whether given string is a valid representation of an IPv6 address
+// as defined in RFC 2373, section 2.2.
 func IsIPV6(s string) bool {
 	if !strings.Contains(s, ":") {
 		return false
@@ -152,16 +172,23 @@ func IsIPV6(s string) bool {
 	return net.ParseIP(s) != nil
 }
 
+// IsURI tells whether given string is valid URI, according to RFC 3986.
 func IsURI(s string) bool {
 	u, err := url.Parse(s)
 	return err == nil && u.IsAbs()
 }
 
+// IsURIRef tells whether given string is a valid URI Reference
+// (either a URI or a relative-reference), according to RFC 3986.
 func IsURIRef(s string) bool {
 	_, err := url.Parse(s)
 	return err == nil
 }
 
+// IsRegex tells whether given string is a valid regular expression,
+// according to the ECMA 262 regular expression dialect.
+//
+// The implementation uses go-lang regexp package.
 func IsRegex(s string) bool {
 	_, err := regexp.Compile(s)
 	return err == nil
