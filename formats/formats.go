@@ -34,10 +34,7 @@ var formats = map[string]Format{
 }
 
 func init() {
-	formats["format"] = func(s string) bool {
-		_, ok := formats[s]
-		return ok
-	}
+	formats["format"] = IsFormat
 }
 
 // Register registers Format object for given format name.
@@ -51,8 +48,16 @@ func Get(name string) (Format, bool) {
 	return f, ok
 }
 
+// IsFormat tells whether given string is a valid format that is registered
+func IsFormat(s string) bool {
+	_, ok := formats[s]
+	return ok
+}
+
 // IsDateTime tells whether given string is a valid date representation
 // as defined by RFC 3339, section 5.6.
+//
+// Note: this is unable to parse UTC leap seconds. See https://github.com/golang/go/issues/8728.
 func IsDateTime(s string) bool {
 	if _, err := time.Parse(time.RFC3339, s); err == nil {
 		return true
@@ -69,11 +74,10 @@ func IsDateTime(s string) bool {
 // See https://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names, for details.
 func IsHostname(s string) bool {
 	// entire hostname (including the delimiting dots but not a trailing dot) has a maximum of 253 ASCII characters
-	strLen := len(s)
 	if strings.HasSuffix(s, ".") {
-		strLen -= 1
+		s = strings.TrimSuffix(s, ".")
 	}
-	if strLen > 253 {
+	if len(s) > 253 {
 		return false
 	}
 
@@ -126,11 +130,6 @@ func IsEmail(s string) bool {
 
 	// local part may be up to 64 characters long
 	if len(local) > 64 {
-		return false
-	}
-
-	// domain may have a maximum of 255 characters[
-	if len(domain) > 255 {
 		return false
 	}
 
