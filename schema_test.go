@@ -7,6 +7,8 @@ package jsonschema_test
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -128,6 +130,15 @@ func TestInvalidSchema(t *testing.T) {
 }
 
 func TestCompileURL(t *testing.T) {
+	tr := http.DefaultTransport.(*http.Transport)
+	tr.TLSClientConfig.InsecureSkipVerify = true
+
+	handler := http.FileServer(http.Dir("testdata"))
+	httpServer := httptest.NewServer(handler)
+	defer httpServer.Close()
+	httpsServer := httptest.NewTLSServer(handler)
+	defer httpsServer.Close()
+
 	abs, err := filepath.Abs("testdata/customer_schema.json")
 	if err != nil {
 		t.Error(err)
@@ -138,6 +149,8 @@ func TestCompileURL(t *testing.T) {
 	}{
 		{"testdata/customer_schema.json#/0", "testdata/customer.json"},
 		{"file://" + abs + "#/0", "testdata/customer.json"},
+		{httpServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
+		{httpsServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
 	}
 	for i, test := range tests {
 		t.Logf("#%d: %+v", i, test)
