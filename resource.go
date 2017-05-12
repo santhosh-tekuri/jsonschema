@@ -62,13 +62,15 @@ func (r *resource) resolveURL(ref string) (string, error) {
 func (r *resource) resolveFromID(doc interface{}, url string) (interface{}, error) {
 	switch doc := doc.(type) {
 	case map[string]interface{}:
-		if id, ok := doc["$id"]; ok {
-			id, err := r.resolveURL(id.(string))
-			if err != nil {
-				return nil, err
-			}
-			if id == url {
-				return doc, nil
+		if id, ok := doc["id"]; ok {
+			if id, ok := id.(string); ok {
+				id, err := r.resolveURL(id)
+				if err != nil {
+					return nil, err
+				}
+				if id == url {
+					return doc, nil
+				}
 			}
 		}
 		for _, v := range doc {

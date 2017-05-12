@@ -39,11 +39,11 @@
       "type": "object",
       "definitions": {
         "name": {
-          "$id": "#nm",
+          "id": "#nm",
           "type": "string"
         },
         "email" : {
-          "$id": "email.json",
+          "id": "email.json",
           "type": "string"
         }
       },

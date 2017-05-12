@@ -40,7 +40,7 @@ func init() {
         "properties": {
             "id": {
                 "type": "string",
-                "format": "uri"
+                "format": "uriref"
             },
             "$schema": {
                 "type": "string",
