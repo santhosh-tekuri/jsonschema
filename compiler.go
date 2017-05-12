@@ -7,6 +7,9 @@ package jsonschema
 import (
 	"regexp"
 
+	"fmt"
+	"strings"
+
 	"github.com/santhosh-tekuri/jsonschema/loader"
 )
 
@@ -35,11 +38,8 @@ func (c *Compiler) AddResource(url string, data []byte) error {
 //
 // The json-schema is validated with draft4 specification.
 func (c *Compiler) Compile(url string) (*Schema, error) {
-	return c.compileRef(split(url))
-}
-
-func (c *Compiler) compileRef(base, ref string) (*Schema, error) {
-	if _, ok := c.resources[base+"#"]; !ok {
+	base, fragment := split(url)
+	if _, ok := c.resources[base]; !ok {
 		data, err := loader.Load(base)
 		if err != nil {
 			return nil, err
@@ -50,56 +50,104 @@ func (c *Compiler) compileRef(base, ref string) (*Schema, error) {
 		}
 		c.resources[r.url] = r
 	}
-	br := c.resources[base+"#"]
-	url, err := br.resolveURL(ref)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := c.resources[url]; !ok {
-		ir, err := br.resolveInternal(ref)
-		if err != nil {
-			return nil, err
-		}
-		if ir == nil {
-			return c.Compile(url)
-		}
-		c.resources[ir.url] = ir
-	}
-	r := c.resources[url]
-	if err := c.compileResource(r); err != nil {
-		return nil, err
-	}
-	return r.schema, nil
+	r := c.resources[base]
+	s, err := c.compileRef(r, nil, r.url, fragment)
+	return s, err
 }
 
-func (c Compiler) compileResource(r *resource) error {
-	if r.schema == nil {
-		url, ptr := split(r.url)
-		if draft4 != nil {
-			if err := draft4.validate(r.doc); err != nil {
-				finishContext(err, draft4)
-				return &SchemaError{r.url, err}
-			}
+func validateSchema(url string, v interface{}) error {
+	if draft4 != nil {
+		if err := draft4.validate(v); err != nil {
+			finishContext(err, draft4)
+			return &SchemaError{url, err}
 		}
-		_, err := c.compile(url, ptr, r.doc.(map[string]interface{}))
-		return err
 	}
 	return nil
 }
 
-func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, error) {
+func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref string) (*Schema, error) {
+	if rootFragment(ref) {
+		if _, ok := r.schemas["#"]; !ok {
+			if err := validateSchema(r.url, r.doc); err != nil {
+				return nil, err
+			}
+			hash := "#"
+			s := &Schema{url: &r.url, ptr: &hash}
+			r.schemas["#"] = s
+			m := r.doc.(map[string]interface{})
+			if _, err := c.compile(r, s, base, m, m); err != nil {
+				return nil, err
+			}
+		}
+		return r.schemas["#"], nil
+	}
+
+	ids := make(map[string]interface{})
+	resolveIDs(r.url, root, ids)
+
+	if strings.HasPrefix(ref, "#/") {
+		if _, ok := r.schemas[ref]; !ok {
+			ptrBase, doc, err := r.resolvePtr(ref)
+			if err != nil {
+				return nil, err
+			}
+			if err := validateSchema(r.url, doc); err != nil {
+				return nil, err
+			}
+			r.schemas[ref] = &Schema{url: &base, ptr: &ref}
+			m := doc.(map[string]interface{})
+
+			if _, err := c.compile(r, r.schemas[ref], ptrBase, root, m); err != nil {
+				return nil, err
+			}
+		}
+		return r.schemas[ref], nil
+	}
+
+	refURL, err := resolveURL(base, ref)
+	if err != nil {
+		return nil, err
+	}
+	if rs, ok := r.schemas[refURL]; ok {
+		return rs, nil
+	}
+
+	if v, ok := ids[refURL]; ok {
+		if err := validateSchema(r.url, v); err != nil {
+			return nil, err
+		}
+		u, f := split(refURL)
+		s := &Schema{url: &u, ptr: &f}
+		r.schemas[refURL] = s
+		rmap := v.(map[string]interface{})
+		if _, err := c.compile(r, s, refURL, root, rmap); err != nil {
+			return nil, err
+		}
+		return s, nil
+	}
+
+	base, _ = split(refURL)
+	if base == r.url {
+		return nil, fmt.Errorf("invalid ref: %q", refURL)
+	}
+	return c.Compile(refURL)
+}
+
+func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[string]interface{}) (*Schema, error) {
 	var err error
 
-	s := new(Schema)
-	if ptr != "" {
-		s.url = &url
-		s.ptr = &ptr
-		c.resources[url+ptr].schema = s
+	if s == nil {
+		s = new(Schema)
+	}
+
+	if id, ok := m["id"]; ok {
+		if base, err = resolveURL(base, id.(string)); err != nil {
+			return nil, err
+		}
 	}
 
 	if ref, ok := m["$ref"]; ok {
-		ref := ref.(string)
-		s.ref, err = c.compileRef(url, ref)
+		s.ref, err = c.compileRef(r, root, base, ref.(string))
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +172,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 	}
 
 	if not, ok := m["not"]; ok {
-		s.not, err = c.compile(url, "", not.(map[string]interface{}))
+		s.not, err = c.compile(r, nil, base, root, not.(map[string]interface{}))
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +183,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
 			for i, v := range pvalue {
-				sch, err := c.compile(url, "", v.(map[string]interface{}))
+				sch, err := c.compile(r, nil, base, root, v.(map[string]interface{}))
 				if err != nil {
 					return nil, err
 				}
@@ -175,7 +223,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 		props := props.(map[string]interface{})
 		s.properties = make(map[string]*Schema, len(props))
 		for pname, pmap := range props {
-			s.properties[pname], err = c.compile(url, "", pmap.(map[string]interface{}))
+			s.properties[pname], err = c.compile(r, nil, base, root, pmap.(map[string]interface{}))
 			if err != nil {
 				return nil, err
 			}
@@ -190,7 +238,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 		patternProps := patternProps.(map[string]interface{})
 		s.patternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
 		for pattern, pmap := range patternProps {
-			s.patternProperties[regexp.MustCompile(pattern)], err = c.compile(url, "", pmap.(map[string]interface{}))
+			s.patternProperties[regexp.MustCompile(pattern)], err = c.compile(r, nil, base, root, pmap.(map[string]interface{}))
 			if err != nil {
 				return nil, err
 			}
@@ -204,7 +252,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 				s.additionalProperties = false
 			}
 		case map[string]interface{}:
-			s.additionalProperties, err = c.compile(url, "", additionalProps)
+			s.additionalProperties, err = c.compile(r, nil, base, root, additionalProps)
 			if err != nil {
 				return nil, err
 			}
@@ -217,7 +265,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 		for pname, pvalue := range deps {
 			switch pvalue := pvalue.(type) {
 			case map[string]interface{}:
-				s.dependencies[pname], err = c.compile(url, "", pvalue)
+				s.dependencies[pname], err = c.compile(r, nil, base, root, pvalue)
 				if err != nil {
 					return nil, err
 				}
@@ -240,14 +288,14 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 	if items, ok := m["items"]; ok {
 		switch items := items.(type) {
 		case map[string]interface{}:
-			s.items, err = c.compile(url, "", items)
+			s.items, err = c.compile(r, nil, base, root, items)
 			if err != nil {
 				return nil, err
 			}
 		case []interface{}:
 			schemas := make([]*Schema, 0, len(items))
 			for _, item := range items {
-				ischema, err := c.compile(url, "", item.(map[string]interface{}))
+				ischema, err := c.compile(r, nil, base, root, item.(map[string]interface{}))
 				if err != nil {
 					return nil, err
 				}
@@ -261,7 +309,7 @@ func (c Compiler) compile(url, ptr string, m map[string]interface{}) (*Schema, e
 			case bool:
 				s.additionalItems = additionalItems
 			case map[string]interface{}:
-				s.additionalItems, err = c.compile(url, "", additionalItems)
+				s.additionalItems, err = c.compile(r, nil, base, root, additionalItems)
 				if err != nil {
 					return nil, err
 				}
