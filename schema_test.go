@@ -14,11 +14,21 @@ import (
 	"strings"
 	"testing"
 
+	"crypto/tls"
+
 	"github.com/santhosh-tekuri/jsonschema"
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
 )
 
 func TestValidate(t *testing.T) {
+	server := &http.Server{Addr: ":1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
+	go func() {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			t.Fatal(err)
+		}
+	}()
+	defer server.Close()
+
 	type testGroup struct {
 		Description string
 		Schema      json.RawMessage
@@ -131,6 +141,9 @@ func TestInvalidSchema(t *testing.T) {
 
 func TestCompileURL(t *testing.T) {
 	tr := http.DefaultTransport.(*http.Transport)
+	if tr.TLSClientConfig == nil {
+		tr.TLSClientConfig = &tls.Config{}
+	}
 	tr.TLSClientConfig.InsecureSkipVerify = true
 
 	handler := http.FileServer(http.Dir("testdata"))
