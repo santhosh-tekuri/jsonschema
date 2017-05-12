@@ -22,15 +22,15 @@ import (
 type Format func(string) bool
 
 var formats = map[string]Format{
-	"date-time":  IsDateTime,
-	"hostname":   IsHostname,
-	"email":      IsEmail,
-	"ip-address": IsIPV4,
-	"ipv4":       IsIPV4,
-	"ipv6":       IsIPV6,
-	"uri":        IsURI,
-	"uriref":     IsURIRef,
-	"regex":      IsRegex,
+	"date-time":     IsDateTime,
+	"hostname":      IsHostname,
+	"email":         IsEmail,
+	"ip-address":    IsIPV4,
+	"ipv4":          IsIPV4,
+	"ipv6":          IsIPV6,
+	"uri":           IsURI,
+	"uri-reference": IsURIReference,
+	"regex":         IsRegex,
 }
 
 func init() {
@@ -179,7 +179,7 @@ func IsURI(s string) bool {
 
 // IsURIRef tells whether given string is a valid URI Reference
 // (either a URI or a relative-reference), according to RFC 3986.
-func IsURIRef(s string) bool {
+func IsURIReference(s string) bool {
 	_, err := url.Parse(s)
 	return err == nil
 }
