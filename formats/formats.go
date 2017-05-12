@@ -30,6 +30,7 @@ var formats = map[string]Format{
 	"ipv6":          IsIPV6,
 	"uri":           IsURI,
 	"uri-reference": IsURIReference,
+	"uriref":        IsURIReference,
 	"regex":         IsRegex,
 }
 
