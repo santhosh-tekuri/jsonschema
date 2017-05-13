@@ -178,7 +178,7 @@ func IsURI(s string) bool {
 	return err == nil && u.IsAbs()
 }
 
-// IsURIRef tells whether given string is a valid URI Reference
+// IsURIReference tells whether given string is a valid URI Reference
 // (either a URI or a relative-reference), according to RFC 3986.
 func IsURIReference(s string) bool {
 	_, err := url.Parse(s)
