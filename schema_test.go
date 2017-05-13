@@ -90,9 +90,43 @@ func TestValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	t.Run("non json instance", func(t *testing.T) {
+		c := jsonschema.NewCompiler()
+		if err := c.AddResource("test.json", []byte("{}")); err != nil {
+			t.Fatal(err)
+		}
+		s, err := c.Compile("test.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := s.Validate([]byte("{")); err != nil {
+			t.Log(err)
+		} else {
+			t.Error("error expected")
+		}
+	})
 }
 
 func TestInvalidSchema(t *testing.T) {
+	t.Run("MustCompile with panic", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("panic expected")
+			}
+		}()
+		jsonschema.MustCompile("testdata/invalid_schema.json")
+	})
+
+	t.Run("MustCompile without panic", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Error("panic not expected")
+			}
+		}()
+		jsonschema.MustCompile("testdata/customer_schema.json#/0")
+	})
+
 	t.Run("invalid json", func(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", []byte("{")); err == nil {
 			t.Error("error expected")
