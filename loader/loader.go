@@ -37,9 +37,7 @@ type fileURLLoader struct{}
 func (fileURLLoader) Load(url string) ([]byte, error) {
 	f := strings.TrimPrefix(url, "file://")
 	if runtime.GOOS == "windows" {
-		if strings.HasPrefix(f, "/") {
-			f = f[1:]
-		}
+		f = strings.TrimPrefix(f, "/")
 		f = filepath.FromSlash(f)
 	}
 	return ioutil.ReadFile(f)

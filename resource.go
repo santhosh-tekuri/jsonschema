@@ -133,7 +133,9 @@ func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{
 		ids[base] = m
 	}
 	if m, ok := m["not"]; ok {
-		resolveIDs(base, m.(map[string]interface{}), ids)
+		if err := resolveIDs(base, m.(map[string]interface{}), ids); err != nil {
+			return err
+		}
 	}
 
 	resolveArray := func(pname string) error {

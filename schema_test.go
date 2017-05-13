@@ -63,7 +63,9 @@ func TestValidate(t *testing.T) {
 			for _, group := range tg {
 				t.Run(group.Description, func(t *testing.T) {
 					c := jsonschema.NewCompiler()
-					c.AddResource("test.json", group.Schema)
+					if err := c.AddResource("test.json", group.Schema); err != nil {
+						t.Fatalf("add resource failed, reason: %v", err)
+					}
 					schema, err := c.Compile("test.json")
 					if err != nil {
 						t.Fatalf("schema compilation failed, reason: %v", err)

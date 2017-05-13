@@ -5,9 +5,8 @@
 package jsonschema
 
 import (
-	"regexp"
-
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/loader"
@@ -44,11 +43,9 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 		if err != nil {
 			return nil, err
 		}
-		r, err := newResource(base, data)
-		if err != nil {
+		if err := c.AddResource(base, data); err != nil {
 			return nil, err
 		}
-		c.resources[r.url] = r
 	}
 	r := c.resources[base]
 	s, err := c.compileRef(r, nil, r.url, fragment)
@@ -82,9 +79,6 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 		return r.schemas["#"], nil
 	}
 
-	ids := make(map[string]interface{})
-	resolveIDs(r.url, root, ids)
-
 	if strings.HasPrefix(ref, "#/") {
 		if _, ok := r.schemas[ref]; !ok {
 			ptrBase, doc, err := r.resolvePtr(ref)
@@ -112,6 +106,10 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 		return rs, nil
 	}
 
+	ids := make(map[string]interface{})
+	if err := resolveIDs(r.url, root, ids); err != nil {
+		return nil, err
+	}
 	if v, ok := ids[refURL]; ok {
 		if err := validateSchema(r.url, v); err != nil {
 			return nil, err
