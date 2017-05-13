@@ -5,6 +5,7 @@
 package jsonschema_test
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -13,8 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"crypto/tls"
 
 	"github.com/santhosh-tekuri/jsonschema"
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
@@ -38,7 +37,7 @@ func TestValidate(t *testing.T) {
 			Valid       bool
 		}
 	}
-	err := filepath.Walk("testdata/tests", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk("testdata/draft4", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			t.Error(err)
 			return nil
