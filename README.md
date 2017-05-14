@@ -1,6 +1,7 @@
 # jsonschema
 
 [![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://godoc.org/github.com/santhosh-tekuri/jsonschema)
+[![Go Report Card](https://goreportcard.com/badge/github.com/santhosh-tekuri/jsonschema)](https://goreportcard.com/report/github.com/santhosh-tekuri/jsonschema)
 
 Package jsonschema provides draft4 json-schema compilation and validation.
 
