@@ -120,7 +120,7 @@ func (s *Schema) validate(v interface{}) error {
 		for _, t := range s.types {
 			if t == "integer" {
 				if vType == "number" {
-					if _, err := v.(json.Number).Int64(); err == nil {
+					if _, ok := new(big.Int).SetString(string(v.(json.Number)), 10); ok {
 						matched = true
 						break
 					}
@@ -327,7 +327,7 @@ func (s *Schema) validate(v interface{}) error {
 			for i := 1; i < len(v); i++ {
 				for j := 0; j < i; j++ {
 					if equals(v[i], v[j]) {
-						return validationError("uniqueItems", "items at %d and %d are equal", j, i)
+						return validationError("uniqueItems", "items at index %d and %d are equal", j, i)
 					}
 				}
 			}
@@ -388,11 +388,11 @@ func (s *Schema) validate(v interface{}) error {
 			cmp := v.Cmp(s.minimum)
 			if s.exclusiveMinimum {
 				if cmp <= 0 {
-					return validationError("minimum", "must be > %f but found %f", *s.minimum, v)
+					return validationError("minimum", "must be > %v but found %v", s.minimum, v)
 				}
 			} else {
 				if cmp < 0 {
-					return validationError("minimum", "must be >= %f but found %f", *s.minimum, v)
+					return validationError("minimum", "must be >= %v but found %v", s.minimum, v)
 				}
 			}
 		}
@@ -401,18 +401,18 @@ func (s *Schema) validate(v interface{}) error {
 			cmp := v.Cmp(s.maximum)
 			if s.exclusiveMaximum {
 				if cmp >= 0 {
-					return validationError("maximum", "must be < %f but found %f", *s.maximum, v)
+					return validationError("maximum", "must be < %v but found %v", s.maximum, v)
 				}
 			} else {
 				if cmp > 0 {
-					return validationError("maximum", "must be <= %f but found %f", *s.maximum, v)
+					return validationError("maximum", "must be <= %v but found %v", s.maximum, v)
 				}
 			}
 		}
 		if s.multipleOf != nil {
 			v, _ := new(big.Float).SetString(string(v))
 			if q := new(big.Float).Quo(v, s.multipleOf); !q.IsInt() {
-				return validationError("multipleOf", "%f not multipleOf %f", v, *s.multipleOf)
+				return validationError("multipleOf", "%v not multipleOf %v", v, s.multipleOf)
 			}
 		}
 	}

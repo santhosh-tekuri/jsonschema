@@ -75,7 +75,7 @@ func TestValidate(t *testing.T) {
 							err = schema.Validate(test.Data)
 							valid := err == nil
 							if !valid {
-								t.Log(err)
+								t.Logf("validation failed. reason:\n%s", err)
 							}
 							if test.Valid != valid {
 								t.Errorf("expected valid=%t got valid=%t", test.Valid, valid)
