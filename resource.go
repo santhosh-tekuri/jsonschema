@@ -5,6 +5,7 @@
 package jsonschema
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,9 +25,14 @@ func newResource(base string, data []byte) (*resource, error) {
 	if strings.IndexByte(base, '#') != -1 {
 		panic(fmt.Sprintf("BUG: newResource(%q)", base))
 	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
 	var doc interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
+	if err := decoder.Decode(&doc); err != nil {
 		return nil, err
+	}
+	if t, _ := decoder.Token(); t != nil {
+		return nil, errors.New("unexpected token at end of json")
 	}
 	return &resource{base, doc, make(map[string]*Schema)}, nil
 }

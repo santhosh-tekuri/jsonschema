@@ -5,9 +5,11 @@
 package jsonschema
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"math"
+	"math/big"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -55,11 +57,11 @@ type Schema struct {
 	format    string
 
 	// number validators
-	minimum          *float64
+	minimum          *big.Float
 	exclusiveMinimum bool
-	maximum          *float64
+	maximum          *big.Float
 	exclusiveMaximum bool
-	multipleOf       *float64
+	multipleOf       *big.Float
 }
 
 // Compile parses json-schema at given url returns, if successful,
@@ -85,16 +87,20 @@ func MustCompile(url string) *Schema {
 //
 // Returned error can be *ValidationError.
 func (s *Schema) Validate(data []byte) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
 	var doc interface{}
-	err := json.Unmarshal(data, &doc)
-	if err != nil {
+	if err := decoder.Decode(&doc); err != nil {
 		return err
 	}
-	err = s.validate(doc)
-	if err != nil {
-		finishContext(err, s)
+	if t, _ := decoder.Token(); t != nil {
+		return errors.New("unexpected token at end of json")
 	}
-	return err
+	if err := s.validate(doc); err != nil {
+		finishContext(err, s)
+		return err
+	}
+	return nil
 }
 
 func (s *Schema) validate(v interface{}) error {
@@ -113,9 +119,11 @@ func (s *Schema) validate(v interface{}) error {
 		matched := false
 		for _, t := range s.types {
 			if t == "integer" {
-				if vType == "number" && v == math.Trunc(v.(float64)) {
-					matched = true
-					break
+				if vType == "number" {
+					if _, err := v.(json.Number).Int64(); err == nil {
+						matched = true
+						break
+					}
 				}
 			} else if vType == t {
 				matched = true
@@ -374,35 +382,37 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 
-	case float64:
+	case json.Number:
 		if s.minimum != nil {
+			v, _ := new(big.Float).SetString(string(v))
+			cmp := v.Cmp(s.minimum)
 			if s.exclusiveMinimum {
-				if v <= *s.minimum {
+				if cmp <= 0 {
 					return validationError("minimum", "must be > %f but found %f", *s.minimum, v)
 				}
 			} else {
-				if v < *s.minimum {
+				if cmp < 0 {
 					return validationError("minimum", "must be >= %f but found %f", *s.minimum, v)
 				}
 			}
 		}
 		if s.maximum != nil {
+			v, _ := new(big.Float).SetString(string(v))
+			cmp := v.Cmp(s.maximum)
 			if s.exclusiveMaximum {
-				if v >= *s.maximum {
+				if cmp >= 0 {
 					return validationError("maximum", "must be < %f but found %f", *s.maximum, v)
 				}
 			} else {
-				if v > *s.maximum {
+				if cmp > 0 {
 					return validationError("maximum", "must be <= %f but found %f", *s.maximum, v)
 				}
 			}
 		}
 		if s.multipleOf != nil {
-			if *s.multipleOf != 0 {
-				t := v / *s.multipleOf
-				if t != math.Trunc(t) {
-					return validationError("multipleOf", "%f not multipleOf %f", v, *s.multipleOf)
-				}
+			v, _ := new(big.Float).SetString(string(v))
+			if q := new(big.Float).Quo(v, s.multipleOf); !q.IsInt() {
+				return validationError("multipleOf", "%f not multipleOf %f", v, *s.multipleOf)
 			}
 		}
 	}
@@ -416,7 +426,7 @@ func jsonType(v interface{}) string {
 		return "null"
 	case bool:
 		return "boolean"
-	case float64:
+	case json.Number:
 		return "number"
 	case string:
 		return "string"
@@ -425,7 +435,7 @@ func jsonType(v interface{}) string {
 	case map[string]interface{}:
 		return "object"
 	default:
-		return fmt.Sprintf("%T", v)
+		panic(fmt.Sprintf("unexpect jsonType: %T", v))
 	}
 }
 
@@ -457,6 +467,10 @@ func equals(v1, v2 interface{}) bool {
 			}
 		}
 		return true
+	case "number":
+		num1, _ := new(big.Float).SetString(string(v1.(json.Number)))
+		num2, _ := new(big.Float).SetString(string(v2.(json.Number)))
+		return num1.Cmp(num2) == 0
 	default:
 		return v1 == v2
 	}

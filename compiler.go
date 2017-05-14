@@ -5,7 +5,9 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"fmt"
+	"math/big"
 	"regexp"
 	"strings"
 
@@ -203,7 +205,8 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 
 	loadInt := func(pname string) int {
 		if num, ok := m[pname]; ok {
-			return int(num.(float64))
+			i, _ := num.(json.Number).Int64()
+			return int(i)
 		}
 		return -1
 	}
@@ -327,10 +330,10 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		s.format = format.(string)
 	}
 
-	loadFloat := func(pname string) *float64 {
+	loadFloat := func(pname string) *big.Float {
 		if num, ok := m[pname]; ok {
-			num := num.(float64)
-			return &num
+			r, _ := new(big.Float).SetString(string(num.(json.Number)))
+			return r
 		}
 		return nil
 	}
@@ -350,6 +353,11 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 	}
 
 	s.multipleOf = loadFloat("multipleOf")
+	if s.multipleOf != nil && s.multipleOf.IsInt() {
+		if i, _ := s.multipleOf.Int64(); i == 0 {
+			s.multipleOf = nil
+		}
+	}
 
 	return s, nil
 }

@@ -1,5 +1,16 @@
 [
   {
+    "description": "multipleOf small value",
+    "schema": {"multipleOf": 0.01},
+    "tests": [
+      {
+        "description": "value is valid",
+        "data": 19.99,
+        "valid": true
+      }
+    ]
+  },
+  {
     "description": "enum with single value",
     "schema": {"enum": [1]},
     "tests": [
