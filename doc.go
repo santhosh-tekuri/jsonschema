@@ -5,7 +5,8 @@
 /*
 Package jsonschema provides draft4 json-schema compilation and validation.
 
-An implementation of JSON Schema, based on IETF's draft v4
+An implementation of JSON Schema, based on IETF's draft v4.
+Passes all tests(including optional) in https://github.com/json-schema/JSON-Schema-Test-Suite
 
 An example of using this package:
 
