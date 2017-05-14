@@ -3,6 +3,7 @@
 [![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://godoc.org/github.com/santhosh-tekuri/jsonschema)
 [![Go Report Card](https://goreportcard.com/badge/github.com/santhosh-tekuri/jsonschema)](https://goreportcard.com/report/github.com/santhosh-tekuri/jsonschema)
 [![Build Status](https://travis-ci.org/santhosh-tekuri/jsonschema.svg?branch=master)](https://travis-ci.org/santhosh-tekuri/jsonschema)
+[![codecov.io](https://codecov.io/github/santhosh-tekuri/jsonschema/coverage.svg?branch=master)](https://codecov.io/github/santhosh-tekuri/jsonschema?branch=master)
 
 Package jsonschema provides draft4 json-schema compilation and validation.
 
