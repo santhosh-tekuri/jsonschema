@@ -14,10 +14,10 @@ An example of using this package:
 ```go
 schemea, err := jsonschema.Compile("schemas/purchaseOrder.json")
 if err != nil {
-  return err
+    return err
 }
 if err = schema.Validate("purchaseOrder.json"); err != nil {
-  return err
+    return err
 }
 ```
 
@@ -39,14 +39,14 @@ data := []byte(`{"type": "string"}`)
 url := "sch.json"
 compiler := jsonschema.NewCompiler()
 if err := compiler.AddResource(url, data); err != nil {
-  return err
+    return err
 }
 schemea, err := jsonschema.Compile(url)
 if err != nil {
-  return err
+    return err
 }
 if err = schema.Validate("doc.json"); err != nil {
-  return err
+    return err
 }
 ```
 
