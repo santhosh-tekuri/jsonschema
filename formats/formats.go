@@ -10,6 +10,7 @@ package formats
 
 import (
 	"net"
+	"net/mail"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -75,9 +76,7 @@ func IsDateTime(s string) bool {
 // See https://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names, for details.
 func IsHostname(s string) bool {
 	// entire hostname (including the delimiting dots but not a trailing dot) has a maximum of 253 ASCII characters
-	if strings.HasSuffix(s, ".") {
-		s = strings.TrimSuffix(s, ".")
-	}
+	s = strings.TrimSuffix(s, ".")
 	if len(s) > 253 {
 		return false
 	}
@@ -139,9 +138,8 @@ func IsEmail(s string) bool {
 		return false
 	}
 
-	//todo: some validations yet to be implemented
-
-	return true
+	_, err := mail.ParseAddress(s)
+	return err == nil
 }
 
 // IsIPV4 tells whether given string is a valid representation of an IPv4 address
