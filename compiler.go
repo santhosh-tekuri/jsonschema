@@ -169,6 +169,26 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 
 	if e, ok := m["enum"]; ok {
 		s.enum = e.([]interface{})
+		allPrimitives := true
+		for _, item := range s.enum {
+			switch jsonType(item) {
+			case "object", "array":
+				allPrimitives = false
+				break
+			}
+		}
+		s.enumError = "enum failed"
+		if allPrimitives {
+			if len(s.enum) == 1 {
+				s.enumError = fmt.Sprintf("value must be %v", s.enum[0])
+			} else {
+				strEnum := make([]string, len(s.enum))
+				for i, item := range s.enum {
+					strEnum[i] = fmt.Sprintf("%v", item)
+				}
+				s.enumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
+			}
+		}
 	}
 
 	if not, ok := m["not"]; ok {

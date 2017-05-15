@@ -24,13 +24,14 @@ type Schema struct {
 	ptr *string
 
 	// type agnostic validations
-	ref   *Schema
-	types []string
-	enum  []interface{}
-	not   *Schema
-	allOf []*Schema
-	anyOf []*Schema
-	oneOf []*Schema
+	ref       *Schema
+	types     []string
+	enum      []interface{}
+	enumError string // error message for enum fail
+	not       *Schema
+	allOf     []*Schema
+	anyOf     []*Schema
+	oneOf     []*Schema
 
 	// object validations
 	minProperties        int // -1 if not specified
@@ -117,16 +118,14 @@ func (s *Schema) validate(v interface{}) error {
 		vType := jsonType(v)
 		matched := false
 		for _, t := range s.types {
-			if t == "integer" {
-				if vType == "number" {
-					if _, ok := new(big.Int).SetString(string(v.(json.Number)), 10); ok {
-						matched = true
-						break
-					}
-				}
-			} else if vType == t {
+			if vType == t {
 				matched = true
 				break
+			} else if t == "integer" && vType == "number" {
+				if _, ok := new(big.Int).SetString(string(v.(json.Number)), 10); ok {
+					matched = true
+					break
+				}
 			}
 		}
 		if !matched {
@@ -136,43 +135,24 @@ func (s *Schema) validate(v interface{}) error {
 
 	if len(s.enum) > 0 {
 		matched := false
-		allPrimitives := true
 		for _, item := range s.enum {
 			if equals(v, item) {
 				matched = true
 				break
 			}
-			switch jsonType(item) {
-			case "object", "arr":
-				allPrimitives = false
-			}
 		}
 		if !matched {
-			if allPrimitives {
-				if len(s.enum) == 1 {
-					return validationError("enum", "value must be %v", s.enum[0])
-				}
-				strEnum := make([]string, len(s.enum))
-				for i, item := range s.enum {
-					strEnum[i] = fmt.Sprintf("%v", item)
-				}
-				return validationError("enum", "value must be one of %s", strings.Join(strEnum, ", "))
-			}
-			return validationError("enum", "enum failed")
+			return validationError("enum", s.enumError)
 		}
 	}
 
-	if s.not != nil {
-		if s.not.validate(v) == nil {
-			return validationError("not", "not failed")
-		}
+	if s.not != nil && s.not.validate(v) == nil {
+		return validationError("not", "not failed")
 	}
 
-	if len(s.allOf) > 0 {
-		for i, sch := range s.allOf {
-			if err := sch.validate(v); err != nil {
-				return validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err)
-			}
+	for i, sch := range s.allOf {
+		if err := sch.validate(v); err != nil {
+			return validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err)
 		}
 	}
 
@@ -213,15 +193,11 @@ func (s *Schema) validate(v interface{}) error {
 
 	switch v := v.(type) {
 	case map[string]interface{}:
-		if s.minProperties != -1 {
-			if len(v) < s.minProperties {
-				return validationError("minProperties", "minimum %d properties allowed, but found %d properties", s.minProperties, len(v))
-			}
+		if s.minProperties != -1 && len(v) < s.minProperties {
+			return validationError("minProperties", "minimum %d properties allowed, but found %d properties", s.minProperties, len(v))
 		}
-		if s.maxProperties != -1 {
-			if len(v) > s.maxProperties {
-				return validationError("maxProperties", "maximum %d properties allowed, but found %d properties", s.maxProperties, len(v))
-			}
+		if s.maxProperties != -1 && len(v) > s.maxProperties {
+			return validationError("maxProperties", "maximum %d properties allowed, but found %d properties", s.maxProperties, len(v))
 		}
 		if len(s.required) > 0 {
 			var missing []string
@@ -260,14 +236,12 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		if len(s.patternProperties) > 0 {
-			for pattern, pschema := range s.patternProperties {
-				for pname, pvalue := range v {
-					if pattern.MatchString(pname) {
-						delete(additionalProps, pname)
-						if err := pschema.validate(pvalue); err != nil {
-							return addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err) // todo pattern escaping in sptr
-						}
+		for pattern, pschema := range s.patternProperties {
+			for pname, pvalue := range v {
+				if pattern.MatchString(pname) {
+					delete(additionalProps, pname)
+					if err := pschema.validate(pvalue); err != nil {
+						return addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err) // todo pattern escaping in sptr
 					}
 				}
 			}
@@ -292,19 +266,17 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		if len(s.dependencies) > 0 {
-			for dname, dvalue := range s.dependencies {
-				if _, ok := v[dname]; ok {
-					switch dvalue := dvalue.(type) {
-					case *Schema:
-						if err := dvalue.validate(v); err != nil {
-							return addContext("", "dependencies/"+escape(dname), err)
-						}
-					case []string:
-						for i, pname := range dvalue {
-							if _, ok := v[pname]; !ok {
-								return validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", pname, dname)
-							}
+		for dname, dvalue := range s.dependencies {
+			if _, ok := v[dname]; ok {
+				switch dvalue := dvalue.(type) {
+				case *Schema:
+					if err := dvalue.validate(v); err != nil {
+						return addContext("", "dependencies/"+escape(dname), err)
+					}
+				case []string:
+					for i, pname := range dvalue {
+						if _, ok := v[pname]; !ok {
+							return validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", pname, dname)
 						}
 					}
 				}
@@ -312,15 +284,11 @@ func (s *Schema) validate(v interface{}) error {
 		}
 
 	case []interface{}:
-		if s.minItems != -1 {
-			if len(v) < s.minItems {
-				return validationError("minItems", "minimum %d items allowed, but found %d items", s.minItems, len(v))
-			}
+		if s.minItems != -1 && len(v) < s.minItems {
+			return validationError("minItems", "minimum %d items allowed, but found %d items", s.minItems, len(v))
 		}
-		if s.maxItems != -1 {
-			if len(v) > s.maxItems {
-				return validationError("maxItems", "maximum %d items allowed, but found %d items", s.maxItems, len(v))
-			}
+		if s.maxItems != -1 && len(v) > s.maxItems {
+			return validationError("maxItems", "maximum %d items allowed, but found %d items", s.maxItems, len(v))
 		}
 		if s.uniqueItems {
 			for i := 1; i < len(v); i++ {
@@ -369,10 +337,8 @@ func (s *Schema) validate(v interface{}) error {
 				return validationError("maxLength", "length must be <= %d, but got %d", s.maxLength, length)
 			}
 		}
-		if s.pattern != nil {
-			if !s.pattern.MatchString(v) {
-				return validationError("pattern", "does not match pattern %s", s.pattern)
-			}
+		if s.pattern != nil && !s.pattern.MatchString(v) {
+			return validationError("pattern", "does not match pattern %s", s.pattern)
 		}
 		if len(s.format) > 0 {
 			f, _ := formats.Get(s.format)
