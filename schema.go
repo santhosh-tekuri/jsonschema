@@ -7,7 +7,6 @@ package jsonschema
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -94,7 +93,7 @@ func (s *Schema) Validate(data []byte) error {
 		return err
 	}
 	if t, _ := decoder.Token(); t != nil {
-		return errors.New("unexpected token at end of json")
+		return fmt.Errorf("invalid character %v after top-level value", t)
 	}
 	if err := s.validate(doc); err != nil {
 		finishContext(err, s)
@@ -435,7 +434,7 @@ func jsonType(v interface{}) string {
 	case map[string]interface{}:
 		return "object"
 	default:
-		panic(fmt.Sprintf("unexpect jsonType: %T", v))
+		panic(fmt.Sprintf("unexpected jsonType: %T", v))
 	}
 }
 

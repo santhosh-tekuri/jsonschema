@@ -32,7 +32,7 @@ func newResource(base string, data []byte) (*resource, error) {
 		return nil, err
 	}
 	if t, _ := decoder.Token(); t != nil {
-		return nil, errors.New("unexpected token at end of json")
+		return nil, fmt.Errorf("invalid character %v after top-level value", t)
 	}
 	return &resource{base, doc, make(map[string]*Schema)}, nil
 }
