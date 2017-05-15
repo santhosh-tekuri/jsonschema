@@ -91,21 +91,30 @@ func TestValidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("non json instance", func(t *testing.T) {
-		c := jsonschema.NewCompiler()
-		if err := c.AddResource("test.json", []byte("{}")); err != nil {
-			t.Fatal(err)
-		}
-		s, err := c.Compile("test.json")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := s.Validate([]byte("{")); err != nil {
-			t.Log(err)
-		} else {
-			t.Error("error expected")
-		}
-	})
+	invalidDocTests := []struct {
+		description string
+		doc         string
+	}{
+		{"non json instance", "{"},
+		{"multiple json instance", "{}{}"},
+	}
+	for _, test := range invalidDocTests {
+		t.Run(test.description, func(t *testing.T) {
+			c := jsonschema.NewCompiler()
+			if err := c.AddResource("test.json", []byte("{}")); err != nil {
+				t.Fatal(err)
+			}
+			s, err := c.Compile("test.json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := s.Validate([]byte(test.doc)); err != nil {
+				t.Log(err)
+			} else {
+				t.Error("error expected")
+			}
+		})
+	}
 }
 
 func TestInvalidSchema(t *testing.T) {
@@ -129,6 +138,14 @@ func TestInvalidSchema(t *testing.T) {
 
 	t.Run("invalid json", func(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", []byte("{")); err == nil {
+			t.Error("error expected")
+		} else {
+			t.Log(err)
+		}
+	})
+
+	t.Run("multiple json", func(t *testing.T) {
+		if err := jsonschema.NewCompiler().AddResource("test.json", []byte("{}{}")); err == nil {
 			t.Error("error expected")
 		} else {
 			t.Log(err)
