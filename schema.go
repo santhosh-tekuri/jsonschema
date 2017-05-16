@@ -424,8 +424,12 @@ func equals(v1, v2 interface{}) bool {
 		if len(obj1) != len(obj2) {
 			return false
 		}
-		for k := range obj1 {
-			if !equals(obj1[k], obj2[k]) {
+		for k, v1 := range obj1 {
+			if v2, ok := obj2[k]; ok {
+				if !equals(v1, v2) {
+					return false
+				}
+			} else {
 				return false
 			}
 		}
