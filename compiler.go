@@ -302,15 +302,10 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 				return nil, err
 			}
 		case []interface{}:
-			schemas := make([]*Schema, 0, len(items))
-			for _, item := range items {
-				ischema, err := c.compile(r, nil, base, root, item.(map[string]interface{}))
-				if err != nil {
-					return nil, err
-				}
-				schemas = append(schemas, ischema)
+			s.items, err = loadSchemas("items")
+			if err != nil {
+				return nil, err
 			}
-			s.items = schemas
 		}
 
 		if additionalItems, ok := m["additionalItems"]; ok {
