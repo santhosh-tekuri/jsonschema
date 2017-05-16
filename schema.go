@@ -51,10 +51,11 @@ type Schema struct {
 	additionalItems interface{} // nil or bool or *Schema
 
 	// string validations
-	minLength int // -1 if not specified
-	maxLength int // -1 if not specified
-	pattern   *regexp.Regexp
-	format    string
+	minLength  int // -1 if not specified
+	maxLength  int // -1 if not specified
+	pattern    *regexp.Regexp
+	format     formats.Format
+	formatName string
 
 	// number validators
 	minimum          *big.Float
@@ -340,11 +341,8 @@ func (s *Schema) validate(v interface{}) error {
 		if s.pattern != nil && !s.pattern.MatchString(v) {
 			return validationError("pattern", "does not match pattern %s", s.pattern)
 		}
-		if len(s.format) > 0 {
-			f, _ := formats.Get(s.format)
-			if !f(v) {
-				return validationError("format", "%q is not valid %s", v, s.format)
-			}
+		if s.format != nil && !s.format(v) {
+			return validationError("format", "%q is not valid %s", v, s.formatName)
 		}
 
 	case json.Number:

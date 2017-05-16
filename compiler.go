@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/santhosh-tekuri/jsonschema/formats"
 	"github.com/santhosh-tekuri/jsonschema/loader"
 )
 
@@ -334,7 +335,8 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 	}
 
 	if format, ok := m["format"]; ok {
-		s.format = format.(string)
+		s.formatName = format.(string)
+		s.format, _ = formats.Get(s.formatName)
 	}
 
 	loadFloat := func(pname string) *big.Float {
