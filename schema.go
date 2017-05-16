@@ -204,7 +204,7 @@ func (s *Schema) validate(v interface{}) error {
 			var missing []string
 			for _, pname := range s.required {
 				if _, ok := v[pname]; !ok {
-					missing = append(missing, pname)
+					missing = append(missing, strconv.Quote(pname))
 				}
 			}
 			if len(missing) > 0 {
@@ -225,7 +225,7 @@ func (s *Schema) validate(v interface{}) error {
 				if pvalue, ok := v[pname]; ok {
 					delete(additionalProps, pname)
 					if err := pschema.validate(pvalue); err != nil {
-						return addContext(escape(pname), "properties/"+escape(pname), err) // todo pname escaping in sptr
+						return addContext(escape(pname), "properties/"+escape(pname), err)
 					}
 				}
 			}
@@ -242,7 +242,7 @@ func (s *Schema) validate(v interface{}) error {
 				if pattern.MatchString(pname) {
 					delete(additionalProps, pname)
 					if err := pschema.validate(pvalue); err != nil {
-						return addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err) // todo pattern escaping in sptr
+						return addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err)
 					}
 				}
 			}
@@ -252,7 +252,7 @@ func (s *Schema) validate(v interface{}) error {
 				if len(additionalProps) != 0 {
 					pnames := make([]string, 0, len(additionalProps))
 					for pname := range additionalProps {
-						pnames = append(pnames, pname)
+						pnames = append(pnames, strconv.Quote(pname))
 					}
 					return validationError("additionalProperties", "additionalProperties %s not allowed", strings.Join(pnames, ", "))
 				}
@@ -277,7 +277,7 @@ func (s *Schema) validate(v interface{}) error {
 				case []string:
 					for i, pname := range dvalue {
 						if _, ok := v[pname]; !ok {
-							return validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", pname, dname)
+							return validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %q is required, if %q property exists", pname, dname)
 						}
 					}
 				}
@@ -339,10 +339,10 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 		if s.pattern != nil && !s.pattern.MatchString(v) {
-			return validationError("pattern", "does not match pattern %s", s.pattern)
+			return validationError("pattern", "does not match pattern %q", s.pattern)
 		}
 		if s.format != nil && !s.format(v) {
-			return validationError("format", "%q is not valid %s", v, s.formatName)
+			return validationError("format", "%q is not valid %q", v, s.formatName)
 		}
 
 	case json.Number:
