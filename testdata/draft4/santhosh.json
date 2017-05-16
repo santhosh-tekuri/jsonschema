@@ -44,6 +44,43 @@
     ]
   },
   {
+    "description": "enum with object having null property",
+    "schema": {"enum": [{ "foo": null }]},
+    "tests": [
+      {
+        "description": "valid",
+        "data": { "foo": null },
+        "valid": true
+      },
+      {
+        "description": "no props is invalid",
+        "data": { },
+        "valid": false
+      },
+      {
+        "description": "missing null prop is invalid",
+        "data": { "bar": null },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "enum with empty object",
+    "schema": {"enum": [{}]},
+    "tests": [
+      {
+        "description": "valid",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "null prop is invalid",
+        "data": { "foo": null },
+        "valid": false
+      }
+    ]
+  },
+  {
     "description": "$ref to $id",
     "schema": {
       "$schema": "http://json-schema.org/draft-04/schema#",
