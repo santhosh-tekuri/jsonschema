@@ -50,8 +50,7 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 		}
 	}
 	r := c.resources[base]
-	s, err := c.compileRef(r, nil, r.url, fragment)
-	return s, err
+	return c.compileRef(r, nil, r.url, fragment)
 }
 
 func validateSchema(url string, v interface{}) error {
@@ -92,7 +91,6 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 			}
 			r.schemas[ref] = &Schema{url: &base, ptr: &ref}
 			m := doc.(map[string]interface{})
-
 			if _, err := c.compile(r, r.schemas[ref], ptrBase, root, m); err != nil {
 				return nil, err
 			}
@@ -160,10 +158,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		case string:
 			s.types = []string{t}
 		case []interface{}:
-			s.types = make([]string, len(t))
-			for i, v := range t {
-				s.types[i] = v.(string)
-			}
+			s.types = toStrings(t)
 		}
 	}
 
@@ -233,11 +228,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 	s.minProperties, s.maxProperties = loadInt("minProperties"), loadInt("maxProperties")
 
 	if req, ok := m["required"]; ok {
-		req := req.([]interface{})
-		s.required = make([]string, len(req))
-		for i, pname := range req {
-			s.required[i] = pname.(string)
-		}
+		s.required = toStrings(req.([]interface{}))
 	}
 
 	if props, ok := m["properties"]; ok {
@@ -291,11 +282,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 					return nil, err
 				}
 			case []interface{}:
-				props := make([]string, len(pvalue))
-				for i, prop := range pvalue {
-					props[i] = prop.(string)
-				}
-				s.dependencies[pname] = props
+				s.dependencies[pname] = toStrings(pvalue)
 			}
 		}
 	}
@@ -358,15 +345,13 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		return nil
 	}
 
-	s.minimum = loadFloat("minimum")
-	if s.minimum != nil {
+	if s.minimum = loadFloat("minimum"); s.minimum != nil {
 		if exclusive, ok := m["exclusiveMinimum"]; ok {
 			s.exclusiveMinimum = exclusive.(bool)
 		}
 	}
 
-	s.maximum = loadFloat("maximum")
-	if s.maximum != nil {
+	if s.maximum = loadFloat("maximum"); s.maximum != nil {
 		if exclusive, ok := m["exclusiveMaximum"]; ok {
 			s.exclusiveMaximum = exclusive.(bool)
 		}
@@ -380,4 +365,12 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 	}
 
 	return s, nil
+}
+
+func toStrings(arr []interface{}) []string {
+	s := make([]string, len(arr))
+	for i, v := range arr {
+		s[i] = v.(string)
+	}
+	return s
 }
