@@ -101,7 +101,7 @@ I[#] S[#] doesn't validate with "schema.json#"
 ```
 
 Here `I` stands for instance document and `S` stands for schema document.  
-The json-fragments that caused error in instance and json documents are represented using json-pointer notation.  
+The json-fragments that caused error in instance and schema documents are represented using json-pointer notation.  
 Nested causes are printed with indent.
 
 ## CLI
