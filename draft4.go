@@ -8,7 +8,7 @@ var draft4 *Schema
 
 func init() {
 	c := NewCompiler()
-	url := "draft4.json"
+	url := "http://json-schema.org/draft-04/schema"
 	err := c.AddResource(url, []byte(`{
         "$schema": "http://json-schema.org/draft-04/schema#",
         "description": "Core schema meta-schema",

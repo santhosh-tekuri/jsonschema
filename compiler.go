@@ -69,7 +69,7 @@ func validateSchema(url, ptr string, v interface{}) error {
 			return &SchemaError{
 				url,
 				&ValidationError{
-					Message:     `doesn't validate with "draft4.json#"`,
+					Message:     fmt.Sprintf("doesn't validate with %q", draft4.url+*draft4.ptr),
 					InstancePtr: instancePtr,
 					SchemaURL:   "draft4.json",
 					SchemaPtr:   "#",
