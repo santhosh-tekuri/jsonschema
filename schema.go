@@ -20,7 +20,7 @@ import (
 
 // A Schema represents compiled version of json-schema.
 type Schema struct {
-	url *string
+	url string
 	ptr *string
 
 	// type agnostic validations
@@ -98,8 +98,15 @@ func (s *Schema) Validate(data []byte) error {
 		return fmt.Errorf("invalid character %v after top-level value", t)
 	}
 	if err := s.validate(doc); err != nil {
-		finishContext(err, s)
-		return err
+		finishSchemaContext(err, s)
+		finishInstanceContext(err)
+		return &ValidationError{
+			Message:     fmt.Sprintf("doesn't validate with %q", s.url+*s.ptr),
+			InstancePtr: "#",
+			SchemaURL:   s.url,
+			SchemaPtr:   *s.ptr,
+			Causes:      []*ValidationError{err.(*ValidationError)},
+		}
 	}
 	return nil
 }
@@ -107,8 +114,14 @@ func (s *Schema) Validate(data []byte) error {
 func (s *Schema) validate(v interface{}) error {
 	if s.ref != nil {
 		if err := s.ref.validate(v); err != nil {
-			finishContext(err, s.ref)
-			return validationError("$ref", "$ref failed").add(err)
+			finishSchemaContext(err, s.ref)
+			var refURL string
+			if s.url == s.ref.url {
+				refURL = *s.ref.ptr
+			} else {
+				refURL = s.ref.url + *s.ref.ptr
+			}
+			return validationError("$ref", "doesn't valide with %q", refURL).add(err)
 		}
 
 		// All other properties in a "$ref" object MUST be ignored

@@ -21,7 +21,7 @@ func main() {
 
 	schema, err := jsonschema.Compile(os.Args[1])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "json-schema is invalid. reason:\n%v\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 

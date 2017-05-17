@@ -22,7 +22,7 @@ type SchemaError struct {
 }
 
 func (se *SchemaError) Error() string {
-	return fmt.Sprintf("schemaURL: %s\n%s", se.SchemaURL, se.Err)
+	return fmt.Sprintf("json-schema %q compilation failed. Reason:\n%s", se.SchemaURL, se.Err)
 }
 
 // ValidationError is the error type returned by Validate.
@@ -58,7 +58,7 @@ func (ve *ValidationError) Error() string {
 	msg := fmt.Sprintf("I[%s] S[%s] %s", ve.InstancePtr, ve.SchemaPtr, ve.Message)
 	for _, c := range ve.Causes {
 		for _, line := range strings.Split(c.Error(), "\n") {
-			msg += "\n    " + line
+			msg += "\n  " + line
 		}
 	}
 	return msg
@@ -70,29 +70,36 @@ func validationError(schemaPtr string, format string, a ...interface{}) *Validat
 
 func addContext(instancePtr, schemaPtr string, err error) error {
 	ve := err.(*ValidationError)
+	ve.InstancePtr = joinPtr(instancePtr, ve.InstancePtr)
 	if len(ve.SchemaURL) == 0 {
-		ve.InstancePtr = joinPtr(instancePtr, ve.InstancePtr)
 		ve.SchemaPtr = joinPtr(schemaPtr, ve.SchemaPtr)
-		for _, cause := range ve.Causes {
-			addContext(instancePtr, schemaPtr, cause)
-		}
+	}
+	for _, cause := range ve.Causes {
+		addContext(instancePtr, schemaPtr, cause)
 	}
 	return ve
 }
 
-func finishContext(err error, s *Schema) {
+func finishSchemaContext(err error, s *Schema) {
 	ve := err.(*ValidationError)
 	if len(ve.SchemaURL) == 0 {
-		if len(ve.InstancePtr) == 0 {
-			ve.InstancePtr = "#"
-		} else {
-			ve.InstancePtr = "#/" + ve.InstancePtr
-		}
-		ve.SchemaURL = *s.url
+		ve.SchemaURL = s.url
 		ve.SchemaPtr = *s.ptr + "/" + ve.SchemaPtr
 		for _, cause := range ve.Causes {
-			finishContext(cause, s)
+			finishSchemaContext(cause, s)
 		}
+	}
+}
+
+func finishInstanceContext(err error) {
+	ve := err.(*ValidationError)
+	if len(ve.InstancePtr) == 0 {
+		ve.InstancePtr = "#"
+	} else {
+		ve.InstancePtr = "#/" + ve.InstancePtr
+	}
+	for _, cause := range ve.Causes {
+		finishInstanceContext(cause)
 	}
 }
 

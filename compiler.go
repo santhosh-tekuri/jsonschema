@@ -54,11 +54,28 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	return c.compileRef(r, nil, r.url, fragment)
 }
 
-func validateSchema(url string, v interface{}) error {
+func validateSchema(url, ptr string, v interface{}) error {
 	if draft4 != nil {
 		if err := draft4.validate(v); err != nil {
-			finishContext(err, draft4)
-			return &SchemaError{url, err}
+			addContext(ptr, "", err)
+			finishSchemaContext(err, draft4)
+			finishInstanceContext(err)
+			var instancePtr string
+			if ptr == "" {
+				instancePtr = "#"
+			} else {
+				instancePtr = "#/" + ptr
+			}
+			return &SchemaError{
+				url,
+				&ValidationError{
+					Message:     `doesn't validate with "draft4.json#"`,
+					InstancePtr: instancePtr,
+					SchemaURL:   "draft4.json",
+					SchemaPtr:   "#",
+					Causes:      []*ValidationError{err.(*ValidationError)},
+				},
+			}
 		}
 	}
 	return nil
@@ -67,11 +84,11 @@ func validateSchema(url string, v interface{}) error {
 func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref string) (*Schema, error) {
 	if rootFragment(ref) {
 		if _, ok := r.schemas["#"]; !ok {
-			if err := validateSchema(r.url, r.doc); err != nil {
+			if err := validateSchema(r.url, "", r.doc); err != nil {
 				return nil, err
 			}
 			hash := "#"
-			s := &Schema{url: &r.url, ptr: &hash}
+			s := &Schema{url: r.url, ptr: &hash}
 			r.schemas["#"] = s
 			m := r.doc.(map[string]interface{})
 			if _, err := c.compile(r, s, base, m, m); err != nil {
@@ -87,10 +104,10 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 			if err != nil {
 				return nil, err
 			}
-			if err := validateSchema(r.url, doc); err != nil {
+			if err := validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
 				return nil, err
 			}
-			r.schemas[ref] = &Schema{url: &base, ptr: &ref}
+			r.schemas[ref] = &Schema{url: base, ptr: &ref}
 			m := doc.(map[string]interface{})
 			if _, err := c.compile(r, r.schemas[ref], ptrBase, root, m); err != nil {
 				return nil, err
@@ -112,11 +129,11 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 		return nil, err
 	}
 	if v, ok := ids[refURL]; ok {
-		if err := validateSchema(r.url, v); err != nil {
+		if err := validateSchema(r.url, "", v); err != nil {
 			return nil, err
 		}
 		u, f := split(refURL)
-		s := &Schema{url: &u, ptr: &f}
+		s := &Schema{url: u, ptr: &f}
 		r.schemas[refURL] = s
 		rmap := v.(map[string]interface{})
 		if _, err := c.compile(r, s, refURL, root, rmap); err != nil {
@@ -137,6 +154,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 
 	if s == nil {
 		s = new(Schema)
+		s.url, _ = split(base)
 	}
 
 	if id, ok := m["id"]; ok {
@@ -146,7 +164,8 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 	}
 
 	if ref, ok := m["$ref"]; ok {
-		s.ref, err = c.compileRef(r, root, base, ref.(string))
+		b, _ := split(base)
+		s.ref, err = c.compileRef(r, root, b, ref.(string))
 		if err != nil {
 			return nil, err
 		}
@@ -176,11 +195,11 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		s.enumError = "enum failed"
 		if allPrimitives {
 			if len(s.enum) == 1 {
-				s.enumError = fmt.Sprintf("value must be %v", s.enum[0])
+				s.enumError = fmt.Sprintf("value must be %#v", s.enum[0])
 			} else {
 				strEnum := make([]string, len(s.enum))
 				for i, item := range s.enum {
-					strEnum[i] = fmt.Sprintf("%v", item)
+					strEnum[i] = fmt.Sprintf("%#v", item)
 				}
 				s.enumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
 			}

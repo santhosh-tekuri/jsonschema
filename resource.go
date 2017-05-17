@@ -29,10 +29,10 @@ func newResource(base string, data []byte) (*resource, error) {
 	decoder.UseNumber()
 	var doc interface{}
 	if err := decoder.Decode(&doc); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
 	}
 	if t, _ := decoder.Token(); t != nil {
-		return nil, fmt.Errorf("invalid character %v after top-level value", t)
+		return nil, fmt.Errorf("parsing %q failed. Reason: invalid character %v after top-level value", base, t)
 	}
 	return &resource{base, doc, make(map[string]*Schema)}, nil
 }
