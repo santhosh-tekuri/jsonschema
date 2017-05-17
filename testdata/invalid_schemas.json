@@ -40,5 +40,22 @@
         "(": {}
       }
     }
+  },
+  {
+    "description": "invalid $ref ptr",
+    "schema": {
+      "$ref": "#/definition/employee"
+    }
+  },
+  {
+    "description": "$ref to invalid schema",
+    "schema": {
+      "$ref": "#/definition/employee",
+      "definitions" : {
+        "employee": {
+          "type": 1
+        }
+      }
+    }
   }
 ]

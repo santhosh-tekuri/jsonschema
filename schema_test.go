@@ -204,33 +204,48 @@ func TestCompileURL(t *testing.T) {
 	httpsServer := httptest.NewTLSServer(handler)
 	defer httpsServer.Close()
 
-	abs, err := filepath.Abs("testdata/customer_schema.json")
+	abs, err := filepath.Abs("testdata")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	tests := []struct {
+	validTests := []struct {
 		schema, doc string
 	}{
 		{"testdata/customer_schema.json#/0", "testdata/customer.json"},
-		{"file://" + abs + "#/0", "testdata/customer.json"},
+		{"file://" + abs + "/customer_schema.json#/0", "testdata/customer.json"},
 		{httpServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
 		{httpsServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
 	}
-	for i, test := range tests {
-		t.Logf("#%d: %+v", i, test)
+	for i, test := range validTests {
+		t.Logf("valid #%d: %+v", i, test)
 		s, err := jsonschema.Compile(test.schema)
 		if err != nil {
-			t.Errorf("#%d: %v", i, err)
+			t.Errorf("valid #%d: %v", i, err)
 			return
 		}
 		data, err := ioutil.ReadFile(test.doc)
 		if err != nil {
-			t.Errorf("#%d: %v", i, err)
+			t.Errorf("valid #%d: %v", i, err)
 			return
 		}
 		if err = s.Validate(data); err != nil {
-			t.Errorf("#%d: %v", i, err)
+			t.Errorf("valid #%d: %v", i, err)
+		}
+	}
+
+	invalidTests := []string{
+		"testdata/missing.json",
+		"file://" + abs + "/missing.json",
+		httpServer.URL + "/missing.json",
+		httpsServer.URL + "/missing.json",
+	}
+	for i, test := range invalidTests {
+		t.Logf("invalid #%d: %v", i, test)
+		if _, err := jsonschema.Compile(test); err == nil {
+			t.Errorf("invalid #%d: expected error", i)
+		} else {
+			t.Logf("invalid #%d: %v", i, err)
 		}
 	}
 }
