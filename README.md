@@ -66,9 +66,43 @@ This package supports json string formats:
 
 Developers can define their own formats using package jsonschema/formats.
 
+## ValidationError
+
 The ValidationError returned by Validate method contains detailed context to understand why and where the error is.
 
-See https://godoc.org/github.com/santhosh-tekuri/jsonschema, for complete documentation
+schema.json:
+```json
+{
+      "$ref": "t.json#/definitions/employee"
+}
+```
+
+t.json:
+```json
+{
+    "definitions": {
+        "employee": {
+            "type": "string"
+        }
+    }
+}
+```
+
+doc.json:
+```json
+1
+```
+
+Validating `doc.json` with `schema.json`, gives following ValidationError:
+```
+I[#] S[#] doesn't validate with "schema.json#"
+  I[#] S[#/$ref] doesn't valide with "t.json#/definitions/employee"
+    I[#] S[#/definitions/employee/type] expected string, but got number
+```
+
+Here `I` stands for instance document and `S` stands for schema document.  
+The json-fragments that caused error in instance and json documents are represented using json-pointer notation.  
+Nested causes are printed with indent.
 
 ## CLI
 
