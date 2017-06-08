@@ -111,6 +111,7 @@ func (s *Schema) Validate(data []byte) error {
 	return nil
 }
 
+// validate validates given value v with this schema.
 func (s *Schema) validate(v interface{}) error {
 	if s.ref != nil {
 		if err := s.ref.validate(v); err != nil {
@@ -396,6 +397,9 @@ func (s *Schema) validate(v interface{}) error {
 	return nil
 }
 
+// jsonType returns the json type of given value v.
+//
+// It panics if the given value is not valid json value
 func jsonType(v interface{}) string {
 	switch v.(type) {
 	case nil:
@@ -415,9 +419,10 @@ func jsonType(v interface{}) string {
 	}
 }
 
+// equals tells if given two json values are equal or not.
 func equals(v1, v2 interface{}) bool {
-	v1Type, v2Type := jsonType(v1), jsonType(v2)
-	if v1Type != v2Type {
+	v1Type := jsonType(v1)
+	if v1Type != jsonType(v2) {
 		return false
 	}
 	switch v1Type {
@@ -456,6 +461,7 @@ func equals(v1, v2 interface{}) bool {
 	}
 }
 
+// escape converts given token to valid json-pointer token
 func escape(token string) string {
 	token = strings.Replace(token, "~", "~0", -1)
 	token = strings.Replace(token, "/", "~1", -1)
