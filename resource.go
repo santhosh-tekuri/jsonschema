@@ -21,18 +21,26 @@ type resource struct {
 	schemas map[string]*Schema
 }
 
-func newResource(base string, data []byte) (*resource, error) {
-	if strings.IndexByte(base, '#') != -1 {
-		panic(fmt.Sprintf("BUG: newResource(%q)", base))
-	}
+func decodeJson(data []byte) (interface{}, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 	var doc interface{}
 	if err := decoder.Decode(&doc); err != nil {
-		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
+		return nil, err
 	}
 	if t, _ := decoder.Token(); t != nil {
-		return nil, fmt.Errorf("parsing %q failed. Reason: invalid character %v after top-level value", base, t)
+		return nil, fmt.Errorf("invalid character %v after top-level value", t)
+	}
+	return doc, nil
+}
+
+func newResource(base string, data []byte) (*resource, error) {
+	if strings.IndexByte(base, '#') != -1 {
+		panic(fmt.Sprintf("BUG: newResource(%q)", base))
+	}
+	doc, err := decodeJson(data)
+	if err != nil {
+		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
 	}
 	return &resource{base, doc, make(map[string]*Schema)}, nil
 }

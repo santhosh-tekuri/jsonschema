@@ -5,7 +5,6 @@
 package jsonschema
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -88,14 +87,9 @@ func MustCompile(url string) *Schema {
 //
 // Returned error can be *ValidationError.
 func (s *Schema) Validate(data []byte) error {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.UseNumber()
-	var doc interface{}
-	if err := decoder.Decode(&doc); err != nil {
+	doc, err := decodeJson(data)
+	if err != nil {
 		return err
-	}
-	if t, _ := decoder.Token(); t != nil {
-		return fmt.Errorf("invalid character %v after top-level value", t)
 	}
 	if err := s.validate(doc); err != nil {
 		finishSchemaContext(err, s)
