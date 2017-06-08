@@ -84,7 +84,7 @@ func finishSchemaContext(err error, s *Schema) {
 	ve := err.(*ValidationError)
 	if len(ve.SchemaURL) == 0 {
 		ve.SchemaURL = s.url
-		ve.SchemaPtr = *s.ptr + "/" + ve.SchemaPtr
+		ve.SchemaPtr = s.ptr + "/" + ve.SchemaPtr
 		for _, cause := range ve.Causes {
 			finishSchemaContext(cause, s)
 		}

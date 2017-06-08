@@ -69,7 +69,7 @@ func validateSchema(url, ptr string, v interface{}) error {
 			return &SchemaError{
 				url,
 				&ValidationError{
-					Message:     fmt.Sprintf("doesn't validate with %q", draft4.url+*draft4.ptr),
+					Message:     fmt.Sprintf("doesn't validate with %q", draft4.url+draft4.ptr),
 					InstancePtr: instancePtr,
 					SchemaURL:   "draft4.json",
 					SchemaPtr:   "#",
@@ -87,8 +87,7 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 			if err := validateSchema(r.url, "", r.doc); err != nil {
 				return nil, err
 			}
-			hash := "#"
-			s := &Schema{url: r.url, ptr: &hash}
+			s := &Schema{url: r.url, ptr: "#"}
 			r.schemas["#"] = s
 			m := r.doc.(map[string]interface{})
 			if _, err := c.compile(r, s, base, m, m); err != nil {
@@ -107,7 +106,7 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 			if err := validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
 				return nil, err
 			}
-			r.schemas[ref] = &Schema{url: base, ptr: &ref}
+			r.schemas[ref] = &Schema{url: base, ptr: ref}
 			m := doc.(map[string]interface{})
 			if _, err := c.compile(r, r.schemas[ref], ptrBase, root, m); err != nil {
 				return nil, err
@@ -133,7 +132,7 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 			return nil, err
 		}
 		u, f := split(refURL)
-		s := &Schema{url: u, ptr: &f}
+		s := &Schema{url: u, ptr: f}
 		r.schemas[refURL] = s
 		rmap := v.(map[string]interface{})
 		if _, err := c.compile(r, s, refURL, root, rmap); err != nil {
