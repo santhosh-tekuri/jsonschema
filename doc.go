@@ -10,7 +10,7 @@ Passes all tests(including optional) in https://github.com/json-schema/JSON-Sche
 
 An example of using this package:
 
-	schemea, err := jsonschema.Compile("schemas/purchaseOrder.json")
+	schema, err := jsonschema.Compile("schemas/purchaseOrder.json")
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ To load json-schema from in-memory:
 	if err := compiler.AddResource(url, data); err != nil {
 		return err
 	}
-	schemea, err := jsonschema.Compile(url)
+	schema, err := jsonschema.Compile(url)
 	if err != nil {
 		return err
 	}

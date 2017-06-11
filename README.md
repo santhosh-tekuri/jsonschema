@@ -15,7 +15,7 @@ Passes all tests(including optional) in https://github.com/json-schema/JSON-Sche
 An example of using this package:
 
 ```go
-schemea, err := jsonschema.Compile("schemas/purchaseOrder.json")
+schema, err := jsonschema.Compile("schemas/purchaseOrder.json")
 if err != nil {
     return err
 }
@@ -44,7 +44,7 @@ compiler := jsonschema.NewCompiler()
 if err := compiler.AddResource(url, data); err != nil {
     return err
 }
-schemea, err := jsonschema.Compile(url)
+schema, err := jsonschema.Compile(url)
 if err != nil {
     return err
 }
