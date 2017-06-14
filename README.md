@@ -19,7 +19,11 @@ schema, err := jsonschema.Compile("schemas/purchaseOrder.json")
 if err != nil {
     return err
 }
-if err = schema.Validate("purchaseOrder.json"); err != nil {
+data, err := ioutil.ReadFile("purchaseOrder.json")
+if err != nil {
+    return err
+}
+if err = schema.Validate(data); err != nil {
     return err
 }
 ```
@@ -48,7 +52,11 @@ schema, err := jsonschema.Compile(url)
 if err != nil {
     return err
 }
-if err = schema.Validate("doc.json"); err != nil {
+data, err := ioutil.ReadFile("doc.json")
+if err != nil {
+    return err
+}
+if err = schema.Validate(data); err != nil {
     return err
 }
 ```

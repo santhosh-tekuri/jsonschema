@@ -14,7 +14,11 @@ An example of using this package:
 	if err != nil {
 		return err
 	}
-	if err = schema.Validate("purchaseOrder.json"); err != nil {
+	data, err := ioutil.ReadFile("purchaseOrder.json")
+	if err != nil {
+		return err
+	}
+	if err = schema.Validate(data); err != nil {
 		return err
 	}
 
@@ -39,7 +43,11 @@ To load json-schema from in-memory:
 	if err != nil {
 		return err
 	}
-	if err = schema.Validate("doc.json"); err != nil {
+	data, err := ioutil.ReadFile("doc.json")
+	if err != nil {
+		return err
+	}
+	if err = schema.Validate(data); err != nil {
 		return err
 	}
 

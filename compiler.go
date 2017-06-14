@@ -26,6 +26,8 @@ func NewCompiler() *Compiler {
 }
 
 // AddResource adds in-memory resource to the compiler.
+//
+// Note that url must not have fragment
 func (c *Compiler) AddResource(url string, data []byte) error {
 	r, err := newResource(url, data)
 	if err != nil {
