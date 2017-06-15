@@ -116,7 +116,7 @@ func (s *Schema) validate(v interface{}) error {
 			} else {
 				refURL = s.ref.url + s.ref.ptr
 			}
-			return validationError("$ref", "doesn't valide with %q", refURL).add(err)
+			return validationError("$ref", "doesn't validate with %q", refURL).add(err)
 		}
 
 		// All other properties in a "$ref" object MUST be ignored
