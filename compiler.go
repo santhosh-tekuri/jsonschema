@@ -37,6 +37,16 @@ func (c *Compiler) AddResource(url string, data []byte) error {
 	return nil
 }
 
+// MustCompile is like Compile but panics if the url cannot be compiled to *Schema.
+// It simplifies safe initialization of global variables holding compiled Schemas.
+func (c *Compiler) MustCompile(url string) *Schema {
+	s, err := c.Compile(url)
+	if err != nil {
+		panic(fmt.Sprintf("jsonschema: Compile(%q): %s", url, err))
+	}
+	return s
+}
+
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
 //

@@ -76,11 +76,7 @@ func Compile(url string) (*Schema, error) {
 // MustCompile is like Compile but panics if the url cannot be compiled to *Schema.
 // It simplifies safe initialization of global variables holding compiled Schemas.
 func MustCompile(url string) *Schema {
-	s, err := Compile(url)
-	if err != nil {
-		panic(fmt.Sprintf("jsonschema: Compile(%q): %s", url, err))
-	}
-	return s
+	return NewCompiler().MustCompile(url)
 }
 
 // Validate validates the given json data, against the json-schema,
