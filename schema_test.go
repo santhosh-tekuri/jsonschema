@@ -21,14 +21,14 @@ import (
 )
 
 func TestDraft4(t *testing.T) {
-	testFolder(t, "testdata/draft4")
+	testFolder(t, "testdata/draft4", jsonschema.Draft4)
 }
 
 func TestDraft6(t *testing.T) {
-	testFolder(t, "testdata/draft6")
+	testFolder(t, "testdata/draft6", jsonschema.Draft6)
 }
 
-func testFolder(t *testing.T, folder string) {
+func testFolder(t *testing.T, folder string, draft jsonschema.Draft) {
 	server := &http.Server{Addr: ":1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
@@ -72,6 +72,7 @@ func testFolder(t *testing.T, folder string) {
 		for _, group := range tg {
 			t.Logf("  %s\n", group.Description)
 			c := jsonschema.NewCompiler()
+			c.Draft = draft
 			if err := c.AddResource("test.json", group.Schema); err != nil {
 				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
 				continue

@@ -109,9 +109,14 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 			}
 			s := &Schema{url: r.url, ptr: "#"}
 			r.schemas["#"] = s
-			m := r.doc.(map[string]interface{})
-			if _, err := c.compile(r, s, base, m, m); err != nil {
-				return nil, err
+			if m, ok := r.doc.(map[string]interface{}); ok {
+				if _, err := c.compile(r, s, base, m, m); err != nil {
+					return nil, err
+				}
+			} else {
+				if _, err := c.compile(r, s, base, nil, r.doc); err != nil {
+					return nil, err
+				}
 			}
 		}
 		return r.schemas["#"], nil
@@ -168,7 +173,21 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 	return c.Compile(refURL)
 }
 
-func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[string]interface{}) (*Schema, error) {
+func (c Compiler) compile(r *resource, s *Schema, base string, root map[string]interface{}, m interface{}) (*Schema, error) {
+	if s == nil {
+		s = new(Schema)
+		s.url, _ = split(base)
+	}
+	switch m := m.(type) {
+	case bool:
+		s.always = &m
+		return s, nil
+	default:
+		return c.compileMap(r, s, base, root, m.(map[string]interface{}))
+	}
+}
+
+func (c Compiler) compileMap(r *resource, s *Schema, base string, root, m map[string]interface{}) (*Schema, error) {
 	var err error
 
 	if s == nil {
@@ -231,7 +250,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 	}
 
 	if not, ok := m["not"]; ok {
-		s.not, err = c.compile(r, nil, base, root, not.(map[string]interface{}))
+		s.not, err = c.compile(r, nil, base, root, not)
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +261,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
 			for i, v := range pvalue {
-				sch, err := c.compile(r, nil, base, root, v.(map[string]interface{}))
+				sch, err := c.compile(r, nil, base, root, v)
 				if err != nil {
 					return nil, err
 				}
@@ -279,10 +298,18 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		props := props.(map[string]interface{})
 		s.properties = make(map[string]*Schema, len(props))
 		for pname, pmap := range props {
-			s.properties[pname], err = c.compile(r, nil, base, root, pmap.(map[string]interface{}))
+			s.properties[pname], err = c.compile(r, nil, base, root, pmap)
 			if err != nil {
 				return nil, err
 			}
+		}
+	}
+
+	// draft6
+	if propertyNames, ok := m["propertyNames"]; ok {
+		s.propertyNames, err = c.compile(r, nil, base, root, propertyNames)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -294,7 +321,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		patternProps := patternProps.(map[string]interface{})
 		s.patternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
 		for pattern, pmap := range patternProps {
-			s.patternProperties[regexp.MustCompile(pattern)], err = c.compile(r, nil, base, root, pmap.(map[string]interface{}))
+			s.patternProperties[regexp.MustCompile(pattern)], err = c.compile(r, nil, base, root, pmap)
 			if err != nil {
 				return nil, err
 			}
@@ -320,13 +347,13 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		s.dependencies = make(map[string]interface{}, len(deps))
 		for pname, pvalue := range deps {
 			switch pvalue := pvalue.(type) {
-			case map[string]interface{}:
+			case []interface{}:
+				s.dependencies[pname] = toStrings(pvalue)
+			default:
 				s.dependencies[pname], err = c.compile(r, nil, base, root, pvalue)
 				if err != nil {
 					return nil, err
 				}
-			case []interface{}:
-				s.dependencies[pname] = toStrings(pvalue)
 			}
 		}
 	}
@@ -339,13 +366,13 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 
 	if items, ok := m["items"]; ok {
 		switch items := items.(type) {
-		case map[string]interface{}:
-			s.items, err = c.compile(r, nil, base, root, items)
+		case []interface{}:
+			s.items, err = loadSchemas("items")
 			if err != nil {
 				return nil, err
 			}
-		case []interface{}:
-			s.items, err = loadSchemas("items")
+		default:
+			s.items, err = c.compile(r, nil, base, root, items)
 			if err != nil {
 				return nil, err
 			}

@@ -23,6 +23,7 @@ type Schema struct {
 	ptr string // json-pointer to schema. always starts with `#`
 
 	// type agnostic validations
+	always    *bool // always pass/fail
 	ref       *Schema
 	types     []string
 	constant  []interface{}
@@ -38,6 +39,7 @@ type Schema struct {
 	maxProperties        int // -1 if not specified
 	required             []string
 	properties           map[string]*Schema
+	propertyNames        *Schema
 	regexProperties      bool // property names must be valid regex
 	patternProperties    map[*regexp.Regexp]*Schema
 	additionalProperties interface{}            // nil or false or *Schema
@@ -104,6 +106,14 @@ func (s *Schema) Validate(data []byte) error {
 
 // validate validates given value v with this schema.
 func (s *Schema) validate(v interface{}) error {
+	// draft6
+	if s.always != nil {
+		if !*s.always {
+			return validationError("", "always fail")
+		}
+		return nil
+	}
+
 	if s.ref != nil {
 		if err := s.ref.validate(v); err != nil {
 			finishSchemaContext(err, s.ref)
@@ -247,6 +257,16 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
+
+		// draft6
+		if s.propertyNames != nil {
+			for pname := range v {
+				if err := s.propertyNames.validate(pname); err != nil {
+					return addContext(escape(pname), "propertyNames", err)
+				}
+			}
+		}
+
 		if s.regexProperties {
 			for pname := range v {
 				if !formats.IsRegex(pname) {
