@@ -123,3 +123,14 @@ func TestIsURI(t *testing.T) {
 		}
 	}
 }
+
+func TestIsJSONPointer(t *testing.T) {
+	tests := []test{
+		{"/foo/baz~", false}, // ~ not escaped
+	}
+	for i, test := range tests {
+		if test.valid != formats.IsJSONPointer(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}

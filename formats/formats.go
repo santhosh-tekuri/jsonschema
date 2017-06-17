@@ -32,7 +32,9 @@ var formats = map[string]Format{
 	"uri":           IsURI,
 	"uri-reference": IsURIReference,
 	"uriref":        IsURIReference,
+	"uri-template":  IsURIReference,
 	"regex":         IsRegex,
+	"json-pointer":  IsJSONPointer,
 }
 
 func init() {
@@ -190,4 +192,26 @@ func IsURIReference(s string) bool {
 func IsRegex(s string) bool {
 	_, err := regexp.Compile(s)
 	return err == nil
+}
+
+// IsJSONPointer tells whether given string is a valid JSON Pointer.
+//
+// Note: It returns false for JSON Pointer URI fragments.
+func IsJSONPointer(s string) bool {
+	for _, item := range strings.Split(s, "/") {
+		for i := 0; i < len(item); i++ {
+			if item[i] == '~' {
+				if i == len(item)-1 {
+					return false
+				}
+				switch item[i+1] {
+				case '~', '0', '1':
+					// valid
+				default:
+					return false
+				}
+			}
+		}
+	}
+	return true
 }
