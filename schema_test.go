@@ -20,7 +20,15 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
 )
 
-func TestValidate(t *testing.T) {
+func TestDraft4(t *testing.T) {
+	testFolder(t, "testdata/draft4")
+}
+
+func TestDraft6(t *testing.T) {
+	testFolder(t, "testdata/draft6")
+}
+
+func testFolder(t *testing.T, folder string) {
 	server := &http.Server{Addr: ":1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
@@ -38,7 +46,7 @@ func TestValidate(t *testing.T) {
 			Valid       bool
 		}
 	}
-	err := filepath.Walk("testdata/draft4", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			t.Error(err)
 			return nil
