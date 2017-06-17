@@ -236,7 +236,6 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		s.url, _ = split(base)
 	}
 
-	// todo get id key from draft
 	if id, ok := m[draft.id]; ok {
 		if base, err = resolveURL(base, id.(string)); err != nil {
 			return nil, err
