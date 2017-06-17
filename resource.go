@@ -138,7 +138,15 @@ func rootFragment(fragment string) bool {
 }
 
 func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{}) error {
-	if id, ok := m["id"]; ok {
+	// todo get id key from draft
+	if id, ok := m["$id"]; ok {
+		b, err := resolveURL(base, id.(string))
+		if err != nil {
+			return err
+		}
+		base = b
+		ids[base] = m
+	} else if id, ok := m["id"]; ok {
 		b, err := resolveURL(base, id.(string))
 		if err != nil {
 			return err

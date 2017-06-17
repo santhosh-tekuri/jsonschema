@@ -194,7 +194,12 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, root, m map[st
 		s.url, _ = split(base)
 	}
 
-	if id, ok := m["id"]; ok {
+	// todo get id key from draft
+	if id, ok := m["$id"]; ok {
+		if base, err = resolveURL(base, id.(string)); err != nil {
+			return nil, err
+		}
+	} else if id, ok := m["id"]; ok {
 		if base, err = resolveURL(base, id.(string)); err != nil {
 			return nil, err
 		}
