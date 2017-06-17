@@ -420,15 +420,25 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, root, m map[st
 		return nil
 	}
 
-	if s.minimum = loadFloat("minimum"); s.minimum != nil {
-		if exclusive, ok := m["exclusiveMinimum"]; ok {
-			s.exclusiveMinimum = exclusive.(bool)
+	s.minimum = loadFloat("minimum")
+	if exclusive, ok := m["exclusiveMinimum"]; ok {
+		if exclusive, ok := exclusive.(bool); ok {
+			if exclusive {
+				s.minimum, s.exclusiveMinimum = nil, s.minimum
+			}
+		} else {
+			s.exclusiveMinimum = loadFloat("exclusiveMinimum")
 		}
 	}
 
-	if s.maximum = loadFloat("maximum"); s.maximum != nil {
-		if exclusive, ok := m["exclusiveMaximum"]; ok {
-			s.exclusiveMaximum = exclusive.(bool)
+	s.maximum = loadFloat("maximum")
+	if exclusive, ok := m["exclusiveMaximum"]; ok {
+		if exclusive, ok := exclusive.(bool); ok {
+			if exclusive {
+				s.maximum, s.exclusiveMaximum = nil, s.maximum
+			}
+		} else {
+			s.exclusiveMaximum = loadFloat("exclusiveMaximum")
 		}
 	}
 

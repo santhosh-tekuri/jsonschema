@@ -62,9 +62,9 @@ type Schema struct {
 
 	// number validators
 	minimum          *big.Float
-	exclusiveMinimum bool
+	exclusiveMinimum *big.Float
 	maximum          *big.Float
-	exclusiveMaximum bool
+	exclusiveMaximum *big.Float
 	multipleOf       *big.Float
 }
 
@@ -400,35 +400,21 @@ func (s *Schema) validate(v interface{}) error {
 		}
 
 	case json.Number:
-		if s.minimum != nil {
-			v, _ := new(big.Float).SetString(string(v))
-			cmp := v.Cmp(s.minimum)
-			if s.exclusiveMinimum {
-				if cmp <= 0 {
-					return validationError("minimum", "must be > %v but found %v", s.minimum, v)
-				}
-			} else {
-				if cmp < 0 {
-					return validationError("minimum", "must be >= %v but found %v", s.minimum, v)
-				}
-			}
+		num, _ := new(big.Float).SetString(string(v))
+		if s.minimum != nil && num.Cmp(s.minimum) < 0 {
+			return validationError("minimum", "must be >= %v but found %v", s.minimum, v)
 		}
-		if s.maximum != nil {
-			v, _ := new(big.Float).SetString(string(v))
-			cmp := v.Cmp(s.maximum)
-			if s.exclusiveMaximum {
-				if cmp >= 0 {
-					return validationError("maximum", "must be < %v but found %v", s.maximum, v)
-				}
-			} else {
-				if cmp > 0 {
-					return validationError("maximum", "must be <= %v but found %v", s.maximum, v)
-				}
-			}
+		if s.exclusiveMinimum != nil && num.Cmp(s.exclusiveMinimum) <= 0 {
+			return validationError("exclusiveMinimum", "must be > %v but found %v", s.exclusiveMinimum, v)
+		}
+		if s.maximum != nil && num.Cmp(s.maximum) > 0 {
+			return validationError("maximum", "must be <= %v but found %v", s.maximum, v)
+		}
+		if s.exclusiveMaximum != nil && num.Cmp(s.exclusiveMaximum) >= 0 {
+			return validationError("exclusiveMaximum", "must be < %v but found %v", s.exclusiveMaximum, v)
 		}
 		if s.multipleOf != nil {
-			v, _ := new(big.Float).SetString(string(v))
-			if q := new(big.Float).Quo(v, s.multipleOf); !q.IsInt() {
+			if q := new(big.Float).Quo(num, s.multipleOf); !q.IsInt() {
 				return validationError("multipleOf", "%v not multipleOf %v", v, s.multipleOf)
 			}
 		}
