@@ -76,7 +76,7 @@ func resolveURL(base, ref string) (string, error) {
 	return filepath.Join(dir, ref) + fragment, nil
 }
 
-func (r *resource) resolvePtr(ptr string) (string, interface{}, error) {
+func (r *resource) resolvePtr(draft *Draft, ptr string) (string, interface{}, error) {
 	if !strings.HasPrefix(ptr, "#/") {
 		panic(fmt.Sprintf("BUG: resolvePtr(%q)", ptr))
 	}
@@ -92,7 +92,7 @@ func (r *resource) resolvePtr(ptr string) (string, interface{}, error) {
 		}
 		switch doc.(type) {
 		case map[string]interface{}:
-			if id, ok := doc.(map[string]interface{})["id"]; ok {
+			if id, ok := doc.(map[string]interface{})[draft.id]; ok {
 				if id, ok := id.(string); ok {
 					if base, err = resolveURL(base, id); err != nil {
 						return "", nil, err

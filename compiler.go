@@ -21,6 +21,8 @@ type Draft struct {
 	id   string
 }
 
+var latest = Draft6
+
 // A Compiler represents a draft4 json-schema compiler.
 type Compiler struct {
 	Draft     *Draft
@@ -45,12 +47,8 @@ func (c *Compiler) AddResource(url string, data []byte) error {
 }
 
 func (c *Compiler) draft(v interface{}) (*Draft, error) {
-	latest := Draft6
-	switch v := v.(type) {
-	case bool:
-		return Draft6, nil
-	case map[string]interface{}:
-		if url, ok := v["$schema"]; ok {
+	if m, ok := v.(map[string]interface{}); ok {
+		if url, ok := m["$schema"]; ok {
 			switch url {
 			case "http://json-schema.org/schema#":
 				return latest, nil
@@ -155,7 +153,14 @@ func (c Compiler) compileRef(draft *Draft, r *resource, root map[string]interfac
 
 	if strings.HasPrefix(ref, "#/") {
 		if _, ok := r.schemas[ref]; !ok {
-			ptrBase, doc, err := r.resolvePtr(ref)
+			docDraft := draft
+			if docDraft == nil {
+				docDraft = c.Draft
+			}
+			if docDraft == nil {
+				docDraft = latest
+			}
+			ptrBase, doc, err := r.resolvePtr(docDraft, ref)
 			if err != nil {
 				return nil, err
 			}
