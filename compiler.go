@@ -393,6 +393,14 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, root, m map[st
 		}
 	}
 
+	// draft6
+	if contains, ok := m["contains"]; ok {
+		s.contains, err = c.compile(r, nil, base, root, contains)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	s.minLength, s.maxLength = loadInt("minLength"), loadInt("maxLength")
 
 	if pattern, ok := m["pattern"]; ok {

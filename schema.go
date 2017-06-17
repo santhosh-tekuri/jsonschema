@@ -51,6 +51,7 @@ type Schema struct {
 	uniqueItems     bool
 	items           interface{} // nil or *Schema or []*Schema
 	additionalItems interface{} // nil or bool or *Schema
+	contains        *Schema
 
 	// string validations
 	minLength  int // -1 if not specified
@@ -362,6 +363,22 @@ func (s *Schema) validate(v interface{}) error {
 				} else {
 					break
 				}
+			}
+		}
+		// draft6
+		if s.contains != nil {
+			matched := false
+			var causes []error
+			for i, item := range v {
+				if err := s.contains.validate(item); err != nil {
+					causes = append(causes, addContext(strconv.Itoa(i), "", err))
+				} else {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				return validationError("contains", "contains failed").add(causes...)
 			}
 		}
 
