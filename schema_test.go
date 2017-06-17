@@ -12,8 +12,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema"
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
@@ -49,42 +50,43 @@ func TestValidate(t *testing.T) {
 			return nil
 		}
 
-		t.Run(strings.TrimSuffix(info.Name(), ".json"), func(t *testing.T) {
-			data, err := ioutil.ReadFile(path)
+		t.Log(info.Name())
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			t.Errorf("  FAIL: %v\n", err)
+			return nil
+		}
+		var tg []testGroup
+		if err = json.Unmarshal(data, &tg); err != nil {
+			t.Errorf("  FAIL: %v\n", err)
+			return nil
+		}
+		for _, group := range tg {
+			t.Logf("  %s\n", group.Description)
+			c := jsonschema.NewCompiler()
+			if err := c.AddResource("test.json", group.Schema); err != nil {
+				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
+				continue
+			}
+			schema, err := c.Compile("test.json")
 			if err != nil {
-				t.Error(err)
-				return
+				t.Errorf("    FAIL: schema compilation failed, reason: %v\n", err)
+				continue
 			}
-			var tg []testGroup
-			if err = json.Unmarshal(data, &tg); err != nil {
-				t.Error(err)
-				return
+			for _, test := range group.Tests {
+				t.Logf("      %s\n", test.Description)
+				err = schema.Validate(test.Data)
+				valid := err == nil
+				if !valid {
+					for _, line := range strings.Split(err.Error(), "\n") {
+						t.Logf("        %s\n", line)
+					}
+				}
+				if test.Valid != valid {
+					t.Errorf("        FAIL: expected valid=%t got valid=%t\n", test.Valid, valid)
+				}
 			}
-			for _, group := range tg {
-				t.Run(group.Description, func(t *testing.T) {
-					c := jsonschema.NewCompiler()
-					if err := c.AddResource("test.json", group.Schema); err != nil {
-						t.Fatalf("add resource failed, reason: %v", err)
-					}
-					schema, err := c.Compile("test.json")
-					if err != nil {
-						t.Fatalf("schema compilation failed, reason: %v", err)
-					}
-					for _, test := range group.Tests {
-						t.Run(test.Description, func(t *testing.T) {
-							err = schema.Validate(test.Data)
-							valid := err == nil
-							if !valid {
-								t.Logf("validation failed. reason:\n%s", err)
-							}
-							if test.Valid != valid {
-								t.Errorf("expected valid=%t got valid=%t", test.Valid, valid)
-							}
-						})
-					}
-				})
-			}
-		})
+		}
 		return nil
 	})
 	if err != nil {
