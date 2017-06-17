@@ -261,11 +261,6 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		}
 	}
 
-	// draft6
-	if c, ok := m["const"]; ok {
-		s.constant = []interface{}{c}
-	}
-
 	if e, ok := m["enum"]; ok {
 		s.enum = e.([]interface{})
 		allPrimitives := true
@@ -343,14 +338,6 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 			if err != nil {
 				return nil, err
 			}
-		}
-	}
-
-	// draft6
-	if propertyNames, ok := m["propertyNames"]; ok {
-		s.propertyNames, err = c.compile(draft, r, nil, base, root, propertyNames)
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -434,14 +421,6 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		}
 	}
 
-	// draft6
-	if contains, ok := m["contains"]; ok {
-		s.contains, err = c.compile(draft, r, nil, base, root, contains)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	s.minLength, s.maxLength = loadInt("minLength"), loadInt("maxLength")
 
 	if pattern, ok := m["pattern"]; ok {
@@ -487,6 +466,24 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 	if s.multipleOf != nil && s.multipleOf.IsInt() {
 		if i, _ := s.multipleOf.Int64(); i == 0 {
 			s.multipleOf = nil
+		}
+	}
+
+	if draft == Draft6 {
+		if c, ok := m["const"]; ok {
+			s.constant = []interface{}{c}
+		}
+		if propertyNames, ok := m["propertyNames"]; ok {
+			s.propertyNames, err = c.compile(draft, r, nil, base, root, propertyNames)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if contains, ok := m["contains"]; ok {
+			s.contains, err = c.compile(draft, r, nil, base, root, contains)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

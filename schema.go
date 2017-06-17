@@ -107,7 +107,6 @@ func (s *Schema) Validate(data []byte) error {
 
 // validate validates given value v with this schema.
 func (s *Schema) validate(v interface{}) error {
-	// draft6
 	if s.always != nil {
 		if !*s.always {
 			return validationError("", "always fail")
@@ -150,7 +149,6 @@ func (s *Schema) validate(v interface{}) error {
 		}
 	}
 
-	// draft6
 	if len(s.constant) > 0 {
 		if !equals(v, s.constant[0]) {
 			switch jsonType(s.constant[0]) {
@@ -259,7 +257,6 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 
-		// draft6
 		if s.propertyNames != nil {
 			for pname := range v {
 				if err := s.propertyNames.validate(pname); err != nil {
@@ -365,7 +362,6 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		// draft6
 		if s.contains != nil {
 			matched := false
 			var causes []error
