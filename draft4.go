@@ -4,7 +4,8 @@
 
 package jsonschema
 
-var draft4 *Schema
+// Draft4 resprensets http://json-schema.org/specification-links.html#draft-4
+var Draft4 = Draft{id: "id"}
 
 func init() {
 	c := NewCompiler()
@@ -169,5 +170,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	draft4 = s
+	Draft4.meta = s
 }

@@ -15,14 +15,21 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/loader"
 )
 
+// A Draft represents json-schema draft
+type Draft struct {
+	meta *Schema
+	id   string
+}
+
 // A Compiler represents a draft4 json-schema compiler.
 type Compiler struct {
+	Draft     Draft
 	resources map[string]*resource
 }
 
 // NewCompiler returns a draft4 json-schema Compiler object.
 func NewCompiler() *Compiler {
-	return &Compiler{make(map[string]*resource)}
+	return &Compiler{Draft4, make(map[string]*resource)}
 }
 
 // AddResource adds in-memory resource to the compiler.
@@ -66,11 +73,12 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	return c.compileRef(r, nil, r.url, fragment)
 }
 
-func validateSchema(url, ptr string, v interface{}) error {
-	if draft4 != nil {
-		if err := draft4.validate(v); err != nil {
+func (c *Compiler) validateSchema(url, ptr string, v interface{}) error {
+	meta := c.Draft.meta
+	if meta != nil {
+		if err := meta.validate(v); err != nil {
 			addContext(ptr, "", err)
-			finishSchemaContext(err, draft4)
+			finishSchemaContext(err, meta)
 			finishInstanceContext(err)
 			var instancePtr string
 			if ptr == "" {
@@ -81,9 +89,9 @@ func validateSchema(url, ptr string, v interface{}) error {
 			return &SchemaError{
 				url,
 				&ValidationError{
-					Message:     fmt.Sprintf("doesn't validate with %q", draft4.url+draft4.ptr),
+					Message:     fmt.Sprintf("doesn't validate with %q", meta.url+meta.ptr),
 					InstancePtr: instancePtr,
-					SchemaURL:   "draft4.json",
+					SchemaURL:   meta.url,
 					SchemaPtr:   "#",
 					Causes:      []*ValidationError{err.(*ValidationError)},
 				},
@@ -96,7 +104,7 @@ func validateSchema(url, ptr string, v interface{}) error {
 func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref string) (*Schema, error) {
 	if rootFragment(ref) {
 		if _, ok := r.schemas["#"]; !ok {
-			if err := validateSchema(r.url, "", r.doc); err != nil {
+			if err := c.validateSchema(r.url, "", r.doc); err != nil {
 				return nil, err
 			}
 			s := &Schema{url: r.url, ptr: "#"}
@@ -115,7 +123,7 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 			if err != nil {
 				return nil, err
 			}
-			if err := validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
+			if err := c.validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
 				return nil, err
 			}
 			r.schemas[ref] = &Schema{url: base, ptr: ref}
@@ -140,7 +148,7 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 		return nil, err
 	}
 	if v, ok := ids[refURL]; ok {
-		if err := validateSchema(r.url, "", v); err != nil {
+		if err := c.validateSchema(r.url, "", v); err != nil {
 			return nil, err
 		}
 		u, f := split(refURL)
@@ -191,6 +199,11 @@ func (c Compiler) compile(r *resource, s *Schema, base string, root, m map[strin
 		case []interface{}:
 			s.types = toStrings(t)
 		}
+	}
+
+	// draft6
+	if c, ok := m["const"]; ok {
+		s.constant = []interface{}{c}
 	}
 
 	if e, ok := m["enum"]; ok {

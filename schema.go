@@ -25,6 +25,7 @@ type Schema struct {
 	// type agnostic validations
 	ref       *Schema
 	types     []string
+	constant  []interface{}
 	enum      []interface{}
 	enumError string // error message for enum fail
 	not       *Schema
@@ -135,6 +136,18 @@ func (s *Schema) validate(v interface{}) error {
 		}
 		if !matched {
 			return validationError("type", "expected %s, but got %s", strings.Join(s.types, " or "), vType)
+		}
+	}
+
+	// draft6
+	if len(s.constant) > 0 {
+		if !equals(v, s.constant[0]) {
+			switch jsonType(s.constant[0]) {
+			case "object", "array":
+				return validationError("const", "const failed")
+			default:
+				return validationError("const", "value must be %#v", s.constant[0])
+			}
 		}
 	}
 
