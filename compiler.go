@@ -132,8 +132,7 @@ func (c Compiler) compileRef(r *resource, root map[string]interface{}, base, ref
 				return nil, err
 			}
 			r.schemas[ref] = &Schema{url: base, ptr: ref}
-			m := doc.(map[string]interface{})
-			if _, err := c.compile(r, r.schemas[ref], ptrBase, root, m); err != nil {
+			if _, err := c.compile(r, r.schemas[ref], ptrBase, root, doc); err != nil {
 				return nil, err
 			}
 		}
