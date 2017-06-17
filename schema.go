@@ -87,7 +87,7 @@ func MustCompile(url string) *Schema {
 //
 // Returned error can be *ValidationError.
 func (s *Schema) Validate(data []byte) error {
-	doc, err := decodeJson(data)
+	doc, err := decodeJSON(data)
 	if err != nil {
 		return err
 	}

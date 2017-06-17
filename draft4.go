@@ -5,7 +5,7 @@
 package jsonschema
 
 // Draft4 resprensets http://json-schema.org/specification-links.html#draft-4
-var Draft4 = Draft{id: "id"}
+var Draft4 = &Draft{id: "id"}
 
 func init() {
 	c := NewCompiler()

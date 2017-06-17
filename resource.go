@@ -21,7 +21,7 @@ type resource struct {
 	schemas map[string]*Schema
 }
 
-func decodeJson(data []byte) (interface{}, error) {
+func decodeJSON(data []byte) (interface{}, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 	var doc interface{}
@@ -38,7 +38,7 @@ func newResource(base string, data []byte) (*resource, error) {
 	if strings.IndexByte(base, '#') != -1 {
 		panic(fmt.Sprintf("BUG: newResource(%q)", base))
 	}
-	doc, err := decodeJson(data)
+	doc, err := decodeJSON(data)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
 	}
@@ -137,16 +137,9 @@ func rootFragment(fragment string) bool {
 	return fragment == "" || fragment == "#" || fragment == "#/"
 }
 
-func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{}) error {
+func resolveIDs(draft *Draft, base string, m map[string]interface{}, ids map[string]interface{}) error {
 	// todo get id key from draft
-	if id, ok := m["$id"]; ok {
-		b, err := resolveURL(base, id.(string))
-		if err != nil {
-			return err
-		}
-		base = b
-		ids[base] = m
-	} else if id, ok := m["id"]; ok {
+	if id, ok := m[draft.id]; ok {
 		b, err := resolveURL(base, id.(string))
 		if err != nil {
 			return err
@@ -155,7 +148,7 @@ func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{
 		ids[base] = m
 	}
 	if m, ok := m["not"]; ok {
-		if err := resolveIDs(base, m.(map[string]interface{}), ids); err != nil {
+		if err := resolveIDs(draft, base, m.(map[string]interface{}), ids); err != nil {
 			return err
 		}
 	}
@@ -163,7 +156,7 @@ func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{
 	resolveArray := func(pname string) error {
 		if arr, ok := m[pname]; ok {
 			for _, m := range arr.([]interface{}) {
-				if err := resolveIDs(base, m.(map[string]interface{}), ids); err != nil {
+				if err := resolveIDs(draft, base, m.(map[string]interface{}), ids); err != nil {
 					return err
 				}
 			}
@@ -183,7 +176,7 @@ func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{
 	resolveMap := func(pname string) error {
 		if props, ok := m[pname]; ok {
 			for _, m := range props.(map[string]interface{}) {
-				if err := resolveIDs(base, m.(map[string]interface{}), ids); err != nil {
+				if err := resolveIDs(draft, base, m.(map[string]interface{}), ids); err != nil {
 					return err
 				}
 			}
@@ -201,7 +194,7 @@ func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{
 	}
 	if additionalProps, ok := m["additionalProperties"]; ok {
 		if additionalProps, ok := additionalProps.(map[string]interface{}); ok {
-			if err := resolveIDs(base, additionalProps, ids); err != nil {
+			if err := resolveIDs(draft, base, additionalProps, ids); err != nil {
 				return err
 			}
 		}
@@ -210,7 +203,7 @@ func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{
 	if deps, ok := m["dependencies"]; ok {
 		for _, pvalue := range deps.(map[string]interface{}) {
 			if m, ok := pvalue.(map[string]interface{}); ok {
-				if err := resolveIDs(base, m, ids); err != nil {
+				if err := resolveIDs(draft, base, m, ids); err != nil {
 					return err
 				}
 			}
@@ -220,19 +213,19 @@ func resolveIDs(base string, m map[string]interface{}, ids map[string]interface{
 	if items, ok := m["items"]; ok {
 		switch items := items.(type) {
 		case map[string]interface{}:
-			if err := resolveIDs(base, items, ids); err != nil {
+			if err := resolveIDs(draft, base, items, ids); err != nil {
 				return err
 			}
 		case []interface{}:
 			for _, item := range items {
-				if err := resolveIDs(base, item.(map[string]interface{}), ids); err != nil {
+				if err := resolveIDs(draft, base, item.(map[string]interface{}), ids); err != nil {
 					return err
 				}
 			}
 		}
 		if additionalItems, ok := m["additionalItems"]; ok {
 			if additionalItems, ok := additionalItems.(map[string]interface{}); ok {
-				if err := resolveIDs(base, additionalItems, ids); err != nil {
+				if err := resolveIDs(draft, base, additionalItems, ids); err != nil {
 					return err
 				}
 			}

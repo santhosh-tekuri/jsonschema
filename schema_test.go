@@ -28,7 +28,7 @@ func TestDraft6(t *testing.T) {
 	testFolder(t, "testdata/draft6", jsonschema.Draft6)
 }
 
-func testFolder(t *testing.T, folder string, draft jsonschema.Draft) {
+func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 	server := &http.Server{Addr: ":1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
