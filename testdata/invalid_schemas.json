@@ -70,5 +70,11 @@
       "$schema": "http://json-schema.org/schema#",
       "contains": 1
     }
-  }  
+  }, 
+  {
+    "description": "$ref schema with syntax error",
+    "schema": {
+      "$ref": "testdata/syntax_error.json#"
+    }
+  }
 ]

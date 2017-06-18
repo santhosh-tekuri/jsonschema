@@ -246,6 +246,7 @@ func TestCompileURL(t *testing.T) {
 	}
 
 	invalidTests := []string{
+		"testdata/syntax_error.json",
 		"testdata/missing.json",
 		"file://" + abs + "/missing.json",
 		httpServer.URL + "/missing.json",
