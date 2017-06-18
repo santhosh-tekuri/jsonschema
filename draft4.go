@@ -166,9 +166,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	s, err := c.Compile(url)
-	if err != nil {
-		panic(err)
-	}
-	Draft4.meta = s
+	Draft4.meta = c.MustCompile(url)
 }
