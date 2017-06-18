@@ -23,6 +23,33 @@ type Draft struct {
 
 var latest = Draft6
 
+func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
+	if meta := draft.meta; meta != nil {
+		if err := meta.validate(v); err != nil {
+			addContext(ptr, "", err)
+			finishSchemaContext(err, meta)
+			finishInstanceContext(err)
+			var instancePtr string
+			if ptr == "" {
+				instancePtr = "#"
+			} else {
+				instancePtr = "#/" + ptr
+			}
+			return &SchemaError{
+				url,
+				&ValidationError{
+					Message:     fmt.Sprintf("doesn't validate with %q", meta.url+meta.ptr),
+					InstancePtr: instancePtr,
+					SchemaURL:   meta.url,
+					SchemaPtr:   "#",
+					Causes:      []*ValidationError{err.(*ValidationError)},
+				},
+			}
+		}
+	}
+	return nil
+}
+
 // A Compiler represents a json-schema compiler.
 //
 // Currently draft4 and draft6 are supported
@@ -99,33 +126,6 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	return c.compileRef(nil, r, nil, r.url, fragment)
 }
 
-func (c *Compiler) validateSchema(meta *Schema, url, ptr string, v interface{}) error {
-	if meta != nil {
-		if err := meta.validate(v); err != nil {
-			addContext(ptr, "", err)
-			finishSchemaContext(err, meta)
-			finishInstanceContext(err)
-			var instancePtr string
-			if ptr == "" {
-				instancePtr = "#"
-			} else {
-				instancePtr = "#/" + ptr
-			}
-			return &SchemaError{
-				url,
-				&ValidationError{
-					Message:     fmt.Sprintf("doesn't validate with %q", meta.url+meta.ptr),
-					InstancePtr: instancePtr,
-					SchemaURL:   meta.url,
-					SchemaPtr:   "#",
-					Causes:      []*ValidationError{err.(*ValidationError)},
-				},
-			}
-		}
-	}
-	return nil
-}
-
 func (c Compiler) compileRef(draft *Draft, r *resource, root map[string]interface{}, base, ref string) (*Schema, error) {
 	var err error
 	if rootFragment(ref) {
@@ -136,7 +136,7 @@ func (c Compiler) compileRef(draft *Draft, r *resource, root map[string]interfac
 					return nil, err
 				}
 			}
-			if err := c.validateSchema(draft.meta, r.url, "", r.doc); err != nil {
+			if err := draft.validateSchema(r.url, "", r.doc); err != nil {
 				return nil, err
 			}
 			s := &Schema{url: r.url, ptr: "#"}
@@ -173,7 +173,7 @@ func (c Compiler) compileRef(draft *Draft, r *resource, root map[string]interfac
 					return nil, err
 				}
 			}
-			if err := c.validateSchema(draft.meta, r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
+			if err := draft.validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
 				return nil, err
 			}
 			r.schemas[ref] = &Schema{url: base, ptr: ref}
@@ -197,7 +197,7 @@ func (c Compiler) compileRef(draft *Draft, r *resource, root map[string]interfac
 		return nil, err
 	}
 	if v, ok := ids[refURL]; ok {
-		if err := c.validateSchema(draft.meta, r.url, "", v); err != nil {
+		if err := draft.validateSchema(r.url, "", v); err != nil {
 			return nil, err
 		}
 		u, f := split(refURL)
