@@ -6,9 +6,9 @@
 [![Build Status](https://travis-ci.org/santhosh-tekuri/jsonschema.svg?branch=master)](https://travis-ci.org/santhosh-tekuri/jsonschema)
 [![codecov.io](https://codecov.io/github/santhosh-tekuri/jsonschema/coverage.svg?branch=master)](https://codecov.io/github/santhosh-tekuri/jsonschema?branch=master)
 
-Package jsonschema provides draft4 json-schema compilation and validation.
+Package jsonschema provides json-schema compilation and validation.
 
-An implementation of JSON Schema, based on IETF's draft v4. 
+This implementation of JSON Schema, supports draft4 and draft6.
 
 Passes all tests(including optional) in https://github.com/json-schema/JSON-Schema-Test-Suite
 
@@ -26,6 +26,15 @@ if err != nil {
 if err = schema.Validate(data); err != nil {
     return err
 }
+```
+
+The schema is compiled against the version specified in `$schema` property.
+If `$schema` property is missing, it uses latest draft which currently is draft6.
+You can force to use draft4 when `$schema` is mentioned, as follows:
+
+```go
+compiler := jsonschema.NewCompiler()
+compler.Draft = jsonschema.Draft4
 ```
 
 This package supports loading json-schema from filePath and fileURL.
@@ -72,6 +81,8 @@ This package supports json string formats:
 - uriref/uri-reference
 - regex
 - format
+- json-pointer
+- uri-template (limited validation)
 
 Developers can define their own formats using package jsonschema/formats.
 

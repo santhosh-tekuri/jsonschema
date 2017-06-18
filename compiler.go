@@ -23,8 +23,13 @@ type Draft struct {
 
 var latest = Draft6
 
-// A Compiler represents a draft4 json-schema compiler.
+// A Compiler represents a json-schema compiler.
+//
+// Currently draft4 and draft6 are supported
 type Compiler struct {
+	// Draft represents the draft used when '$schema' attribute is missing.
+	//
+	// This defaults to latest draft (currently draft6).
 	Draft     *Draft
 	resources map[string]*resource
 }
@@ -79,8 +84,6 @@ func (c *Compiler) MustCompile(url string) *Schema {
 
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
-//
-// The json-schema is validated with draft4 specification.
 func (c *Compiler) Compile(url string) (*Schema, error) {
 	base, fragment := split(url)
 	if _, ok := c.resources[base]; !ok {

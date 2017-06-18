@@ -3,9 +3,9 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package jsonschema provides draft4 json-schema compilation and validation.
+Package jsonschema provides json-schema compilation and validation.
 
-An implementation of JSON Schema, based on IETF's draft v4.
+This implementation of JSON Schema, supports draft4 and draft6.
 Passes all tests(including optional) in https://github.com/json-schema/JSON-Schema-Test-Suite
 
 An example of using this package:
@@ -21,6 +21,13 @@ An example of using this package:
 	if err = schema.Validate(data); err != nil {
 		return err
 	}
+
+The schema is compiled against the version specified in `$schema` property.
+If `$schema` property is missing, it uses latest draft which currently is draft6.
+You can force to use draft4 when `$schema` is mentioned, as follows:
+
+	compiler := jsonschema.NewCompiler()
+	compler.Draft = jsonschema.Draft4
 
 This package supports loading json-schema from filePath and fileURL.
 
@@ -51,7 +58,9 @@ To load json-schema from in-memory:
 		return err
 	}
 
-This package supports json string formats: date-time, hostname, email, ip-address, ipv4, ipv6, uri, uriref, regex.
+This package supports json string formats: date-time, hostname, email, ip-address, ipv4, ipv6, uri, uriref, regex,
+format, json-pointer, uri-template (limited validation).
+
 Developers can define their own formats using package jsonschema/formats.
 
 The ValidationError returned by Validate method contains detailed context to understand why and where the error is.
