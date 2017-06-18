@@ -57,5 +57,18 @@
         }
       }
     }
-  }
+  },
+  {
+    "description": "draft3 is not supported",
+    "schema": {
+      "$schema": "http://json-schema.org/draft-03/schema#"
+    }
+  },
+  {
+    "description": "does not validate with latest draft",
+    "schema": {
+      "$schema": "http://json-schema.org/schema#",
+      "contains": 1
+    }
+  }  
 ]
