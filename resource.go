@@ -137,7 +137,11 @@ func rootFragment(fragment string) bool {
 	return fragment == "" || fragment == "#" || fragment == "#/"
 }
 
-func resolveIDs(draft *Draft, base string, m map[string]interface{}, ids map[string]interface{}) error {
+func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]interface{}) error {
+	m, ok := v.(map[string]interface{})
+	if !ok {
+		return nil
+	}
 	if id, ok := m[draft.id]; ok {
 		b, err := resolveURL(base, id.(string))
 		if err != nil {
@@ -147,7 +151,7 @@ func resolveIDs(draft *Draft, base string, m map[string]interface{}, ids map[str
 		ids[base] = m
 	}
 	if m, ok := m["not"]; ok {
-		if err := resolveIDs(draft, base, m.(map[string]interface{}), ids); err != nil {
+		if err := resolveIDs(draft, base, m, ids); err != nil {
 			return err
 		}
 	}
@@ -155,7 +159,7 @@ func resolveIDs(draft *Draft, base string, m map[string]interface{}, ids map[str
 	resolveArray := func(pname string) error {
 		if arr, ok := m[pname]; ok {
 			for _, m := range arr.([]interface{}) {
-				if err := resolveIDs(draft, base, m.(map[string]interface{}), ids); err != nil {
+				if err := resolveIDs(draft, base, m, ids); err != nil {
 					return err
 				}
 			}
@@ -175,7 +179,7 @@ func resolveIDs(draft *Draft, base string, m map[string]interface{}, ids map[str
 	resolveMap := func(pname string) error {
 		if props, ok := m[pname]; ok {
 			for _, m := range props.(map[string]interface{}) {
-				if err := resolveIDs(draft, base, m.(map[string]interface{}), ids); err != nil {
+				if err := resolveIDs(draft, base, m, ids); err != nil {
 					return err
 				}
 			}
@@ -217,7 +221,7 @@ func resolveIDs(draft *Draft, base string, m map[string]interface{}, ids map[str
 			}
 		case []interface{}:
 			for _, item := range items {
-				if err := resolveIDs(draft, base, item.(map[string]interface{}), ids); err != nil {
+				if err := resolveIDs(draft, base, item, ids); err != nil {
 					return err
 				}
 			}
@@ -227,6 +231,19 @@ func resolveIDs(draft *Draft, base string, m map[string]interface{}, ids map[str
 				if err := resolveIDs(draft, base, additionalItems, ids); err != nil {
 					return err
 				}
+			}
+		}
+	}
+
+	if draft == Draft6 {
+		if propertyNames, ok := m["propertyNames"]; ok {
+			if err := resolveIDs(draft, base, propertyNames, ids); err != nil {
+				return err
+			}
+		}
+		if contains, ok := m["contains"]; ok {
+			if err := resolveIDs(draft, base, contains, ids); err != nil {
+				return err
 			}
 		}
 	}
