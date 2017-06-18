@@ -122,7 +122,7 @@ func init() {
 			},
 			"patternProperties": {
 				"type": "object",
-                "regexProperties": true,
+				"regexProperties": true,
 				"additionalProperties": { "$ref": "#" },
 				"default": {}
 			},
