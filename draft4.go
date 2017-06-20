@@ -162,7 +162,7 @@ func init() {
 		    "exclusiveMinimum": [ "minimum" ]
 		},
 		"default": {}
-    }`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
