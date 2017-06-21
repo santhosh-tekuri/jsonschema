@@ -76,5 +76,9 @@
     "schema": {
       "$ref": "testdata/syntax_error.json#"
     }
+  },
+  {
+      "description": "multipleOf must be greater than zero",
+      "schema": {"multipleOf": 0}
   }
 ]

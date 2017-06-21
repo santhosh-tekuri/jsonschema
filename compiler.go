@@ -466,11 +466,6 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 	}
 
 	s.multipleOf = loadFloat("multipleOf")
-	if s.multipleOf != nil && s.multipleOf.IsInt() {
-		if i, _ := s.multipleOf.Int64(); i == 0 {
-			s.multipleOf = nil
-		}
-	}
 
 	if draft == Draft6 {
 		if c, ok := m["const"]; ok {
