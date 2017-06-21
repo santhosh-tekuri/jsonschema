@@ -436,9 +436,8 @@ func jsonType(v interface{}) string {
 		return "array"
 	case map[string]interface{}:
 		return "object"
-	default:
-		panic(fmt.Sprintf("unexpected jsonType: %T", v))
 	}
+	panic(fmt.Sprintf("unexpected jsonType: %T", v))
 }
 
 // equals tells if given two json values are equal or not.
