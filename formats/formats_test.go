@@ -128,7 +128,6 @@ func TestIsJSONPointer(t *testing.T) {
 	tests := []test{
 		{"/foo/baz", true},
 		{"/foo/baz~", false}, // ~ not escaped
-		{"/foo/baz%", false}, // invalid urlescape
 	}
 	for i, test := range tests {
 		if test.valid != formats.IsJSONPointer(test.str) {
