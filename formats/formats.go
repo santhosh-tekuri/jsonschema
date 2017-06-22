@@ -212,6 +212,11 @@ func IsJSONPointer(s string) bool {
 				}
 			}
 		}
+		item = strings.Replace(item, "~1", "/", -1)
+		item = strings.Replace(item, "~0", "~", -1)
+		if _, err := url.PathUnescape(item); err != nil {
+			return false
+		}
 	}
 	return true
 }

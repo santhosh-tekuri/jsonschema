@@ -42,6 +42,18 @@
     }
   },
   {
+    "description": "invalid $ref json-pointer",
+    "schema": {
+      "$ref": "#/definition/employee%1"
+    }
+  },
+  {
+    "description": "invalid $ref url",
+    "schema": {
+      "$ref": "http:/localhost/test.json"
+    }
+  },
+  {
     "description": "invalid $ref ptr",
     "schema": {
       "$ref": "#/definition/employee"
