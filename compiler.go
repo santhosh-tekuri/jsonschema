@@ -234,11 +234,6 @@ func (c Compiler) compile(draft *Draft, r *resource, s *Schema, base string, roo
 func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, root, m map[string]interface{}) (*Schema, error) {
 	var err error
 
-	if s == nil {
-		s = new(Schema)
-		s.url, _ = split(base)
-	}
-
 	if id, ok := m[draft.id]; ok {
 		if base, err = resolveURL(base, id.(string)); err != nil {
 			return nil, err
