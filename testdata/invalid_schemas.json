@@ -63,7 +63,7 @@
     "description": "$ref to invalid schema",
     "schema": {
       "$ref": "#/definition/employee",
-      "definitions" : {
+      "definitions": {
         "employee": {
           "type": 1
         }
@@ -82,7 +82,7 @@
       "$schema": "http://json-schema.org/schema#",
       "contains": 1
     }
-  }, 
+  },
   {
     "description": "$ref schema with syntax error",
     "schema": {
@@ -90,7 +90,128 @@
     }
   },
   {
-      "description": "multipleOf must be greater than zero",
-      "schema": {"multipleOf": 0}
+    "description": "multipleOf must be greater than zero",
+    "schema": {
+      "multipleOf": 0
+    }
+  },
+  {
+    "description": "not compile fail",
+    "schema": {
+      "not": {
+        "$ref": "#/unknown"
+      }
+    }
+  },
+  {
+    "description": "allOf compile fail",
+    "schema": {
+      "allOf": [
+        {
+          "$ref": "#/unknown"
+        }
+      ]
+    }
+  },
+  {
+    "description": "anyOf compile fail",
+    "schema": {
+      "anyOf": [
+        {
+          "$ref": "#/unknown"
+        }
+      ]
+    }
+  },
+  {
+    "description": "oneOf compile fail",
+    "schema": {
+      "oneOf": [
+        {
+          "$ref": "#/unknown"
+        }
+      ]
+    }
+  },
+  {
+    "description": "properties compile fail",
+    "schema": {
+      "properties": {
+        "p1": {
+          "$ref": "#/unknown"
+        }
+      }
+    }
+  },
+  {
+    "description": "patternProperties compile fail",
+    "schema": {
+      "patternProperties": {
+        "p1": {
+          "$ref": "#/unknown"
+        }
+      }
+    }
+  },
+  {
+    "description": "additionalProperties compile fail",
+    "schema": {
+      "additionalProperties": {
+        "$ref": "#/unknown"
+      }
+    }
+  },
+  {
+    "description": "items compile fail",
+    "schema": {
+      "items": {
+        "$ref": "#/unknown"
+      }
+    }
+  },
+  {
+    "description": "item compile fail",
+    "schema": {
+      "items": [
+        {
+          "$ref": "#/unknown"
+        }
+      ]
+    }
+  },
+  {
+    "description": "additionalItems compile fail",
+    "schema": {
+      "items": [{}],
+      "additionalItems": {
+        "$ref": "#/unknown"
+      }
+    }
+  },
+  {
+    "description": "dependencies compile fail",
+    "schema": {
+      "dependencies": {
+        "p1": {
+          "$ref": "#/unknown"
+        }
+      }
+    }
+  },
+  {
+    "description": "contains compile fail",
+    "schema": {
+      "contains": {
+        "$ref": "#/unknown"
+      }
+    }
+  },
+  {
+    "description": "propertyNames compile fail",
+    "schema": {
+      "propertyNames": {
+        "$ref": "#/unknown"
+      }
+    }
   }
 ]
