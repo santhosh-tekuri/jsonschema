@@ -82,7 +82,7 @@ func (r *resource) resolvePtr(draft *Draft, ptr string) (string, interface{}, er
 	}
 	base := r.url
 	p := strings.TrimPrefix(ptr, "#/")
-	var doc interface{} = r.doc
+	doc := r.doc
 	for _, item := range strings.Split(p, "/") {
 		item = strings.Replace(item, "~1", "/", -1)
 		item = strings.Replace(item, "~0", "~", -1)
@@ -156,7 +156,7 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]interfa
 		}
 	}
 
-	resolveArray := func(pname string) error {
+	for _, pname := range []string{"allOf", "anyOf", "oneOf"} {
 		if arr, ok := m[pname]; ok {
 			for _, m := range arr.([]interface{}) {
 				if err := resolveIDs(draft, base, m, ids); err != nil {
@@ -164,19 +164,9 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]interfa
 				}
 			}
 		}
-		return nil
-	}
-	if err := resolveArray("allOf"); err != nil {
-		return err
-	}
-	if err := resolveArray("anyOf"); err != nil {
-		return err
-	}
-	if err := resolveArray("oneOf"); err != nil {
-		return err
 	}
 
-	resolveMap := func(pname string) error {
+	for _, pname := range []string{"definitions", "properties", "patternProperties"} {
 		if props, ok := m[pname]; ok {
 			for _, m := range props.(map[string]interface{}) {
 				if err := resolveIDs(draft, base, m, ids); err != nil {
@@ -184,17 +174,8 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]interfa
 				}
 			}
 		}
-		return nil
 	}
-	if err := resolveMap("definitions"); err != nil {
-		return err
-	}
-	if err := resolveMap("properties"); err != nil {
-		return err
-	}
-	if err := resolveMap("patternProperties"); err != nil {
-		return err
-	}
+
 	if additionalProps, ok := m["additionalProperties"]; ok {
 		if additionalProps, ok := additionalProps.(map[string]interface{}); ok {
 			if err := resolveIDs(draft, base, additionalProps, ids); err != nil {

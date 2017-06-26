@@ -213,5 +213,31 @@
         "$ref": "#/unknown"
       }
     }
+  },
+  {
+    "description": "jsonpointer urlescape",
+    "schema": {
+      "propertyNames": {
+        "$ref": "#/unknown%"
+      }
+    }
+  },
+  {
+    "description": "jsonpointer array index",
+    "schema": {
+      "refs": [{}],
+      "propertyNames": {
+        "$ref": "#/refs/unknown"
+      }
+    }
+  },
+  {
+    "description": "jsonpointer array index outofrange",
+    "schema": {
+      "refs": [{}],
+      "propertyNames": {
+        "$ref": "#/refs/5"
+      }
+    }
   }
 ]
