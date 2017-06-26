@@ -14,7 +14,7 @@ package httploader
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/santhosh-tekuri/jsonschema/loader"
@@ -22,16 +22,16 @@ import (
 
 type httpLoader struct{}
 
-func (httpLoader) Load(url string) ([]byte, error) {
+func (httpLoader) Load(url string) (io.ReadCloser, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("%s returned status code %d", url, resp.StatusCode)
 	}
-	return ioutil.ReadAll(resp.Body)
+	return resp.Body, nil
 }
 
 func init() {

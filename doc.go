@@ -14,11 +14,12 @@ An example of using this package:
 	if err != nil {
 		return err
 	}
-	data, err := ioutil.ReadFile("purchaseOrder.json")
+	f, err := os.Open("purchaseOrder.json")
 	if err != nil {
 		return err
 	}
-	if err = schema.Validate(data); err != nil {
+	defer f.Close()
+	if err = schema.Validate(f); err != nil {
 		return err
 	}
 
@@ -40,21 +41,22 @@ for an example
 
 To load json-schema from in-memory:
 
-	data := []byte(`{"type": "string"}`)
+	data := `{"type": "string"}`
 	url := "sch.json"
 	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource(url, data); err != nil {
+	if err := compiler.AddResource(url, strings.NewReader(data)); err != nil {
 		return err
 	}
 	schema, err := jsonschema.Compile(url)
 	if err != nil {
 		return err
 	}
-	data, err := ioutil.ReadFile("doc.json")
+	f, err := os.Open("doc.json")
 	if err != nil {
 		return err
 	}
-	if err = schema.Validate(data); err != nil {
+	defer f.Close()
+	if err = schema.Validate(f); err != nil {
 		return err
 	}
 

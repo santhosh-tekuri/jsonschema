@@ -7,6 +7,7 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 	"net/url"
 	"regexp"
@@ -86,8 +87,8 @@ func MustCompile(url string) *Schema {
 // Validate validates the given json data, against the json-schema,
 //
 // Returned error can be *ValidationError.
-func (s *Schema) Validate(data []byte) error {
-	doc, err := decodeJSON(data)
+func (s *Schema) Validate(r io.Reader) error {
+	doc, err := decodeJSON(r)
 	if err != nil {
 		return err
 	}

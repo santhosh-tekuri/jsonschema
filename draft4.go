@@ -4,13 +4,15 @@
 
 package jsonschema
 
+import "strings"
+
 // Draft4 resprensets http://json-schema.org/specification-links.html#draft-4
 var Draft4 = &Draft{id: "id"}
 
 func init() {
 	c := NewCompiler()
 	url := "http://json-schema.org/draft-04/schema"
-	err := c.AddResource(url, []byte(`{
+	err := c.AddResource(url, strings.NewReader(`{
 		"$schema": "http://json-schema.org/draft-04/schema#",
 		"description": "Core schema meta-schema",
 		"definitions": {

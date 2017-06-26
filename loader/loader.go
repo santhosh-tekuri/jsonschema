@@ -10,8 +10,9 @@ package loader
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -23,24 +24,24 @@ import (
 // Load loads the document at given url and returns []byte,
 // if successful.
 type Loader interface {
-	Load(url string) ([]byte, error)
+	Load(url string) (io.ReadCloser, error)
 }
 
 type filePathLoader struct{}
 
-func (filePathLoader) Load(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
+func (filePathLoader) Load(path string) (io.ReadCloser, error) {
+	return os.Open(path)
 }
 
 type fileURLLoader struct{}
 
-func (fileURLLoader) Load(url string) ([]byte, error) {
+func (fileURLLoader) Load(url string) (io.ReadCloser, error) {
 	f := strings.TrimPrefix(url, "file://")
 	if runtime.GOOS == "windows" {
 		f = strings.TrimPrefix(f, "/")
 		f = filepath.FromSlash(f)
 	}
-	return ioutil.ReadFile(f)
+	return os.Open(f)
 }
 
 var registry = make(map[string]Loader)
@@ -86,7 +87,7 @@ func get(s string) (Loader, error) {
 //
 // If no Loader is registered against the URI Scheme, then it
 // returns *SchemeNotRegisteredError
-func Load(url string) ([]byte, error) {
+func Load(url string) (io.ReadCloser, error) {
 	loader, err := get(url)
 	if err != nil {
 		return nil, err

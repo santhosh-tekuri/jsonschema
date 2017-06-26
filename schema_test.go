@@ -5,6 +5,7 @@
 package jsonschema_test
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
@@ -12,9 +13,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"testing"
-
 	"strings"
+	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema"
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
@@ -85,16 +85,16 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 		for _, group := range tg {
 			t.Logf("  %s\n", group.Description)
 			c := jsonschema.NewCompiler()
-			if err := c.AddResource("http://json-schema.org/draft-04/schema", draft4); err != nil {
+			if err := c.AddResource("http://json-schema.org/draft-04/schema", bytes.NewReader(draft4)); err != nil {
 				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
 				continue
 			}
-			if err := c.AddResource("http://json-schema.org/draft-06/schema", draft6); err != nil {
+			if err := c.AddResource("http://json-schema.org/draft-06/schema", bytes.NewReader(draft6)); err != nil {
 				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
 				continue
 			}
 			c.Draft = draft
-			if err := c.AddResource("test.json", group.Schema); err != nil {
+			if err := c.AddResource("test.json", bytes.NewReader(group.Schema)); err != nil {
 				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
 				continue
 			}
@@ -105,7 +105,7 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 			}
 			for _, test := range group.Tests {
 				t.Logf("      %s\n", test.Description)
-				err = schema.Validate(test.Data)
+				err = schema.Validate(bytes.NewReader(test.Data))
 				valid := err == nil
 				if !valid {
 					for _, line := range strings.Split(err.Error(), "\n") {
@@ -133,14 +133,14 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 	for _, test := range invalidDocTests {
 		t.Run(test.description, func(t *testing.T) {
 			c := jsonschema.NewCompiler()
-			if err := c.AddResource("test.json", []byte("{}")); err != nil {
+			if err := c.AddResource("test.json", strings.NewReader("{}")); err != nil {
 				t.Fatal(err)
 			}
 			s, err := c.Compile("test.json")
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := s.Validate([]byte(test.doc)); err != nil {
+			if err := s.Validate(strings.NewReader(test.doc)); err != nil {
 				t.Log(err)
 			} else {
 				t.Error("error expected")
@@ -169,7 +169,7 @@ func TestInvalidSchema(t *testing.T) {
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
-		if err := jsonschema.NewCompiler().AddResource("test.json", []byte("{")); err == nil {
+		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{")); err == nil {
 			t.Error("error expected")
 		} else {
 			t.Log(err)
@@ -177,7 +177,7 @@ func TestInvalidSchema(t *testing.T) {
 	})
 
 	t.Run("multiple json", func(t *testing.T) {
-		if err := jsonschema.NewCompiler().AddResource("test.json", []byte("{}{}")); err == nil {
+		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{}{}")); err == nil {
 			t.Error("error expected")
 		} else {
 			t.Log(err)
@@ -186,7 +186,7 @@ func TestInvalidSchema(t *testing.T) {
 
 	t.Run("schemaRef", func(t *testing.T) {
 		c := jsonschema.NewCompiler()
-		if err := c.AddResource("test.json", []byte("[1]")); err != nil {
+		if err := c.AddResource("test.json", strings.NewReader("[1]")); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := c.Compile("test.json#/0"); err == nil {
@@ -211,7 +211,7 @@ func TestInvalidSchema(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Description, func(t *testing.T) {
 			c := jsonschema.NewCompiler()
-			if err := c.AddResource("test.json", test.Schema); err != nil {
+			if err := c.AddResource("test.json", bytes.NewReader(test.Schema)); err != nil {
 				t.Fatal(err)
 			}
 			if _, err = c.Compile("test.json"); err == nil {
@@ -256,12 +256,14 @@ func TestCompileURL(t *testing.T) {
 			t.Errorf("valid #%d: %v", i, err)
 			return
 		}
-		data, err := ioutil.ReadFile(test.doc)
+		f, err := os.Open(test.doc)
 		if err != nil {
 			t.Errorf("valid #%d: %v", i, err)
 			return
 		}
-		if err = s.Validate(data); err != nil {
+		err = s.Validate(f)
+		_ = f.Close()
+		if err != nil {
 			t.Errorf("valid #%d: %v", i, err)
 		}
 	}

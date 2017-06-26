@@ -5,10 +5,10 @@
 package jsonschema
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -21,8 +21,8 @@ type resource struct {
 	schemas map[string]*Schema
 }
 
-func decodeJSON(data []byte) (interface{}, error) {
-	decoder := json.NewDecoder(bytes.NewReader(data))
+func decodeJSON(r io.Reader) (interface{}, error) {
+	decoder := json.NewDecoder(r)
 	decoder.UseNumber()
 	var doc interface{}
 	if err := decoder.Decode(&doc); err != nil {
@@ -34,11 +34,11 @@ func decodeJSON(data []byte) (interface{}, error) {
 	return doc, nil
 }
 
-func newResource(base string, data []byte) (*resource, error) {
+func newResource(base string, r io.Reader) (*resource, error) {
 	if strings.IndexByte(base, '#') != -1 {
 		panic(fmt.Sprintf("BUG: newResource(%q)", base))
 	}
-	doc, err := decodeJSON(data)
+	doc, err := decodeJSON(r)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
 	}

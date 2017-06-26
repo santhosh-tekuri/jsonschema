@@ -7,6 +7,7 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 	"regexp"
 	"strings"
@@ -69,12 +70,12 @@ func NewCompiler() *Compiler {
 // AddResource adds in-memory resource to the compiler.
 //
 // Note that url must not have fragment
-func (c *Compiler) AddResource(url string, data []byte) error {
-	r, err := newResource(url, data)
+func (c *Compiler) AddResource(url string, r io.Reader) error {
+	res, err := newResource(url, r)
 	if err != nil {
 		return err
 	}
-	c.resources[r.url] = r
+	c.resources[res.url] = res
 	return nil
 }
 
@@ -114,11 +115,12 @@ func (c *Compiler) MustCompile(url string) *Schema {
 func (c *Compiler) Compile(url string) (*Schema, error) {
 	base, fragment := split(url)
 	if _, ok := c.resources[base]; !ok {
-		data, err := loader.Load(base)
+		r, err := loader.Load(base)
 		if err != nil {
 			return nil, err
 		}
-		if err := c.AddResource(base, data); err != nil {
+		defer r.Close()
+		if err := c.AddResource(base, r); err != nil {
 			return nil, err
 		}
 	}
