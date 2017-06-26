@@ -239,5 +239,25 @@
         "$ref": "#/refs/5"
       }
     }
+  },
+  {
+    "description": "schemaRef with invalid $schema",
+    "schema": [{"$schema":"http://json-schema.org/draft-03/schema"}],
+    "fragment": "#/0"
+  },
+  {
+    "description": "schemaRef with wrong jsonpointer",
+    "schema": [{}],
+    "fragment": "#/1"
+  },
+  {
+    "description": "schemaRef",
+    "schema": [1],
+    "fragment": "#/0"
+  },
+  {
+    "description": "schemaRef wrong jsonpointer",
+    "schema": [{"$ref": "#/5"}],
+    "fragment": "#/0"
   }
 ]

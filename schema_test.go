@@ -184,21 +184,10 @@ func TestInvalidSchema(t *testing.T) {
 		}
 	})
 
-	t.Run("schemaRef", func(t *testing.T) {
-		c := jsonschema.NewCompiler()
-		if err := c.AddResource("test.json", strings.NewReader("[1]")); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := c.Compile("test.json#/0"); err == nil {
-			t.Error("error expected")
-		} else {
-			t.Log(err)
-		}
-	})
-
 	type test struct {
 		Description string
 		Schema      json.RawMessage
+		Fragment    string
 	}
 	data, err := ioutil.ReadFile("testdata/invalid_schemas.json")
 	if err != nil {
@@ -211,10 +200,14 @@ func TestInvalidSchema(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Description, func(t *testing.T) {
 			c := jsonschema.NewCompiler()
-			if err := c.AddResource("test.json", bytes.NewReader(test.Schema)); err != nil {
+			url := "test.json"
+			if err := c.AddResource(url, bytes.NewReader(test.Schema)); err != nil {
 				t.Fatal(err)
 			}
-			if _, err = c.Compile("test.json"); err == nil {
+			if len(test.Fragment) > 0 {
+				url += test.Fragment
+			}
+			if _, err = c.Compile(url); err == nil {
 				t.Error("error expected")
 			} else {
 				t.Log(err)

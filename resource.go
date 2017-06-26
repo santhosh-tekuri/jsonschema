@@ -90,26 +90,25 @@ func (r *resource) resolvePtr(draft *Draft, ptr string) (string, interface{}, er
 		if err != nil {
 			return "", nil, errors.New("unable to url unscape: " + item)
 		}
-		switch doc.(type) {
+		switch d := doc.(type) {
 		case map[string]interface{}:
-			if id, ok := doc.(map[string]interface{})[draft.id]; ok {
+			if id, ok := d[draft.id]; ok {
 				if id, ok := id.(string); ok {
 					if base, err = resolveURL(base, id); err != nil {
 						return "", nil, err
 					}
 				}
 			}
-			doc = doc.(map[string]interface{})[item]
+			doc = d[item]
 		case []interface{}:
 			index, err := strconv.Atoi(item)
 			if err != nil {
 				return "", nil, fmt.Errorf("invalid $ref %q, reason: %s", ptr, err)
 			}
-			arrLen := len(doc.([]interface{}))
-			if index < 0 || index > arrLen {
+			if index < 0 || index >= len(d) {
 				return "", nil, fmt.Errorf("invalid $ref %q, reason: array index outofrange", ptr)
 			}
-			doc = doc.([]interface{})[index]
+			doc = d[index]
 		default:
 			return "", nil, errors.New("invalid $ref " + ptr)
 		}
