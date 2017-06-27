@@ -399,25 +399,24 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 			if err != nil {
 				return nil, err
 			}
+			if additionalItems, ok := m["additionalItems"]; ok {
+				switch additionalItems := additionalItems.(type) {
+				case bool:
+					s.additionalItems = additionalItems
+				case map[string]interface{}:
+					s.additionalItems, err = c.compile(draft, r, nil, base, root, additionalItems)
+					if err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				s.additionalItems = true
+			}
 		default:
 			s.items, err = c.compile(draft, r, nil, base, root, items)
 			if err != nil {
 				return nil, err
 			}
-		}
-
-		if additionalItems, ok := m["additionalItems"]; ok {
-			switch additionalItems := additionalItems.(type) {
-			case bool:
-				s.additionalItems = additionalItems
-			case map[string]interface{}:
-				s.additionalItems, err = c.compile(draft, r, nil, base, root, additionalItems)
-				if err != nil {
-					return nil, err
-				}
-			}
-		} else {
-			s.additionalItems = true
 		}
 	}
 
