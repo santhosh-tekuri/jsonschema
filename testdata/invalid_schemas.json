@@ -215,12 +215,17 @@
     }
   },
   {
-    "description": "jsonpointer urlescape",
+    "description": "a:jsonpointer urlescape",
     "schema": {
       "propertyNames": {
         "$ref": "#/unknown%"
       }
     }
+  },
+  {
+    "description": "b:jsonpointer urlescape",
+    "schema": {},
+    "fragment": "#/unknown%"
   },
   {
     "description": "jsonpointer array index",
