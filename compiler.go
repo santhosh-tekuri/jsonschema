@@ -194,7 +194,7 @@ func (c Compiler) compileRef(draft *Draft, r *resource, root map[string]interfac
 		return rs, nil
 	}
 
-	ids := make(map[string]interface{})
+	ids := make(map[string]map[string]interface{})
 	if err := resolveIDs(draft, r.url, root, ids); err != nil {
 		return nil, err
 	}
@@ -205,8 +205,7 @@ func (c Compiler) compileRef(draft *Draft, r *resource, root map[string]interfac
 		u, f := split(refURL)
 		s := &Schema{url: u, ptr: f}
 		r.schemas[refURL] = s
-		rmap := v.(map[string]interface{})
-		if _, err := c.compile(draft, r, s, refURL, root, rmap); err != nil {
+		if err := c.compileMap(draft, r, s, refURL, root, v); err != nil {
 			return nil, err
 		}
 		return s, nil

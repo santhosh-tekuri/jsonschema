@@ -136,7 +136,7 @@ func rootFragment(fragment string) bool {
 	return fragment == "" || fragment == "#" || fragment == "#/"
 }
 
-func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]interface{}) error {
+func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[string]interface{}) error {
 	m, ok := v.(map[string]interface{})
 	if !ok {
 		return nil
