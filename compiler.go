@@ -229,16 +229,16 @@ func (c Compiler) compile(draft *Draft, r *resource, s *Schema, base string, roo
 		s.always = &m
 		return s, nil
 	default:
-		return c.compileMap(draft, r, s, base, root, m.(map[string]interface{}))
+		return s, c.compileMap(draft, r, s, base, root, m.(map[string]interface{}))
 	}
 }
 
-func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, root, m map[string]interface{}) (*Schema, error) {
+func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, root, m map[string]interface{}) error {
 	var err error
 
 	if id, ok := m[draft.id]; ok {
 		if base, err = resolveURL(base, id.(string)); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -246,10 +246,10 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		b, _ := split(base)
 		s.ref, err = c.compileRef(draft, r, root, b, ref.(string))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		// All other properties in a "$ref" object MUST be ignored
-		return s, nil
+		return nil
 	}
 
 	if t, ok := m["type"]; ok {
@@ -288,7 +288,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 	if not, ok := m["not"]; ok {
 		s.not, err = c.compile(draft, r, nil, base, root, not)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -308,13 +308,13 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		return nil, nil
 	}
 	if s.allOf, err = loadSchemas("allOf"); err != nil {
-		return nil, err
+		return err
 	}
 	if s.anyOf, err = loadSchemas("anyOf"); err != nil {
-		return nil, err
+		return err
 	}
 	if s.oneOf, err = loadSchemas("oneOf"); err != nil {
-		return nil, err
+		return err
 	}
 
 	loadInt := func(pname string) int {
@@ -336,7 +336,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		for pname, pmap := range props {
 			s.properties[pname], err = c.compile(draft, r, nil, base, root, pmap)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -351,7 +351,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		for pattern, pmap := range patternProps {
 			s.patternProperties[regexp.MustCompile(pattern)], err = c.compile(draft, r, nil, base, root, pmap)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -365,7 +365,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		case map[string]interface{}:
 			s.additionalProperties, err = c.compile(draft, r, nil, base, root, additionalProps)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -380,7 +380,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 			default:
 				s.dependencies[pname], err = c.compile(draft, r, nil, base, root, pvalue)
 				if err != nil {
-					return nil, err
+					return err
 				}
 			}
 		}
@@ -397,7 +397,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		case []interface{}:
 			s.items, err = loadSchemas("items")
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if additionalItems, ok := m["additionalItems"]; ok {
 				switch additionalItems := additionalItems.(type) {
@@ -406,7 +406,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 				case map[string]interface{}:
 					s.additionalItems, err = c.compile(draft, r, nil, base, root, additionalItems)
 					if err != nil {
-						return nil, err
+						return err
 					}
 				}
 			} else {
@@ -415,7 +415,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		default:
 			s.items, err = c.compile(draft, r, nil, base, root, items)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -470,18 +470,18 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		if propertyNames, ok := m["propertyNames"]; ok {
 			s.propertyNames, err = c.compile(draft, r, nil, base, root, propertyNames)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 		if contains, ok := m["contains"]; ok {
 			s.contains, err = c.compile(draft, r, nil, base, root, contains)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	return s, nil
+	return nil
 }
 
 func toStrings(arr []interface{}) []string {
