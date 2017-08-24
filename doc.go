@@ -47,7 +47,7 @@ To load json-schema from in-memory:
 	if err := compiler.AddResource(url, strings.NewReader(data)); err != nil {
 		return err
 	}
-	schema, err := jsonschema.Compile(url)
+	schema, err := compiler.Compile(url)
 	if err != nil {
 		return err
 	}
