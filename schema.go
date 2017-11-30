@@ -92,7 +92,7 @@ func (s *Schema) Validate(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if err := s.validate(doc); err != nil {
+	if err := s.ValidateInterface(doc); err != nil {
 		finishSchemaContext(err, s)
 		finishInstanceContext(err)
 		return &ValidationError{
@@ -106,8 +106,8 @@ func (s *Schema) Validate(r io.Reader) error {
 	return nil
 }
 
-// validate validates given value v with this schema.
-func (s *Schema) validate(v interface{}) error {
+// ValidateInterface validates given value v with this schema.
+func (s *Schema) ValidateInterface(v interface{}) error {
 	if s.always != nil {
 		if !*s.always {
 			return validationError("", "always fail")
@@ -116,7 +116,7 @@ func (s *Schema) validate(v interface{}) error {
 	}
 
 	if s.ref != nil {
-		if err := s.ref.validate(v); err != nil {
+		if err := s.ref.ValidateInterface(v); err != nil {
 			finishSchemaContext(err, s.ref)
 			var refURL string
 			if s.url == s.ref.url {
@@ -174,12 +174,12 @@ func (s *Schema) validate(v interface{}) error {
 		}
 	}
 
-	if s.not != nil && s.not.validate(v) == nil {
+	if s.not != nil && s.not.ValidateInterface(v) == nil {
 		return validationError("not", "not failed")
 	}
 
 	for i, sch := range s.allOf {
-		if err := sch.validate(v); err != nil {
+		if err := sch.ValidateInterface(v); err != nil {
 			return validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err)
 		}
 	}
@@ -188,7 +188,7 @@ func (s *Schema) validate(v interface{}) error {
 		matched := false
 		var causes []error
 		for i, sch := range s.anyOf {
-			if err := sch.validate(v); err == nil {
+			if err := sch.ValidateInterface(v); err == nil {
 				matched = true
 				break
 			} else {
@@ -204,7 +204,7 @@ func (s *Schema) validate(v interface{}) error {
 		matched := -1
 		var causes []error
 		for i, sch := range s.oneOf {
-			if err := sch.validate(v); err == nil {
+			if err := sch.ValidateInterface(v); err == nil {
 				if matched == -1 {
 					matched = i
 				} else {
@@ -251,7 +251,7 @@ func (s *Schema) validate(v interface{}) error {
 			for pname, pschema := range s.properties {
 				if pvalue, ok := v[pname]; ok {
 					delete(additionalProps, pname)
-					if err := pschema.validate(pvalue); err != nil {
+					if err := pschema.ValidateInterface(pvalue); err != nil {
 						return addContext(escape(pname), "properties/"+escape(pname), err)
 					}
 				}
@@ -260,7 +260,7 @@ func (s *Schema) validate(v interface{}) error {
 
 		if s.propertyNames != nil {
 			for pname := range v {
-				if err := s.propertyNames.validate(pname); err != nil {
+				if err := s.propertyNames.ValidateInterface(pname); err != nil {
 					return addContext(escape(pname), "propertyNames", err)
 				}
 			}
@@ -277,7 +277,7 @@ func (s *Schema) validate(v interface{}) error {
 			for pname, pvalue := range v {
 				if pattern.MatchString(pname) {
 					delete(additionalProps, pname)
-					if err := pschema.validate(pvalue); err != nil {
+					if err := pschema.ValidateInterface(pvalue); err != nil {
 						return addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err)
 					}
 				}
@@ -296,7 +296,7 @@ func (s *Schema) validate(v interface{}) error {
 				schema := s.additionalProperties.(*Schema)
 				for pname := range additionalProps {
 					if pvalue, ok := v[pname]; ok {
-						if err := schema.validate(pvalue); err != nil {
+						if err := schema.ValidateInterface(pvalue); err != nil {
 							return addContext(escape(pname), "additionalProperties", err)
 						}
 					}
@@ -307,7 +307,7 @@ func (s *Schema) validate(v interface{}) error {
 			if _, ok := v[dname]; ok {
 				switch dvalue := dvalue.(type) {
 				case *Schema:
-					if err := dvalue.validate(v); err != nil {
+					if err := dvalue.ValidateInterface(v); err != nil {
 						return addContext("", "dependencies/"+escape(dname), err)
 					}
 				case []string:
@@ -339,7 +339,7 @@ func (s *Schema) validate(v interface{}) error {
 		switch items := s.items.(type) {
 		case *Schema:
 			for i, item := range v {
-				if err := items.validate(item); err != nil {
+				if err := items.ValidateInterface(item); err != nil {
 					return addContext(strconv.Itoa(i), "items", err)
 				}
 			}
@@ -351,11 +351,11 @@ func (s *Schema) validate(v interface{}) error {
 			}
 			for i, item := range v {
 				if i < len(items) {
-					if err := items[i].validate(item); err != nil {
+					if err := items[i].ValidateInterface(item); err != nil {
 						return addContext(strconv.Itoa(i), "items/"+strconv.Itoa(i), err)
 					}
 				} else if sch, ok := s.additionalItems.(*Schema); ok {
-					if err := sch.validate(item); err != nil {
+					if err := sch.ValidateInterface(item); err != nil {
 						return addContext(strconv.Itoa(i), "additionalItems", err)
 					}
 				} else {
@@ -367,7 +367,7 @@ func (s *Schema) validate(v interface{}) error {
 			matched := false
 			var causes []error
 			for i, item := range v {
-				if err := s.contains.validate(item); err != nil {
+				if err := s.contains.ValidateInterface(item); err != nil {
 					causes = append(causes, addContext(strconv.Itoa(i), "", err))
 				} else {
 					matched = true

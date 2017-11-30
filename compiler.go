@@ -26,7 +26,7 @@ var latest = Draft6
 
 func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
 	if meta := draft.meta; meta != nil {
-		if err := meta.validate(v); err != nil {
+		if err := meta.ValidateInterface(v); err != nil {
 			addContext(ptr, "", err)
 			finishSchemaContext(err, meta)
 			finishInstanceContext(err)
