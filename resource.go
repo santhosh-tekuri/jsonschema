@@ -21,7 +21,10 @@ type resource struct {
 	schemas map[string]*Schema
 }
 
-func decodeJSON(r io.Reader) (interface{}, error) {
+// DecodeJSON decodes json document from r.
+//
+// Note that number is decoded into json.Number instead of as a float64
+func DecodeJSON(r io.Reader) (interface{}, error) {
 	decoder := json.NewDecoder(r)
 	decoder.UseNumber()
 	var doc interface{}
@@ -38,7 +41,7 @@ func newResource(base string, r io.Reader) (*resource, error) {
 	if strings.IndexByte(base, '#') != -1 {
 		panic(fmt.Sprintf("BUG: newResource(%q)", base))
 	}
-	doc, err := decodeJSON(r)
+	doc, err := DecodeJSON(r)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
 	}

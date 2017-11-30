@@ -84,14 +84,22 @@ func MustCompile(url string) *Schema {
 	return NewCompiler().MustCompile(url)
 }
 
-// Validate validates the given json data, against the json-schema,
+// Validate validates the given json data, against the json-schema.
 //
 // Returned error can be *ValidationError.
 func (s *Schema) Validate(r io.Reader) error {
-	doc, err := decodeJSON(r)
+	doc, err := DecodeJSON(r)
 	if err != nil {
 		return err
 	}
+	return s.ValidateInterface(doc)
+}
+
+// ValidateInterface validates given doc, against the json-schema.
+//
+// the doc must be the value decoded by json package using interface{} type.
+// we recommend to use jsonschema.DecodeJSON(io.Reader) to decode JSON.
+func (s *Schema) ValidateInterface(doc interface{}) error {
 	if err := s.validate(doc); err != nil {
 		finishSchemaContext(err, s)
 		finishInstanceContext(err)
@@ -139,7 +147,7 @@ func (s *Schema) validate(v interface{}) error {
 				matched = true
 				break
 			} else if t == "integer" && vType == "number" {
-				if _, ok := new(big.Int).SetString(string(v.(json.Number)), 10); ok {
+				if _, ok := new(big.Int).SetString(fmt.Sprint(v), 10); ok {
 					matched = true
 					break
 				}
@@ -396,8 +404,8 @@ func (s *Schema) validate(v interface{}) error {
 			return validationError("format", "%q is not valid %q", v, s.formatName)
 		}
 
-	case json.Number:
-		num, _ := new(big.Float).SetString(string(v))
+	case json.Number, float64:
+		num, _ := new(big.Float).SetString(fmt.Sprint(v))
 		if s.minimum != nil && num.Cmp(s.minimum) < 0 {
 			return validationError("minimum", "must be >= %v but found %v", s.minimum, v)
 		}
@@ -429,7 +437,7 @@ func jsonType(v interface{}) string {
 		return "null"
 	case bool:
 		return "boolean"
-	case json.Number:
+	case json.Number, float64:
 		return "number"
 	case string:
 		return "string"

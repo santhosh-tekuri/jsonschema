@@ -41,6 +41,16 @@ func TestDraft6(t *testing.T) {
 	testFolder(t, "testdata/draft6", jsonschema.Draft6)
 }
 
+type testGroup struct {
+	Description string
+	Schema      json.RawMessage
+	Tests       []struct {
+		Description string
+		Data        json.RawMessage
+		Valid       bool
+	}
+}
+
 func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 	server := &http.Server{Addr: ":1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
 	go func() {
@@ -50,15 +60,6 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 	}()
 	defer server.Close()
 
-	type testGroup struct {
-		Description string
-		Schema      json.RawMessage
-		Tests       []struct {
-			Description string
-			Data        json.RawMessage
-			Valid       bool
-		}
-	}
 	err := filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			t.Error(err)
@@ -274,6 +275,62 @@ func TestCompileURL(t *testing.T) {
 			t.Errorf("invalid #%d: expected error", i)
 		} else {
 			t.Logf("invalid #%d: %v", i, err)
+		}
+	}
+}
+
+func TestValidateInterface(t *testing.T) {
+	files := []string{
+		"testdata/draft4/type.json",
+		"testdata/draft4/minimum.json",
+		"testdata/draft4/maximum.json",
+	}
+	for _, file := range files {
+		t.Log(filepath.Base(file))
+		data, err := ioutil.ReadFile(file)
+		if err != nil {
+			t.Errorf("  FAIL: %v\n", err)
+			return
+		}
+		var tg []testGroup
+		if err = json.Unmarshal(data, &tg); err != nil {
+			t.Errorf("  FAIL: %v\n", err)
+			return
+		}
+		for _, group := range tg {
+			t.Logf("  %s\n", group.Description)
+			c := jsonschema.NewCompiler()
+			if err := c.AddResource("test.json", bytes.NewReader(group.Schema)); err != nil {
+				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
+				continue
+			}
+			c.Draft = jsonschema.Draft4
+			schema, err := c.Compile("test.json")
+			if err != nil {
+				t.Errorf("    FAIL: schema compilation failed, reason: %v\n", err)
+				continue
+			}
+			for _, test := range group.Tests {
+				t.Logf("      %s\n", test.Description)
+
+				decoder := json.NewDecoder(bytes.NewReader(test.Data))
+				var doc interface{}
+				if err := decoder.Decode(&doc); err != nil {
+					t.Errorf("        FAIL: decode json failed, reason: %v\n", err)
+					continue
+				}
+
+				err = schema.ValidateInterface(doc)
+				valid := err == nil
+				if !valid {
+					for _, line := range strings.Split(err.Error(), "\n") {
+						t.Logf("        %s\n", line)
+					}
+				}
+				if test.Valid != valid {
+					t.Errorf("        FAIL: expected valid=%t got valid=%t\n", test.Valid, valid)
+				}
+			}
 		}
 	}
 }
