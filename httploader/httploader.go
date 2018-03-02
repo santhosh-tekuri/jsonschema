@@ -20,10 +20,13 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/loader"
 )
 
+// Client is the default HTTP Client used to Get the resource.
+var Client = http.DefaultClient
+
 type httpLoader struct{}
 
 func (httpLoader) Load(url string) (io.ReadCloser, error) {
-	resp, err := http.Get(url)
+	resp, err := Client.Get(url)
 	if err != nil {
 		return nil, err
 	}
