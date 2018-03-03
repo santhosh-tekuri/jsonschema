@@ -52,7 +52,7 @@ var mutex = sync.RWMutex{}
 type SchemeNotRegisteredError string
 
 func (s SchemeNotRegisteredError) Error() string {
-	return fmt.Sprintf("no Loader registered for schema %s", s)
+	return fmt.Sprintf("no Loader registered for scheme %s", s)
 }
 
 // Register registers given Loader for given URI Scheme.
