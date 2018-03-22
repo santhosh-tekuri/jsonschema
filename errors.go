@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+// InvalidJSONTypeError is the error type returned by ValidateInteface.
+// this tells that specified go object is not valid jsonType.
+type InvalidJSONTypeError string
+
+func (e InvalidJSONTypeError) Error() string {
+	return fmt.Sprintf("invalid jsonType: %s", string(e))
+}
+
 // SchemaError is the error type returned by Compile.
 type SchemaError struct {
 	// SchemaURL is the url to json-schema that filed to compile.
