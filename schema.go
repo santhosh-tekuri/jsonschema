@@ -404,7 +404,7 @@ func (s *Schema) validate(v interface{}) error {
 			return validationError("format", "%q is not valid %q", v, s.formatName)
 		}
 
-	case json.Number, float64:
+	case json.Number, float64, int, int32, int64:
 		num, _ := new(big.Float).SetString(fmt.Sprint(v))
 		if s.minimum != nil && num.Cmp(s.minimum) < 0 {
 			return validationError("minimum", "must be >= %v but found %v", s.minimum, v)
@@ -437,7 +437,7 @@ func jsonType(v interface{}) string {
 		return "null"
 	case bool:
 		return "boolean"
-	case json.Number, float64:
+	case json.Number, float64, int, int32, int64:
 		return "number"
 	case string:
 		return "string"
