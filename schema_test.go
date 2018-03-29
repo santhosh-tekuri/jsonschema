@@ -52,7 +52,7 @@ type testGroup struct {
 }
 
 func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
-	server := &http.Server{Addr: ":1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
+	server := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			t.Fatal(err)
