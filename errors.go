@@ -91,8 +91,8 @@ func addContext(instancePtr, schemaPtr string, err error) error {
 func finishSchemaContext(err error, s *Schema) {
 	ve := err.(*ValidationError)
 	if len(ve.SchemaURL) == 0 {
-		ve.SchemaURL = s.url
-		ve.SchemaPtr = s.ptr + "/" + ve.SchemaPtr
+		ve.SchemaURL = s.URL
+		ve.SchemaPtr = s.Ptr + "/" + ve.SchemaPtr
 		for _, cause := range ve.Causes {
 			finishSchemaContext(cause, s)
 		}

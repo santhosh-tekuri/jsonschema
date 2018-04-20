@@ -20,53 +20,53 @@ import (
 
 // A Schema represents compiled version of json-schema.
 type Schema struct {
-	url string // absolute url of the resource
-	ptr string // json-pointer to schema. always starts with `#`
+	URL string // absolute url of the resource.
+	Ptr string // json-pointer to schema. always starts with `#`.
 
 	// type agnostic validations
-	always    *bool // always pass/fail
-	ref       *Schema
-	types     []string
-	constant  []interface{}
-	enum      []interface{}
-	enumError string // error message for enum fail
-	not       *Schema
-	allOf     []*Schema
-	anyOf     []*Schema
-	oneOf     []*Schema
+	Always    *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref       *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
+	Types     []string      // allowed types.
+	Constant  []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
+	Enum      []interface{} // allowed values.
+	enumError string        // error message for enum fail. captured here to avoid constructing error message every time.
+	Not       *Schema
+	AllOf     []*Schema
+	AnyOf     []*Schema
+	OneOf     []*Schema
 
 	// object validations
-	minProperties        int // -1 if not specified
-	maxProperties        int // -1 if not specified
-	required             []string
-	properties           map[string]*Schema
-	propertyNames        *Schema
-	regexProperties      bool // property names must be valid regex
-	patternProperties    map[*regexp.Regexp]*Schema
-	additionalProperties interface{}            // nil or false or *Schema
-	dependencies         map[string]interface{} // value is *Schema or []string
+	MinProperties        int      // -1 if not specified.
+	MaxProperties        int      // -1 if not specified.
+	Required             []string // list of required properties.
+	Properties           map[string]*Schema
+	PropertyNames        *Schema
+	RegexProperties      bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
+	PatternProperties    map[*regexp.Regexp]*Schema
+	AdditionalProperties interface{}            // nil or false or *Schema.
+	Dependencies         map[string]interface{} // value is *Schema or []string.
 
 	// array validations
-	minItems        int // -1 if not specified
-	maxItems        int // -1 if not specified
-	uniqueItems     bool
-	items           interface{} // nil or *Schema or []*Schema
-	additionalItems interface{} // nil or bool or *Schema
-	contains        *Schema
+	MinItems        int // -1 if not specified.
+	MaxItems        int // -1 if not specified.
+	UniqueItems     bool
+	Items           interface{} // nil or *Schema or []*Schema
+	AdditionalItems interface{} // nil or bool or *Schema.
+	Contains        *Schema
 
 	// string validations
-	minLength  int // -1 if not specified
-	maxLength  int // -1 if not specified
-	pattern    *regexp.Regexp
-	format     formats.Format
-	formatName string
+	MinLength  int // -1 if not specified.
+	MaxLength  int // -1 if not specified.
+	Pattern    *regexp.Regexp
+	Format     formats.Format
+	FormatName string
 
 	// number validators
-	minimum          *big.Float
-	exclusiveMinimum *big.Float
-	maximum          *big.Float
-	exclusiveMaximum *big.Float
-	multipleOf       *big.Float
+	Minimum          *big.Float
+	ExclusiveMinimum *big.Float
+	Maximum          *big.Float
+	ExclusiveMaximum *big.Float
+	MultipleOf       *big.Float
 }
 
 // Compile parses json-schema at given url returns, if successful,
@@ -113,10 +113,10 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 		finishSchemaContext(err, s)
 		finishInstanceContext(err)
 		return &ValidationError{
-			Message:     fmt.Sprintf("doesn't validate with %q", s.url+s.ptr),
+			Message:     fmt.Sprintf("doesn't validate with %q", s.URL+s.Ptr),
 			InstancePtr: "#",
-			SchemaURL:   s.url,
-			SchemaPtr:   s.ptr,
+			SchemaURL:   s.URL,
+			SchemaPtr:   s.Ptr,
 			Causes:      []*ValidationError{err.(*ValidationError)},
 		}
 	}
@@ -125,21 +125,21 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 
 // validate validates given value v with this schema.
 func (s *Schema) validate(v interface{}) error {
-	if s.always != nil {
-		if !*s.always {
+	if s.Always != nil {
+		if !*s.Always {
 			return validationError("", "always fail")
 		}
 		return nil
 	}
 
-	if s.ref != nil {
-		if err := s.ref.validate(v); err != nil {
-			finishSchemaContext(err, s.ref)
+	if s.Ref != nil {
+		if err := s.Ref.validate(v); err != nil {
+			finishSchemaContext(err, s.Ref)
 			var refURL string
-			if s.url == s.ref.url {
-				refURL = s.ref.ptr
+			if s.URL == s.Ref.URL {
+				refURL = s.Ref.Ptr
 			} else {
-				refURL = s.ref.url + s.ref.ptr
+				refURL = s.Ref.URL + s.Ref.Ptr
 			}
 			return validationError("$ref", "doesn't validate with %q", refURL).add(err)
 		}
@@ -148,10 +148,10 @@ func (s *Schema) validate(v interface{}) error {
 		return nil
 	}
 
-	if len(s.types) > 0 {
+	if len(s.Types) > 0 {
 		vType := jsonType(v)
 		matched := false
-		for _, t := range s.types {
+		for _, t := range s.Types {
 			if vType == t {
 				matched = true
 				break
@@ -163,24 +163,24 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 		if !matched {
-			return validationError("type", "expected %s, but got %s", strings.Join(s.types, " or "), vType)
+			return validationError("type", "expected %s, but got %s", strings.Join(s.Types, " or "), vType)
 		}
 	}
 
-	if len(s.constant) > 0 {
-		if !equals(v, s.constant[0]) {
-			switch jsonType(s.constant[0]) {
+	if len(s.Constant) > 0 {
+		if !equals(v, s.Constant[0]) {
+			switch jsonType(s.Constant[0]) {
 			case "object", "array":
 				return validationError("const", "const failed")
 			default:
-				return validationError("const", "value must be %#v", s.constant[0])
+				return validationError("const", "value must be %#v", s.Constant[0])
 			}
 		}
 	}
 
-	if len(s.enum) > 0 {
+	if len(s.Enum) > 0 {
 		matched := false
-		for _, item := range s.enum {
+		for _, item := range s.Enum {
 			if equals(v, item) {
 				matched = true
 				break
@@ -191,20 +191,20 @@ func (s *Schema) validate(v interface{}) error {
 		}
 	}
 
-	if s.not != nil && s.not.validate(v) == nil {
+	if s.Not != nil && s.Not.validate(v) == nil {
 		return validationError("not", "not failed")
 	}
 
-	for i, sch := range s.allOf {
+	for i, sch := range s.AllOf {
 		if err := sch.validate(v); err != nil {
 			return validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err)
 		}
 	}
 
-	if len(s.anyOf) > 0 {
+	if len(s.AnyOf) > 0 {
 		matched := false
 		var causes []error
-		for i, sch := range s.anyOf {
+		for i, sch := range s.AnyOf {
 			if err := sch.validate(v); err == nil {
 				matched = true
 				break
@@ -217,10 +217,10 @@ func (s *Schema) validate(v interface{}) error {
 		}
 	}
 
-	if len(s.oneOf) > 0 {
+	if len(s.OneOf) > 0 {
 		matched := -1
 		var causes []error
-		for i, sch := range s.oneOf {
+		for i, sch := range s.OneOf {
 			if err := sch.validate(v); err == nil {
 				if matched == -1 {
 					matched = i
@@ -238,15 +238,15 @@ func (s *Schema) validate(v interface{}) error {
 
 	switch v := v.(type) {
 	case map[string]interface{}:
-		if s.minProperties != -1 && len(v) < s.minProperties {
-			return validationError("minProperties", "minimum %d properties allowed, but found %d properties", s.minProperties, len(v))
+		if s.MinProperties != -1 && len(v) < s.MinProperties {
+			return validationError("minProperties", "minimum %d properties allowed, but found %d properties", s.MinProperties, len(v))
 		}
-		if s.maxProperties != -1 && len(v) > s.maxProperties {
-			return validationError("maxProperties", "maximum %d properties allowed, but found %d properties", s.maxProperties, len(v))
+		if s.MaxProperties != -1 && len(v) > s.MaxProperties {
+			return validationError("maxProperties", "maximum %d properties allowed, but found %d properties", s.MaxProperties, len(v))
 		}
-		if len(s.required) > 0 {
+		if len(s.Required) > 0 {
 			var missing []string
-			for _, pname := range s.required {
+			for _, pname := range s.Required {
 				if _, ok := v[pname]; !ok {
 					missing = append(missing, strconv.Quote(pname))
 				}
@@ -257,15 +257,15 @@ func (s *Schema) validate(v interface{}) error {
 		}
 
 		var additionalProps map[string]struct{}
-		if s.additionalProperties != nil {
+		if s.AdditionalProperties != nil {
 			additionalProps = make(map[string]struct{}, len(v))
 			for pname := range v {
 				additionalProps[pname] = struct{}{}
 			}
 		}
 
-		if len(s.properties) > 0 {
-			for pname, pschema := range s.properties {
+		if len(s.Properties) > 0 {
+			for pname, pschema := range s.Properties {
 				if pvalue, ok := v[pname]; ok {
 					delete(additionalProps, pname)
 					if err := pschema.validate(pvalue); err != nil {
@@ -275,22 +275,22 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 
-		if s.propertyNames != nil {
+		if s.PropertyNames != nil {
 			for pname := range v {
-				if err := s.propertyNames.validate(pname); err != nil {
+				if err := s.PropertyNames.validate(pname); err != nil {
 					return addContext(escape(pname), "propertyNames", err)
 				}
 			}
 		}
 
-		if s.regexProperties {
+		if s.RegexProperties {
 			for pname := range v {
 				if !formats.IsRegex(pname) {
 					return validationError("", "patternProperty %q is not valid regex", pname)
 				}
 			}
 		}
-		for pattern, pschema := range s.patternProperties {
+		for pattern, pschema := range s.PatternProperties {
 			for pname, pvalue := range v {
 				if pattern.MatchString(pname) {
 					delete(additionalProps, pname)
@@ -300,8 +300,8 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		if s.additionalProperties != nil {
-			if _, ok := s.additionalProperties.(bool); ok {
+		if s.AdditionalProperties != nil {
+			if _, ok := s.AdditionalProperties.(bool); ok {
 				if len(additionalProps) != 0 {
 					pnames := make([]string, 0, len(additionalProps))
 					for pname := range additionalProps {
@@ -310,7 +310,7 @@ func (s *Schema) validate(v interface{}) error {
 					return validationError("additionalProperties", "additionalProperties %s not allowed", strings.Join(pnames, ", "))
 				}
 			} else {
-				schema := s.additionalProperties.(*Schema)
+				schema := s.AdditionalProperties.(*Schema)
 				for pname := range additionalProps {
 					if pvalue, ok := v[pname]; ok {
 						if err := schema.validate(pvalue); err != nil {
@@ -320,7 +320,7 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		for dname, dvalue := range s.dependencies {
+		for dname, dvalue := range s.Dependencies {
 			if _, ok := v[dname]; ok {
 				switch dvalue := dvalue.(type) {
 				case *Schema:
@@ -338,13 +338,13 @@ func (s *Schema) validate(v interface{}) error {
 		}
 
 	case []interface{}:
-		if s.minItems != -1 && len(v) < s.minItems {
-			return validationError("minItems", "minimum %d items allowed, but found %d items", s.minItems, len(v))
+		if s.MinItems != -1 && len(v) < s.MinItems {
+			return validationError("minItems", "minimum %d items allowed, but found %d items", s.MinItems, len(v))
 		}
-		if s.maxItems != -1 && len(v) > s.maxItems {
-			return validationError("maxItems", "maximum %d items allowed, but found %d items", s.maxItems, len(v))
+		if s.MaxItems != -1 && len(v) > s.MaxItems {
+			return validationError("maxItems", "maximum %d items allowed, but found %d items", s.MaxItems, len(v))
 		}
-		if s.uniqueItems {
+		if s.UniqueItems {
 			for i := 1; i < len(v); i++ {
 				for j := 0; j < i; j++ {
 					if equals(v[i], v[j]) {
@@ -353,7 +353,7 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		switch items := s.items.(type) {
+		switch items := s.Items.(type) {
 		case *Schema:
 			for i, item := range v {
 				if err := items.validate(item); err != nil {
@@ -361,7 +361,7 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		case []*Schema:
-			if additionalItems, ok := s.additionalItems.(bool); ok {
+			if additionalItems, ok := s.AdditionalItems.(bool); ok {
 				if !additionalItems && len(v) > len(items) {
 					return validationError("additionalItems", "only %d items are allowed, but found %d items", len(items), len(v))
 				}
@@ -371,7 +371,7 @@ func (s *Schema) validate(v interface{}) error {
 					if err := items[i].validate(item); err != nil {
 						return addContext(strconv.Itoa(i), "items/"+strconv.Itoa(i), err)
 					}
-				} else if sch, ok := s.additionalItems.(*Schema); ok {
+				} else if sch, ok := s.AdditionalItems.(*Schema); ok {
 					if err := sch.validate(item); err != nil {
 						return addContext(strconv.Itoa(i), "additionalItems", err)
 					}
@@ -380,11 +380,11 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		if s.contains != nil {
+		if s.Contains != nil {
 			matched := false
 			var causes []error
 			for i, item := range v {
-				if err := s.contains.validate(item); err != nil {
+				if err := s.Contains.validate(item); err != nil {
 					causes = append(causes, addContext(strconv.Itoa(i), "", err))
 				} else {
 					matched = true
@@ -397,39 +397,39 @@ func (s *Schema) validate(v interface{}) error {
 		}
 
 	case string:
-		if s.minLength != -1 || s.maxLength != -1 {
+		if s.MinLength != -1 || s.MaxLength != -1 {
 			length := utf8.RuneCount([]byte(v))
-			if s.minLength != -1 && length < s.minLength {
-				return validationError("minLength", "length must be >= %d, but got %d", s.minLength, length)
+			if s.MinLength != -1 && length < s.MinLength {
+				return validationError("minLength", "length must be >= %d, but got %d", s.MinLength, length)
 			}
-			if s.maxLength != -1 && length > s.maxLength {
-				return validationError("maxLength", "length must be <= %d, but got %d", s.maxLength, length)
+			if s.MaxLength != -1 && length > s.MaxLength {
+				return validationError("maxLength", "length must be <= %d, but got %d", s.MaxLength, length)
 			}
 		}
-		if s.pattern != nil && !s.pattern.MatchString(v) {
-			return validationError("pattern", "does not match pattern %q", s.pattern)
+		if s.Pattern != nil && !s.Pattern.MatchString(v) {
+			return validationError("pattern", "does not match pattern %q", s.Pattern)
 		}
-		if s.format != nil && !s.format(v) {
-			return validationError("format", "%q is not valid %q", v, s.formatName)
+		if s.Format != nil && !s.Format(v) {
+			return validationError("format", "%q is not valid %q", v, s.FormatName)
 		}
 
 	case json.Number, float64, int, int32, int64:
 		num, _ := new(big.Float).SetString(fmt.Sprint(v))
-		if s.minimum != nil && num.Cmp(s.minimum) < 0 {
-			return validationError("minimum", "must be >= %v but found %v", s.minimum, v)
+		if s.Minimum != nil && num.Cmp(s.Minimum) < 0 {
+			return validationError("minimum", "must be >= %v but found %v", s.Minimum, v)
 		}
-		if s.exclusiveMinimum != nil && num.Cmp(s.exclusiveMinimum) <= 0 {
-			return validationError("exclusiveMinimum", "must be > %v but found %v", s.exclusiveMinimum, v)
+		if s.ExclusiveMinimum != nil && num.Cmp(s.ExclusiveMinimum) <= 0 {
+			return validationError("exclusiveMinimum", "must be > %v but found %v", s.ExclusiveMinimum, v)
 		}
-		if s.maximum != nil && num.Cmp(s.maximum) > 0 {
-			return validationError("maximum", "must be <= %v but found %v", s.maximum, v)
+		if s.Maximum != nil && num.Cmp(s.Maximum) > 0 {
+			return validationError("maximum", "must be <= %v but found %v", s.Maximum, v)
 		}
-		if s.exclusiveMaximum != nil && num.Cmp(s.exclusiveMaximum) >= 0 {
-			return validationError("exclusiveMaximum", "must be < %v but found %v", s.exclusiveMaximum, v)
+		if s.ExclusiveMaximum != nil && num.Cmp(s.ExclusiveMaximum) >= 0 {
+			return validationError("exclusiveMaximum", "must be < %v but found %v", s.ExclusiveMaximum, v)
 		}
-		if s.multipleOf != nil {
-			if q := new(big.Float).Quo(num, s.multipleOf); !q.IsInt() {
-				return validationError("multipleOf", "%v not multipleOf %v", v, s.multipleOf)
+		if s.MultipleOf != nil {
+			if q := new(big.Float).Quo(num, s.MultipleOf); !q.IsInt() {
+				return validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf)
 			}
 		}
 	}
