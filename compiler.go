@@ -18,11 +18,12 @@ import (
 
 // A Draft represents json-schema draft
 type Draft struct {
-	meta *Schema
-	id   string
+	meta    *Schema
+	id      string // property name used to represent schema id.
+	version int
 }
 
-var latest = Draft6
+var latest = Draft7
 
 func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
 	if meta := draft.meta; meta != nil {
@@ -85,6 +86,8 @@ func (c *Compiler) draft(v interface{}) (*Draft, error) {
 			switch url {
 			case "http://json-schema.org/schema#":
 				return latest, nil
+			case "http://json-schema.org/draft-07/schema#":
+				return Draft7, nil
 			case "http://json-schema.org/draft-06/schema#":
 				return Draft6, nil
 			case "http://json-schema.org/draft-04/schema#":
@@ -462,7 +465,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 
 	s.MultipleOf = loadFloat("multipleOf")
 
-	if draft == Draft6 {
+	if draft.version >= 6 {
 		if c, ok := m["const"]; ok {
 			s.Constant = []interface{}{c}
 		}

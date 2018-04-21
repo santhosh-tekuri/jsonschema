@@ -6,15 +6,15 @@ package jsonschema
 
 import "strings"
 
-// Draft6 respresents http://json-schema.org/specification-links.html#draft-6
-var Draft6 = &Draft{id: "$id", version: 6}
+// Draft7 respresents http://json-schema.org/specification-links.html#draft-7
+var Draft7 = &Draft{id: "$id", version: 7}
 
 func init() {
 	c := NewCompiler()
-	url := "http://json-schema.org/draft-06/schema"
+	url := "http://json-schema.org/draft-07/schema"
 	err := c.AddResource(url, strings.NewReader(`{
-		"$schema": "http://json-schema.org/draft-06/schema#",
-		"$id": "http://json-schema.org/draft-06/schema#",
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"$id": "http://json-schema.org/draft-07/schema#",
 		"title": "Core schema meta-schema",
 		"definitions": {
 			"schemaArray": {
@@ -64,13 +64,24 @@ func init() {
 				"type": "string",
 				"format": "uri-reference"
 			},
+			"$comment": {
+				"type": "string"
+			},
 			"title": {
 				"type": "string"
 			},
 			"description": {
 				"type": "string"
 			},
-			"default": {},
+			"default": true,
+			"readOnly": {
+				"type": "boolean",
+				"default": false
+			},
+			"examples": {
+				"type": "array",
+				"items": true
+			},
 			"multipleOf": {
 				"type": "number",
 				"exclusiveMinimum": 0
@@ -99,7 +110,7 @@ func init() {
 					{ "$ref": "#" },
 					{ "$ref": "#/definitions/schemaArray" }
 				],
-				"default": {}
+				"default": true
 			},
 			"maxItems": { "$ref": "#/definitions/nonNegativeInteger" },
 			"minItems": { "$ref": "#/definitions/nonNegativeIntegerDefault0" },
@@ -124,8 +135,8 @@ func init() {
 			},
 			"patternProperties": {
 				"type": "object",
-				"regexProperties": true,
 				"additionalProperties": { "$ref": "#" },
+				"propertyNames": { "format": "regex" },
 				"default": {}
 			},
 			"dependencies": {
@@ -138,9 +149,10 @@ func init() {
 				}
 			},
 			"propertyNames": { "$ref": "#" },
-			"const": {},
+			"const": true,
 			"enum": {
 				"type": "array",
+				"items": true,
 				"minItems": 1,
 				"uniqueItems": true
 			},
@@ -155,16 +167,24 @@ func init() {
 					}
 				]
 			},
-			"format": { "type": "string", "format": "format" },
+			"format": { 
+				"type": "string",
+				"format": "format"
+			},
+			"contentMediaType": { "type": "string" },
+			"contentEncoding": { "type": "string" },
+			"if": {"$ref": "#"},
+			"then": {"$ref": "#"},
+			"else": {"$ref": "#"},
 			"allOf": { "$ref": "#/definitions/schemaArray" },
 			"anyOf": { "$ref": "#/definitions/schemaArray" },
 			"oneOf": { "$ref": "#/definitions/schemaArray" },
 			"not": { "$ref": "#" }
 		},
-		"default": {}
+		"default": true
 	}`))
 	if err != nil {
 		panic(err)
 	}
-	Draft6.meta = c.MustCompile(url)
+	Draft7.meta = c.MustCompile(url)
 }
