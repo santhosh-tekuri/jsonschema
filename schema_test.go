@@ -41,6 +41,10 @@ func TestDraft6(t *testing.T) {
 	testFolder(t, "testdata/draft6", jsonschema.Draft6)
 }
 
+func TestDraft7(t *testing.T) {
+	testFolder(t, "testdata/draft7", jsonschema.Draft7)
+}
+
 type testGroup struct {
 	Description string
 	Schema      json.RawMessage
