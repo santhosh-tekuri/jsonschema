@@ -29,6 +29,7 @@ var formats = map[string]Format{
 	"encoding":      IsEncoding,
 	"mediatype":     IsMediaType,
 	"date-time":     IsDateTime,
+	"date":          IsDate,
 	"hostname":      IsHostname,
 	"email":         IsEmail,
 	"ip-address":    IsIPV4,
@@ -87,6 +88,13 @@ func IsDateTime(s string) bool {
 		return true
 	}
 	return false
+}
+
+// IsDate tells whether given string is a valid full-date production
+// as defined by RFC 3339, section 5.6.
+func IsDate(s string) bool {
+	_, err := time.Parse("2006-01-02", s)
+	return err == nil
 }
 
 // IsHostname tells whether given string is a valid representation
