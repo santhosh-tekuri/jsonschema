@@ -215,6 +215,9 @@ func IsRegex(s string) bool {
 //
 // Note: It returns false for JSON Pointer URI fragments.
 func IsJSONPointer(s string) bool {
+	if s != "" && !strings.HasPrefix(s, "/") {
+		return false
+	}
 	for _, item := range strings.Split(s, "/") {
 		for i := 0; i < len(item); i++ {
 			if item[i] == '~' {
