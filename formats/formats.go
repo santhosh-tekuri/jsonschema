@@ -16,6 +16,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/santhosh-tekuri/jsonschema/decoders"
+	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
 // The Format type is a function, to check
@@ -23,6 +26,8 @@ import (
 type Format func(string) bool
 
 var formats = map[string]Format{
+	"encoding":      IsEncoding,
+	"mediatype":     IsMediaType,
 	"date-time":     IsDateTime,
 	"hostname":      IsHostname,
 	"email":         IsEmail,
@@ -46,15 +51,27 @@ func Register(name string, f Format) {
 	formats[name] = f
 }
 
-// Get returns Format object for given format name, if found
+// Get returns Format object for given format name, if found.
 func Get(name string) (Format, bool) {
 	f, ok := formats[name]
 	return f, ok
 }
 
-// IsFormat tells whether given string is a valid format that is registered
+// IsFormat tells whether given string is a valid format that is registered.
 func IsFormat(s string) bool {
 	_, ok := formats[s]
+	return ok
+}
+
+// IsEncoding tells whether given string is a valid encoding that is registered.
+func IsEncoding(s string) bool {
+	_, ok := decoders.Get(s)
+	return ok
+}
+
+// IsMediaType tells whether given string is a valid mediatype that is registered.
+func IsMediaType(s string) bool {
+	_, ok := mediatypes.Get(s)
 	return ok
 }
 

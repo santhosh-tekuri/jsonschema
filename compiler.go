@@ -12,8 +12,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/santhosh-tekuri/jsonschema/decoders"
 	"github.com/santhosh-tekuri/jsonschema/formats"
 	"github.com/santhosh-tekuri/jsonschema/loader"
+	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
 // A Draft represents json-schema draft
@@ -492,6 +494,15 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 			if s.Else, err = loadSchema("else"); err != nil {
 				return err
 			}
+		}
+
+		if encoding, ok := m["contentEncoding"]; ok {
+			s.ContentEncoding = encoding.(string)
+			s.Decoder, _ = decoders.Get(s.ContentEncoding)
+		}
+		if mediaType, ok := m["contentMediaType"]; ok {
+			s.ContentMediaType = mediaType.(string)
+			s.MediaType, _ = mediatypes.Get(s.ContentMediaType)
 		}
 	}
 

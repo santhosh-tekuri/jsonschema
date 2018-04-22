@@ -15,7 +15,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/santhosh-tekuri/jsonschema/decoders"
 	"github.com/santhosh-tekuri/jsonschema/formats"
+	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
 // A Schema represents compiled version of json-schema.
@@ -58,11 +60,15 @@ type Schema struct {
 	Contains        *Schema
 
 	// string validations
-	MinLength  int // -1 if not specified.
-	MaxLength  int // -1 if not specified.
-	Pattern    *regexp.Regexp
-	Format     formats.Format
-	FormatName string
+	MinLength        int // -1 if not specified.
+	MaxLength        int // -1 if not specified.
+	Pattern          *regexp.Regexp
+	Format           formats.Format
+	FormatName       string
+	ContentEncoding  string
+	Decoder          decoders.Decoder
+	ContentMediaType string
+	MediaType        mediatypes.MediaType
 
 	// number validators
 	Minimum          *big.Float
@@ -430,6 +436,23 @@ func (s *Schema) validate(v interface{}) error {
 		}
 		if s.Format != nil && !s.Format(v) {
 			return validationError("format", "%q is not valid %q", v, s.FormatName)
+		}
+
+		var content []byte
+		if s.Decoder != nil {
+			b, err := s.Decoder(v)
+			if err != nil {
+				return validationError("contentEncoding", "%q is not %s encoded", v, s.ContentEncoding)
+			}
+			content = b
+		}
+		if s.MediaType != nil {
+			if s.Decoder == nil {
+				content = []byte(v)
+			}
+			if err := s.MediaType(content); err != nil {
+				return validationError("contentMediaType", "value is not of mediatype %q", s.ContentMediaType)
+			}
 		}
 
 	case json.Number, float64, int, int32, int64:
