@@ -473,17 +473,11 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		if c, ok := m["const"]; ok {
 			s.Constant = []interface{}{c}
 		}
-		if propertyNames, ok := m["propertyNames"]; ok {
-			s.PropertyNames, err = c.compile(draft, r, nil, base, root, propertyNames)
-			if err != nil {
-				return err
-			}
+		if s.PropertyNames, err = loadSchema("propertyNames"); err != nil {
+			return err
 		}
-		if contains, ok := m["contains"]; ok {
-			s.Contains, err = c.compile(draft, r, nil, base, root, contains)
-			if err != nil {
-				return err
-			}
+		if s.Contains, err = loadSchema("contains"); err != nil {
+			return err
 		}
 	}
 
