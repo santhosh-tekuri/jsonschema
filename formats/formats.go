@@ -26,22 +26,23 @@ import (
 type Format func(string) bool
 
 var formats = map[string]Format{
-	"encoding":      IsEncoding,
-	"mediatype":     IsMediaType,
-	"date-time":     IsDateTime,
-	"date":          IsDate,
-	"time":          IsTime,
-	"hostname":      IsHostname,
-	"email":         IsEmail,
-	"ip-address":    IsIPV4,
-	"ipv4":          IsIPV4,
-	"ipv6":          IsIPV6,
-	"uri":           IsURI,
-	"uri-reference": IsURIReference,
-	"uriref":        IsURIReference,
-	"uri-template":  IsURIReference,
-	"regex":         IsRegex,
-	"json-pointer":  IsJSONPointer,
+	"encoding":              IsEncoding,
+	"mediatype":             IsMediaType,
+	"date-time":             IsDateTime,
+	"date":                  IsDate,
+	"time":                  IsTime,
+	"hostname":              IsHostname,
+	"email":                 IsEmail,
+	"ip-address":            IsIPV4,
+	"ipv4":                  IsIPV4,
+	"ipv6":                  IsIPV6,
+	"uri":                   IsURI,
+	"uri-reference":         IsURIReference,
+	"uriref":                IsURIReference,
+	"uri-template":          IsURIReference,
+	"regex":                 IsRegex,
+	"json-pointer":          IsJSONPointer,
+	"relative-json-pointer": IsRelativeJSONPointer,
 }
 
 func init() {
@@ -255,4 +256,23 @@ func IsJSONPointer(s string) bool {
 		}
 	}
 	return true
+}
+
+// IsRelativeJSONPointer tells whether given string is a valid Relative JSON Pointer.
+//
+// see https://tools.ietf.org/html/draft-handrews-relative-json-pointer-01#section-3
+func IsRelativeJSONPointer(s string) bool {
+	if s == "" {
+		return false
+	}
+	if s[0] == '0' {
+		s = s[1:]
+	} else if s[0] >= '0' && s[0] <= '9' {
+		for s != "" && s[0] >= '0' && s[0] <= '9' {
+			s = s[1:]
+		}
+	} else {
+		return false
+	}
+	return s == "#" || IsJSONPointer(s)
 }
