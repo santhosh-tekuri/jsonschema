@@ -34,6 +34,9 @@ type Schema struct {
 	AllOf     []*Schema
 	AnyOf     []*Schema
 	OneOf     []*Schema
+	If        *Schema
+	Then      *Schema // nil, when If is nil.
+	Else      *Schema // nil, when If is nil.
 
 	// object validations
 	MinProperties        int      // -1 if not specified.
@@ -233,6 +236,22 @@ func (s *Schema) validate(v interface{}) error {
 		}
 		if matched == -1 {
 			return validationError("oneOf", "oneOf failed").add(causes...)
+		}
+	}
+
+	if s.If != nil {
+		if s.If.validate(v) == nil {
+			if s.Then != nil {
+				if err := s.Then.validate(v); err != nil {
+					return validationError("then", "if-then failed").add(err)
+				}
+			}
+		} else {
+			if s.Else != nil {
+				if err := s.Else.validate(v); err != nil {
+					return validationError("else", "if-else failed").add(err)
+				}
+			}
 		}
 	}
 

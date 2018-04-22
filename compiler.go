@@ -287,11 +287,15 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		}
 	}
 
-	if not, ok := m["not"]; ok {
-		s.Not, err = c.compile(draft, r, nil, base, root, not)
-		if err != nil {
-			return err
+	loadSchema := func(pname string) (*Schema, error) {
+		if pvalue, ok := m[pname]; ok {
+			return c.compile(draft, r, nil, base, root, pvalue)
 		}
+		return nil, nil
+	}
+
+	if s.Not, err = loadSchema("not"); err != nil {
+		return err
 	}
 
 	loadSchemas := func(pname string) ([]*Schema, error) {
@@ -478,6 +482,20 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		if contains, ok := m["contains"]; ok {
 			s.Contains, err = c.compile(draft, r, nil, base, root, contains)
 			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if draft.version >= 7 {
+		if m["if"] != nil && (m["then"] != nil || m["else"] != nil) {
+			if s.If, err = loadSchema("if"); err != nil {
+				return err
+			}
+			if s.Then, err = loadSchema("then"); err != nil {
+				return err
+			}
+			if s.Else, err = loadSchema("else"); err != nil {
 				return err
 			}
 		}
