@@ -108,8 +108,7 @@
             {
                 "description": "an invalid uri-template",
                 "data": "http://example.com/dictionary/{term:1}/{term",
-                "TODO:valid": false,
-                "valid": true
+                "valid": false
             },
             {
                 "description": "a valid uri-template without variables",

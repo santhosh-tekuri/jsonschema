@@ -39,7 +39,7 @@ var formats = map[string]Format{
 	"uri":                   IsURI,
 	"uri-reference":         IsURIReference,
 	"uriref":                IsURIReference,
-	"uri-template":          IsURIReference,
+	"uri-template":          IsURITemplate,
 	"regex":                 IsRegex,
 	"json-pointer":          IsJSONPointer,
 	"relative-json-pointer": IsRelativeJSONPointer,
@@ -222,6 +222,38 @@ func IsURI(s string) bool {
 func IsURIReference(s string) bool {
 	_, err := url.Parse(s)
 	return err == nil
+}
+
+// IsURITemplate tells whether given string is a valid URI Template
+// according to RFC6570.
+//
+// Current implementation does minimal validation.
+func IsURITemplate(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	for _, item := range strings.Split(u.RawPath, "/") {
+		depth := 0
+		for _, ch := range item {
+			switch ch {
+			case '{':
+				depth++
+				if depth != 1 {
+					return false
+				}
+			case '}':
+				depth--
+				if depth != 0 {
+					return false
+				}
+			}
+		}
+		if depth != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // IsRegex tells whether given string is a valid regular expression,

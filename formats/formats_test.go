@@ -124,6 +124,20 @@ func TestIsURI(t *testing.T) {
 	}
 }
 
+func TestIsURITemplate(t *testing.T) {
+	tests := []test{
+		{"http://example.com/dictionary/{term:1}/{term}", true},
+		{"http://example.com/dictionary/{term:1}/{term", false},
+		{"http://example.com/dictionary", true}, // without variables
+		{"dictionary/{term:1}/{term}", true},    // relative url-template
+	}
+	for i, test := range tests {
+		if test.valid != formats.IsURITemplate(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
+
 func TestIsJSONPointer(t *testing.T) {
 	tests := []test{
 		{"/foo/baz", true},
