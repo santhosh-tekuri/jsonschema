@@ -177,3 +177,18 @@ func TestIsJSONPointer(t *testing.T) {
 		}
 	}
 }
+
+func TestRelativeJSONPointer(t *testing.T) {
+	tests := []test{
+		{"1", true},             // upwards RJP
+		{"0/foo/bar", true},     // downwards RJP
+		{"2/0/baz/1/zip", true}, // up and then down RJP, with array index
+		{"0#", true},            // taking the member or index name
+		{"/foo/bar", false},     // valid json-pointer, but invalid RJP
+	}
+	for i, test := range tests {
+		if test.valid != formats.IsRelativeJSONPointer(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
