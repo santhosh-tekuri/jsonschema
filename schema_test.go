@@ -346,3 +346,23 @@ func TestValidateInterface(t *testing.T) {
 		}
 	}
 }
+
+func TestInvalidJsonTypeError(t *testing.T) {
+	compiler := jsonschema.NewCompiler()
+	err := compiler.AddResource("test.json", strings.NewReader(`{ "type": "string"}`))
+	if err != nil {
+		t.Fatalf("addResource failed. reason: %v\n", err)
+	}
+	schema, err := compiler.Compile("test.json")
+	if err != nil {
+		t.Fatalf("schema compilation failed. reason: %v\n", err)
+	}
+	v := struct{ name string }{"hello world"}
+	err = schema.ValidateInterface(v)
+	switch err.(type) {
+	case jsonschema.InvalidJSONTypeError:
+		// passed
+	default:
+		t.Fatalf("got %v. want InvalidJSONTypeErr", err)
+	}
+}
