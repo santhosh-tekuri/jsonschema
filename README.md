@@ -8,7 +8,7 @@
 
 Package jsonschema provides json-schema compilation and validation.
 
-This implementation of JSON Schema, supports draft4 and draft6.
+This implementation of JSON Schema, supports draft4, draft6 and draft7.
 
 Passes all tests(including optional) in https://github.com/json-schema/JSON-Schema-Test-Suite
 
@@ -78,6 +78,8 @@ if err = schema.Validate(f); err != nil {
 
 This package supports json string formats: 
 - date-time
+- date
+- time
 - hostname
 - email
 - ip-address
@@ -88,9 +90,14 @@ This package supports json string formats:
 - regex
 - format
 - json-pointer
+- relative-json-pointer
 - uri-template (limited validation)
 
-Developers can define their own formats using package jsonschema/formats.
+Developers can register their own formats using package "github.com/santhosh-tekuri/jsonschema/formats".
+
+"base64" contentEncoding is supported. Custom decoders can be registered using package "github.com/santhosh-tekuri/jsonschema/decoders".
+
+"application/json" contentMediaType is supported. Custom mediatypes can be registered using package "github.com/santhosh-tekuri/jsonschema/mediatypes".
 
 ## ValidationError
 
