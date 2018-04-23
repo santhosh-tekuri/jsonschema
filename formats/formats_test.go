@@ -140,8 +140,36 @@ func TestIsURITemplate(t *testing.T) {
 
 func TestIsJSONPointer(t *testing.T) {
 	tests := []test{
+		{"", true}, // empty
+		{"/ ", true},
 		{"/foo/baz", true},
-		{"/foo/baz~", false}, // ~ not escaped
+		{"/foo/bar~0/baz~1/%a", true},
+		{"/g|h", true},
+		{"/i\\j", true},
+		{"/k\"l", true},
+		{"/foo//bar", true},   // empty segment
+		{"/foo/bar/", true},   // last empty segment
+		{"/foo/-", true},      // last array position
+		{"/foo/-/bar", true},  // - used as object member
+		{"/~1~0~0~1~1", true}, // multiple escape characters
+		{"/foo/baz~", false},  // ~ not escaped
+		{"/~-1", false},       // wrong escape character
+		{"/~~", false},        // multiple characters not escaped
+		// escaped with fractional part
+		{"/~1.1", true},
+		{"/~0.1", true},
+		// uri fragment identifier
+		{"#", false},
+		{"#/", false},
+		{"#a", false},
+		// some escaped, but not all
+		{"/~0~", false},
+		{"/~0/~", false},
+		{"/~0/~", false},
+		// isn't empty nor starts with /
+		{"a", false},
+		{"0", false},
+		{"a/a", false},
 	}
 	for i, test := range tests {
 		if test.valid != formats.IsJSONPointer(test.str) {
