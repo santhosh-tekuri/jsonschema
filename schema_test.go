@@ -20,7 +20,7 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
 )
 
-var draft4, draft6 []byte
+var draft4, draft6, draft7 []byte
 
 func init() {
 	var err error
@@ -29,6 +29,10 @@ func init() {
 		panic(err)
 	}
 	draft6, err = ioutil.ReadFile("testdata/draft6.json")
+	if err != nil {
+		panic(err)
+	}
+	draft7, err = ioutil.ReadFile("testdata/draft7.json")
 	if err != nil {
 		panic(err)
 	}
@@ -95,6 +99,10 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 				continue
 			}
 			if err := c.AddResource("http://json-schema.org/draft-06/schema", bytes.NewReader(draft6)); err != nil {
+				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
+				continue
+			}
+			if err := c.AddResource("http://json-schema.org/draft-07/schema", bytes.NewReader(draft7)); err != nil {
 				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
 				continue
 			}
