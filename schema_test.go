@@ -366,3 +366,46 @@ func TestInvalidJsonTypeError(t *testing.T) {
 		t.Fatalf("got %v. want InvalidJSONTypeErr", err)
 	}
 }
+
+func TestExtractAnnotations(t *testing.T) {
+	t.Run("false", func(t *testing.T) {
+		compiler := jsonschema.NewCompiler()
+
+		err := compiler.AddResource("test.json", strings.NewReader(`{
+			"title": "this is title"
+		}`))
+		if err != nil {
+			t.Fatalf("addResource failed. reason: %v\n", err)
+		}
+
+		schema, err := compiler.Compile("test.json")
+		if err != nil {
+			t.Fatalf("schema compilation failed. reason: %v\n", err)
+		}
+
+		if schema.Title != "" {
+			t.Error("title should not be extracted")
+		}
+	})
+
+	t.Run("true", func(t *testing.T) {
+		compiler := jsonschema.NewCompiler()
+		compiler.ExtractAnnotations = true
+
+		err := compiler.AddResource("test.json", strings.NewReader(`{
+			"title": "this is title"
+		}`))
+		if err != nil {
+			t.Fatalf("addResource failed. reason: %v\n", err)
+		}
+
+		schema, err := compiler.Compile("test.json")
+		if err != nil {
+			t.Fatalf("schema compilation failed. reason: %v\n", err)
+		}
+
+		if schema.Title != "this is title" {
+			t.Errorf("title: got %q, want %q", schema.Title, "this is title")
+		}
+	})
+}

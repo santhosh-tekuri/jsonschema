@@ -63,6 +63,10 @@ type Compiler struct {
 	// This defaults to latest draft (currently draft6).
 	Draft     *Draft
 	resources map[string]*resource
+
+	// ExtractAnnotations tells whether schema annotations has to be extracted
+	// in compiled Schema or not.
+	ExtractAnnotations bool
 }
 
 // NewCompiler returns a draft4 json-schema Compiler object.
@@ -471,6 +475,18 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 
 	s.MultipleOf = loadFloat("multipleOf")
 
+	if c.ExtractAnnotations {
+		if title, ok := m["title"]; ok {
+			s.Title = title.(string)
+		}
+		if description, ok := m["description"]; ok {
+			s.Description = description.(string)
+		}
+		if def, ok := m["default"]; ok {
+			s.Default = def.(bool)
+		}
+	}
+
 	if draft.version >= 6 {
 		if c, ok := m["const"]; ok {
 			s.Constant = []interface{}{c}
@@ -493,6 +509,18 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 			}
 			if s.Else, err = loadSchema("else"); err != nil {
 				return err
+			}
+
+			if c.ExtractAnnotations {
+				if readOnly, ok := m["readOnly"]; ok {
+					s.ReadOnly = readOnly.(bool)
+				}
+				if writeOnly, ok := m["writeOnly"]; ok {
+					s.WriteOnly = writeOnly.(bool)
+				}
+				if examples, ok := m["examples"]; ok {
+					s.Examples = examples.([]interface{})
+				}
 			}
 		}
 

@@ -76,6 +76,14 @@ type Schema struct {
 	Maximum          *big.Float
 	ExclusiveMaximum *big.Float
 	MultipleOf       *big.Float
+
+	// annotations. captured only when Compiler.ExtractAnnotations is true.
+	Title       string
+	Description string
+	Default     interface{}
+	ReadOnly    bool
+	WriteOnly   bool
+	Examples    []interface{}
 }
 
 // Compile parses json-schema at given url returns, if successful,
