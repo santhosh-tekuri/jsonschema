@@ -35,11 +35,38 @@ func TestIsDateTime(t *testing.T) {
 		{"1990-12-31T23:59:59Z", true},
 		{"1990-12-31T15:59:59-08:00", true},
 		{"1937-01-01T12:00:27.87+00:20", true},
+		{"1963-06-19T08:30:06.283185Z", true},
 		{"06/19/1963 08:30:06 PST", false},
 		{"2013-350T01:01:01", false},
 	}
 	for i, test := range tests {
 		if test.valid != formats.IsDateTime(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
+
+func TestIsDate(t *testing.T) {
+	tests := []test{
+		{"1963-06-19", true},
+		{"06/19/1963", false},
+		{"2013-350", false}, // only RFC3339 not all of ISO 8601 are valid
+	}
+	for i, test := range tests {
+		if test.valid != formats.IsDate(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
+
+func TestIsTime(t *testing.T) {
+	tests := []test{
+		{"08:30:06.283185Z", true},
+		{"08:30:06 PST", false},
+		{"01:01:01,1111", false}, // only RFC3339 not all of ISO 8601 are valid
+	}
+	for i, test := range tests {
+		if test.valid != formats.IsTime(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -133,6 +160,18 @@ func TestIsURITemplate(t *testing.T) {
 	}
 	for i, test := range tests {
 		if test.valid != formats.IsURITemplate(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
+
+func TestIsRegex(t *testing.T) {
+	tests := []test{
+		{"([abc])+\\s+$", true},
+		{"^(abc]", false}, // unclosed parenthesis
+	}
+	for i, test := range tests {
+		if test.valid != formats.IsRegex(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
