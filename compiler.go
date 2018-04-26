@@ -482,9 +482,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		if description, ok := m["description"]; ok {
 			s.Description = description.(string)
 		}
-		if def, ok := m["default"]; ok {
-			s.Default = def.(bool)
-		}
+		s.Default = m["default"]
 	}
 
 	if draft.version >= 6 {
