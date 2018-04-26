@@ -18,6 +18,17 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
+func init() {
+	formats.Register("encoding", func(s string) bool {
+		_, ok := decoders.Get(s)
+		return ok
+	})
+	formats.Register("mediatype", func(s string) bool {
+		_, ok := mediatypes.Get(s)
+		return ok
+	})
+}
+
 // A Draft represents json-schema draft
 type Draft struct {
 	meta    *Schema
