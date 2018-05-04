@@ -152,9 +152,12 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		base = b
 		ids[base] = m
 	}
-	if m, ok := m["not"]; ok {
-		if err := resolveIDs(draft, base, m, ids); err != nil {
-			return err
+
+	for _, pname := range []string{"not", "additionalProperties"} {
+		if m, ok := m[pname]; ok {
+			if err := resolveIDs(draft, base, m, ids); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -168,27 +171,9 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		}
 	}
 
-	for _, pname := range []string{"definitions", "properties", "patternProperties"} {
+	for _, pname := range []string{"definitions", "properties", "patternProperties", "dependencies"} {
 		if props, ok := m[pname]; ok {
 			for _, m := range props.(map[string]interface{}) {
-				if err := resolveIDs(draft, base, m, ids); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	if additionalProps, ok := m["additionalProperties"]; ok {
-		if additionalProps, ok := additionalProps.(map[string]interface{}); ok {
-			if err := resolveIDs(draft, base, additionalProps, ids); err != nil {
-				return err
-			}
-		}
-	}
-
-	if deps, ok := m["dependencies"]; ok {
-		for _, pvalue := range deps.(map[string]interface{}) {
-			if m, ok := pvalue.(map[string]interface{}); ok {
 				if err := resolveIDs(draft, base, m, ids); err != nil {
 					return err
 				}
@@ -218,15 +203,27 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		}
 	}
 
-	if draft == Draft6 {
-		if propertyNames, ok := m["propertyNames"]; ok {
-			if err := resolveIDs(draft, base, propertyNames, ids); err != nil {
-				return err
+	if draft.version >= 6 {
+		for _, pname := range []string{"propertyNames", "contains"} {
+			if m, ok := m[pname]; ok {
+				if err := resolveIDs(draft, base, m, ids); err != nil {
+					return err
+				}
 			}
 		}
-		if contains, ok := m["contains"]; ok {
-			if err := resolveIDs(draft, base, contains, ids); err != nil {
+	}
+
+	if draft.version >= 7 {
+		if iff, ok := m["if"]; ok {
+			if err := resolveIDs(draft, base, iff, ids); err != nil {
 				return err
+			}
+			for _, pname := range []string{"then", "else"} {
+				if m, ok := m[pname]; ok {
+					if err := resolveIDs(draft, base, m, ids); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
