@@ -19,14 +19,43 @@
                 "valid": false
             },
             {
-                "description": "ignores non-objects",
+                "description": "ignores arrays",
                 "data": [1, 2, 3],
+                "valid": true
+            },
+            {
+                "description": "ignores strings",
+                "data": "foobarbaz",
+                "valid": true
+            },
+            {
+                "description": "ignores other non-objects",
+                "data": 12,
                 "valid": true
             },
             {
                 "description": "patternProperties are not additional properties",
                 "data": {"foo":1, "vroom": 2},
                 "valid": true
+            }
+        ]
+    },
+    {
+        "description": "non-ASCII pattern with additionalProperties",
+        "schema": {
+            "patternProperties": {"^á": {}},
+            "additionalProperties": false
+        },
+        "tests": [
+            {
+                "description": "matching the pattern is valid",
+                "data": {"ármányos": 2},
+                "valid": true
+            },
+            {
+                "description": "not matching the pattern is invalid",
+                "data": {"élmény": 2},
+                "valid": false
             }
         ]
     },
