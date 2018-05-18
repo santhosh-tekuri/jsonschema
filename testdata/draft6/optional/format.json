@@ -73,8 +73,8 @@
             {
                 "description": "an invalid URI Reference",
                 "data": "\\\\WINDOWS\\fileshare",
-                "TODO:valid": false,
-                "valid": true
+                "valid": false,
+                "skip": "does not work with net.URL"
             },
             {
                 "description": "a valid URI Reference",
@@ -89,8 +89,8 @@
             {
                 "description": "an invalid URI fragment",
                 "data": "#frag\\ment",
-                "TODO:valid": false,
-                "valid": true
+                "valid": false,
+                "skip": "does not work with net.URL"
             }
         ]
     },

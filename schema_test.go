@@ -56,6 +56,7 @@ type testGroup struct {
 		Description string
 		Data        json.RawMessage
 		Valid       bool
+		Skip        *string
 	}
 }
 
@@ -118,6 +119,10 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 			}
 			for _, test := range group.Tests {
 				t.Logf("      %s\n", test.Description)
+				if test.Skip != nil {
+					t.Logf("        skipping: %s\n", *test.Skip)
+					continue
+				}
 				err = schema.Validate(bytes.NewReader(test.Data))
 				valid := err == nil
 				if !valid {

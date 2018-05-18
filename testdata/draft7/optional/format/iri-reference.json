@@ -21,8 +21,8 @@
             {
                 "description": "an invalid IRI Reference",
                 "data": "\\\\WINDOWS\\filëßåré",
-                "TODO:valid": false,
-                "valid": true
+                "valid": false,
+                "skip": "does not work with net.URL"
             },
             {
                 "description": "a valid IRI Reference",
@@ -37,8 +37,8 @@
             {
                 "description": "an invalid IRI fragment",
                 "data": "#ƒräg\\mênt",
-                "TODO:valid": false,
-                "valid": true
+                "valid": false,
+                "skip": "does not work with net.URL"
             }
         ]
     }
