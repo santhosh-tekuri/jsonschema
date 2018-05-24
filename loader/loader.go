@@ -87,7 +87,7 @@ func get(s string) (Loader, error) {
 //
 // If no Loader is registered against the URI Scheme, then it
 // returns *SchemeNotRegisteredError
-func Load(url string) (io.ReadCloser, error) {
+var Load = func(url string) (io.ReadCloser, error) {
 	loader, err := get(url)
 	if err != nil {
 		return nil, err
