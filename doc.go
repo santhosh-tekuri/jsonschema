@@ -24,7 +24,7 @@ An example of using this package:
 	}
 
 The schema is compiled against the version specified in `$schema` property.
-If `$schema` property is missing, it uses latest draft which currently is draft6.
+If `$schema` property is missing, it uses latest draft which currently is draft7.
 You can force to use draft4 when `$schema` is missing, as follows:
 
 	compiler := jsonschema.NewCompiler()
