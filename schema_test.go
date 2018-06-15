@@ -256,7 +256,7 @@ func TestCompileURL(t *testing.T) {
 		schema, doc string
 	}{
 		{"testdata/customer_schema.json#/0", "testdata/customer.json"},
-		{"file://" + abs + "/customer_schema.json#/0", "testdata/customer.json"},
+		{"file://" + filepath.ToSlash(abs) + "/customer_schema.json#/0", "testdata/customer.json"},
 		{httpServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
 		{httpsServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
 	}
