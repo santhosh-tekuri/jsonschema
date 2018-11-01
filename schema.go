@@ -173,8 +173,9 @@ func (s *Schema) validate(v interface{}) error {
 				matched = true
 				break
 			} else if t == "integer" && vType == "number" {
-				if _, ok := new(big.Int).SetString(fmt.Sprint(v), 10); ok {
-					matched = true
+				floatValue, err := strconv.ParseFloat(fmt.Sprint(v), 64)
+				if err == nil {
+					matched = floatValue == float64(int64(floatValue))
 					break
 				}
 			}

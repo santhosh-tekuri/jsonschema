@@ -42,6 +42,11 @@
                 "description": "null is not an integer",
                 "data": null,
                 "valid": false
+            },
+            {
+                "description": "a large integer is still an integer",
+                "data": 2147483647,
+                "valid": true
             }
         ]
     },
