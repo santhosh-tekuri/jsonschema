@@ -11,8 +11,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -247,18 +249,14 @@ func TestCompileURL(t *testing.T) {
 	httpsServer := httptest.NewTLSServer(handler)
 	defer httpsServer.Close()
 
-	abs, err := filepath.Abs("testdata")
-	if err != nil {
-		t.Error(err)
-		return
-	}
 	validTests := []struct {
 		schema, doc string
 	}{
 		{"testdata/customer_schema.json#/0", "testdata/customer.json"},
-		{"file://" + filepath.ToSlash(abs) + "/customer_schema.json#/0", "testdata/customer.json"},
+		{toFileURL("testdata/customer_schema.json") + "#/0", "testdata/customer.json"},
 		{httpServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
 		{httpsServer.URL + "/customer_schema.json#/0", "testdata/customer.json"},
+		{toFileURL("testdata/empty schema.json"), "testdata/empty schema.json"},
 	}
 	for i, test := range validTests {
 		t.Logf("valid #%d: %+v", i, test)
@@ -282,7 +280,7 @@ func TestCompileURL(t *testing.T) {
 	invalidTests := []string{
 		"testdata/syntax_error.json",
 		"testdata/missing.json",
-		"file://" + abs + "/missing.json",
+		toFileURL("testdata/missing.json"),
 		httpServer.URL + "/missing.json",
 		httpsServer.URL + "/missing.json",
 	}
@@ -413,4 +411,20 @@ func TestExtractAnnotations(t *testing.T) {
 			t.Errorf("title: got %q, want %q", schema.Title, "this is title")
 		}
 	})
+}
+
+func toFileURL(path string) string {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		panic(err)
+	}
+	path = filepath.ToSlash(path)
+	if runtime.GOOS == "windows" {
+		path = "/" + path
+	}
+	u, err := url.Parse("file://" + path)
+	if err != nil {
+		panic(err)
+	}
+	return u.String()
 }

@@ -35,8 +35,12 @@ func (filePathLoader) Load(path string) (io.ReadCloser, error) {
 
 type fileURLLoader struct{}
 
-func (fileURLLoader) Load(url string) (io.ReadCloser, error) {
-	f := strings.TrimPrefix(url, "file://")
+func (fileURLLoader) Load(s string) (io.ReadCloser, error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return nil, err
+	}
+	f := u.Path
 	if runtime.GOOS == "windows" {
 		f = strings.TrimPrefix(f, "/")
 		f = filepath.FromSlash(f)
