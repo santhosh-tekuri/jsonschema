@@ -80,7 +80,9 @@ type Compiler struct {
 	ExtractAnnotations bool
 }
 
-// NewCompiler returns a draft7 json-schema Compiler object.
+// NewCompiler returns a json-schema Compiler object.
+// if '$schema' attribute is missing, it is treated as draft7. to change this
+// behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
 	return &Compiler{Draft: latest, resources: make(map[string]*resource)}
 }
@@ -155,14 +157,8 @@ func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 			}
 			s := &Schema{URL: r.url, Ptr: "#"}
 			r.schemas["#"] = s
-			if m, ok := r.doc.(map[string]interface{}); ok {
-				if _, err := c.compile(r, s, base, m); err != nil {
-					return nil, err
-				}
-			} else {
-				if _, err := c.compile(r, s, base, r.doc); err != nil {
-					return nil, err
-				}
+			if _, err := c.compile(r, s, base, r.doc); err != nil {
+				return nil, err
 			}
 		}
 		return r.schemas["#"], nil
