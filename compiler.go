@@ -67,11 +67,11 @@ func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
 
 // A Compiler represents a json-schema compiler.
 //
-// Currently draft4 and draft6 are supported
+// Currently draft4, draft6 and draft7 are supported
 type Compiler struct {
 	// Draft represents the draft used when '$schema' attribute is missing.
 	//
-	// This defaults to latest draft (currently draft6).
+	// This defaults to latest draft (currently draft7).
 	Draft     *Draft
 	resources map[string]*resource
 
@@ -80,9 +80,9 @@ type Compiler struct {
 	ExtractAnnotations bool
 }
 
-// NewCompiler returns a draft4 json-schema Compiler object.
+// NewCompiler returns a draft7 json-schema Compiler object.
 func NewCompiler() *Compiler {
-	return &Compiler{resources: make(map[string]*resource)}
+	return &Compiler{Draft: latest, resources: make(map[string]*resource)}
 }
 
 // AddResource adds in-memory resource to the compiler.
@@ -95,29 +95,6 @@ func (c *Compiler) AddResource(url string, r io.Reader) error {
 	}
 	c.resources[res.url] = res
 	return nil
-}
-
-func (c *Compiler) draft(v interface{}) (*Draft, error) {
-	if m, ok := v.(map[string]interface{}); ok {
-		if url, ok := m["$schema"]; ok {
-			switch url {
-			case "http://json-schema.org/schema#":
-				return latest, nil
-			case "http://json-schema.org/draft-07/schema#":
-				return Draft7, nil
-			case "http://json-schema.org/draft-06/schema#":
-				return Draft6, nil
-			case "http://json-schema.org/draft-04/schema#":
-				return Draft4, nil
-			default:
-				return nil, fmt.Errorf("unknown $schema %q", url)
-			}
-		}
-	}
-	if c.Draft == nil {
-		return latest, nil
-	}
-	return c.Draft, nil
 }
 
 // MustCompile is like Compile but panics if the url cannot be compiled to *Schema.
@@ -145,30 +122,45 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 		}
 	}
 	r := c.resources[base]
-	return c.compileRef(nil, r, r.url, fragment)
+	if r.draft == nil {
+		if m, ok := r.doc.(map[string]interface{}); ok {
+			if url, ok := m["$schema"]; ok {
+				switch url {
+				case "http://json-schema.org/schema#":
+					r.draft = latest
+				case "http://json-schema.org/draft-07/schema#":
+					r.draft = Draft7
+				case "http://json-schema.org/draft-06/schema#":
+					r.draft = Draft6
+				case "http://json-schema.org/draft-04/schema#":
+					r.draft = Draft4
+				default:
+					return nil, fmt.Errorf("unknown $schema %q", url)
+				}
+			}
+		}
+		if r.draft == nil {
+			r.draft = c.Draft
+		}
+	}
+	return c.compileRef(r, r.url, fragment)
 }
 
-func (c Compiler) compileRef(draft *Draft, r *resource, base, ref string) (*Schema, error) {
+func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 	var err error
 	if rootFragment(ref) {
 		if _, ok := r.schemas["#"]; !ok {
-			if draft == nil {
-				draft, err = c.draft(r.doc)
-				if err != nil {
-					return nil, err
-				}
-			}
-			if err := draft.validateSchema(r.url, "", r.doc); err != nil {
+			if err := r.draft.validateSchema(r.url, "", r.doc); err != nil {
 				return nil, err
 			}
 			s := &Schema{URL: r.url, Ptr: "#"}
 			r.schemas["#"] = s
 			if m, ok := r.doc.(map[string]interface{}); ok {
-				if _, err := c.compile(draft, r, s, base, m); err != nil {
+				if _, err := c.compile(r, s, base, m); err != nil {
 					return nil, err
 				}
 			} else {
-				if _, err := c.compile(draft, r, s, base, r.doc); err != nil {
+				if _, err := c.compile(r, s, base, r.doc); err != nil {
 					return nil, err
 				}
 			}
@@ -178,28 +170,15 @@ func (c Compiler) compileRef(draft *Draft, r *resource, base, ref string) (*Sche
 
 	if strings.HasPrefix(ref, "#/") {
 		if _, ok := r.schemas[ref]; !ok {
-			docDraft := draft
-			if docDraft == nil {
-				docDraft = c.Draft
-			}
-			if docDraft == nil {
-				docDraft = latest
-			}
-			ptrBase, doc, err := r.resolvePtr(docDraft, ref)
+			ptrBase, doc, err := r.resolvePtr(ref)
 			if err != nil {
 				return nil, err
 			}
-			if draft == nil {
-				draft, err = c.draft(doc)
-				if err != nil {
-					return nil, err
-				}
-			}
-			if err := draft.validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
+			if err := r.draft.validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
 				return nil, err
 			}
 			r.schemas[ref] = &Schema{URL: base, Ptr: ref}
-			if _, err := c.compile(draft, r, r.schemas[ref], ptrBase, doc); err != nil {
+			if _, err := c.compile(r, r.schemas[ref], ptrBase, doc); err != nil {
 				return nil, err
 			}
 		}
@@ -215,17 +194,17 @@ func (c Compiler) compileRef(draft *Draft, r *resource, base, ref string) (*Sche
 	}
 
 	ids := make(map[string]map[string]interface{})
-	if err := resolveIDs(draft, r.url, r.doc, ids); err != nil {
+	if err := resolveIDs(r.draft, r.url, r.doc, ids); err != nil {
 		return nil, err
 	}
 	if v, ok := ids[refURL]; ok {
-		if err := draft.validateSchema(r.url, "", v); err != nil {
+		if err := r.draft.validateSchema(r.url, "", v); err != nil {
 			return nil, err
 		}
 		u, f := split(refURL)
 		s := &Schema{URL: u, Ptr: f}
 		r.schemas[refURL] = s
-		if err := c.compileMap(draft, r, s, refURL, v); err != nil {
+		if err := c.compileMap(r, s, refURL, v); err != nil {
 			return nil, err
 		}
 		return s, nil
@@ -238,7 +217,7 @@ func (c Compiler) compileRef(draft *Draft, r *resource, base, ref string) (*Sche
 	return c.Compile(refURL)
 }
 
-func (c Compiler) compile(draft *Draft, r *resource, s *Schema, base string, m interface{}) (*Schema, error) {
+func (c Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*Schema, error) {
 	if s == nil {
 		s = new(Schema)
 		s.URL, _ = split(base)
@@ -248,14 +227,14 @@ func (c Compiler) compile(draft *Draft, r *resource, s *Schema, base string, m i
 		s.Always = &m
 		return s, nil
 	default:
-		return s, c.compileMap(draft, r, s, base, m.(map[string]interface{}))
+		return s, c.compileMap(r, s, base, m.(map[string]interface{}))
 	}
 }
 
-func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, m map[string]interface{}) error {
+func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]interface{}) error {
 	var err error
 
-	if id, ok := m[draft.id]; ok {
+	if id, ok := m[r.draft.id]; ok {
 		if base, err = resolveURL(base, id.(string)); err != nil {
 			return err
 		}
@@ -263,7 +242,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 
 	if ref, ok := m["$ref"]; ok {
 		b, _ := split(base)
-		s.Ref, err = c.compileRef(draft, r, b, ref.(string))
+		s.Ref, err = c.compileRef(r, b, ref.(string))
 		if err != nil {
 			return err
 		}
@@ -306,7 +285,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 
 	loadSchema := func(pname string) (*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
-			return c.compile(draft, r, nil, base, pvalue)
+			return c.compile(r, nil, base, pvalue)
 		}
 		return nil, nil
 	}
@@ -320,7 +299,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
 			for i, v := range pvalue {
-				sch, err := c.compile(draft, r, nil, base, v)
+				sch, err := c.compile(r, nil, base, v)
 				if err != nil {
 					return nil, err
 				}
@@ -357,7 +336,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		props := props.(map[string]interface{})
 		s.Properties = make(map[string]*Schema, len(props))
 		for pname, pmap := range props {
-			s.Properties[pname], err = c.compile(draft, r, nil, base, pmap)
+			s.Properties[pname], err = c.compile(r, nil, base, pmap)
 			if err != nil {
 				return err
 			}
@@ -372,7 +351,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		patternProps := patternProps.(map[string]interface{})
 		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
 		for pattern, pmap := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compile(draft, r, nil, base, pmap)
+			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compile(r, nil, base, pmap)
 			if err != nil {
 				return err
 			}
@@ -386,7 +365,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 				s.AdditionalProperties = false
 			}
 		case map[string]interface{}:
-			s.AdditionalProperties, err = c.compile(draft, r, nil, base, additionalProps)
+			s.AdditionalProperties, err = c.compile(r, nil, base, additionalProps)
 			if err != nil {
 				return err
 			}
@@ -401,7 +380,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 			case []interface{}:
 				s.Dependencies[pname] = toStrings(pvalue)
 			default:
-				s.Dependencies[pname], err = c.compile(draft, r, nil, base, pvalue)
+				s.Dependencies[pname], err = c.compile(r, nil, base, pvalue)
 				if err != nil {
 					return err
 				}
@@ -427,7 +406,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 				case bool:
 					s.AdditionalItems = additionalItems
 				case map[string]interface{}:
-					s.AdditionalItems, err = c.compile(draft, r, nil, base, additionalItems)
+					s.AdditionalItems, err = c.compile(r, nil, base, additionalItems)
 					if err != nil {
 						return err
 					}
@@ -436,7 +415,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 				s.AdditionalItems = true
 			}
 		default:
-			s.Items, err = c.compile(draft, r, nil, base, items)
+			s.Items, err = c.compile(r, nil, base, items)
 			if err != nil {
 				return err
 			}
@@ -496,7 +475,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		s.Default = m["default"]
 	}
 
-	if draft.version >= 6 {
+	if r.draft.version >= 6 {
 		if c, ok := m["const"]; ok {
 			s.Constant = []interface{}{c}
 		}
@@ -508,7 +487,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 		}
 	}
 
-	if draft.version >= 7 {
+	if r.draft.version >= 7 {
 		if m["if"] != nil && (m["then"] != nil || m["else"] != nil) {
 			if s.If, err = loadSchema("if"); err != nil {
 				return err

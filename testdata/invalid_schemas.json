@@ -255,11 +255,6 @@
     }
   },
   {
-    "description": "schemaRef with invalid $schema",
-    "schema": [{"$schema":"http://json-schema.org/draft-03/schema"}],
-    "fragment": "#/0"
-  },
-  {
     "description": "schemaRef with wrong jsonpointer",
     "schema": [{}],
     "fragment": "#/1"

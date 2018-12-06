@@ -18,6 +18,7 @@ import (
 type resource struct {
 	url     string
 	doc     interface{}
+	draft   *Draft
 	schemas map[string]*Schema
 }
 
@@ -45,7 +46,10 @@ func newResource(base string, r io.Reader) (*resource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
 	}
-	return &resource{base, doc, make(map[string]*Schema)}, nil
+	return &resource{
+		url:     base,
+		doc:     doc,
+		schemas: make(map[string]*Schema)}, nil
 }
 
 func resolveURL(base, ref string) (string, error) {
@@ -79,7 +83,7 @@ func resolveURL(base, ref string) (string, error) {
 	return filepath.Join(dir, ref) + fragment, nil
 }
 
-func (r *resource) resolvePtr(draft *Draft, ptr string) (string, interface{}, error) {
+func (r *resource) resolvePtr(ptr string) (string, interface{}, error) {
 	if !strings.HasPrefix(ptr, "#/") {
 		panic(fmt.Sprintf("BUG: resolvePtr(%q)", ptr))
 	}
@@ -95,7 +99,7 @@ func (r *resource) resolvePtr(draft *Draft, ptr string) (string, interface{}, er
 		}
 		switch d := doc.(type) {
 		case map[string]interface{}:
-			if id, ok := d[draft.id]; ok {
+			if id, ok := d[r.draft.id]; ok {
 				if id, ok := id.(string); ok {
 					if base, err = resolveURL(base, id); err != nil {
 						return "", nil, err

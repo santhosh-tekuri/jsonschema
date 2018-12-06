@@ -428,3 +428,37 @@ func toFileURL(path string) string {
 	}
 	return u.String()
 }
+
+// TestPanic tests https://github.com/santhosh-tekuri/jsonschema/issues/18
+func TestPanic(t *testing.T) {
+	schema_d := `
+	{
+		"type": "object",
+		"properties": {
+		"myid": { "type": "integer" },
+		"otype": { "$ref": "defs.json#someid" }
+		}
+	}
+	`
+	defs_d := `
+	{
+		"definitions": {
+		"stt": {
+			"$schema": "http://json-schema.org/draft-07/schema#",
+			"$id": "#someid",
+				"type": "object",
+			"enum": [ { "name": "stainless" }, { "name": "zinc" } ]
+		}
+		}
+	}
+	`
+	c := jsonschema.NewCompiler()
+	c.Draft = jsonschema.Draft7
+	c.AddResource("schema.json", strings.NewReader(schema_d))
+	c.AddResource("defs.json", strings.NewReader(defs_d))
+
+	if _, err := c.Compile("schema.json"); err != nil {
+		t.Error("no error expected")
+		return
+	}
+}
