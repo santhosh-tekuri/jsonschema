@@ -97,7 +97,8 @@ func IsTime(s string) bool {
 }
 
 // IsHostname tells whether given string is a valid representation
-// for an Internet host name, as defined by RFC 1034, section 3.1.
+// for an Internet host name, as defined by RFC 1034 section 3.1 and
+// RFC 1123 section 2.1.
 //
 // See https://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names, for details.
 func IsHostname(s string) bool {
@@ -114,8 +115,8 @@ func IsHostname(s string) bool {
 			return false
 		}
 
-		// labels could not start with a digit or with a hyphen
-		if first := s[0]; (first >= '0' && first <= '9') || (first == '-') {
+		// labels must not start with a hyphen
+		if first := s[0]; first == '-' {
 			return false
 		}
 
