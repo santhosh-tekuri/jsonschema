@@ -116,6 +116,8 @@ func IsHostname(s string) bool {
 		}
 
 		// labels must not start with a hyphen
+		// RFC 1123 section 2.1: restriction on the first character
+		// is relaxed to allow either a letter or a digit
 		if first := s[0]; first == '-' {
 			return false
 		}
