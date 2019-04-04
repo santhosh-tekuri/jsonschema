@@ -16,18 +16,6 @@ type test struct {
 	valid bool
 }
 
-func TestIsFormat(t *testing.T) {
-	tests := []test{
-		{"date-time", true},
-		{"palindrome", false},
-	}
-	for i, test := range tests {
-		if test.valid != formats.IsFormat(test.str) {
-			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
-		}
-	}
-}
-
 func TestIsDateTime(t *testing.T) {
 	tests := []test{
 		{"1985-04-12T23:20:50.52Z", true},
