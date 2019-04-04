@@ -42,10 +42,6 @@ var formats = map[string]Format{
 	"relative-json-pointer": IsRelativeJSONPointer,
 }
 
-func init() {
-	formats["format"] = IsFormat
-}
-
 // Register registers Format object for given format name.
 func Register(name string, f Format) {
 	formats[name] = f
@@ -55,12 +51,6 @@ func Register(name string, f Format) {
 func Get(name string) (Format, bool) {
 	f, ok := formats[name]
 	return f, ok
-}
-
-// IsFormat tells whether given string is a valid format that is registered.
-func IsFormat(s string) bool {
-	_, ok := formats[s]
-	return ok
 }
 
 // IsDateTime tells whether given string is a valid date representation

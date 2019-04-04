@@ -1,5 +1,21 @@
 [
   {
+    "description": "ignore unknown formats",
+    "schema": {"type": "string", "format": "palindrome"},
+    "tests": [
+      {
+        "description": "value is palindrome",
+        "data": "racecar",
+        "valid": true
+      },
+      {
+        "description": "value is not palindrome",
+        "data": "sample",
+        "valid": true
+      }
+    ]
+  },
+  {
     "description": "multipleOf small value",
     "schema": {"multipleOf": 0.01},
     "tests": [

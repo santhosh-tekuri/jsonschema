@@ -156,7 +156,7 @@ func init() {
 		    "anyOf": { "$ref": "#/definitions/schemaArray" },
 		    "oneOf": { "$ref": "#/definitions/schemaArray" },
 		    "not": { "$ref": "#" },
-		    "format": { "type": "string", "format": "format" },
+		    "format": { "type": "string" },
 		    "$ref": { "type": "string" }
 		},
 		"dependencies": {

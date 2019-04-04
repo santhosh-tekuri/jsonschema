@@ -10,12 +10,6 @@
     }
   },
   {
-    "description": "unknown format",
-    "schema": {
-      "format": "palindrome"
-    }
-  },
-  {
     "description": "pattern must be string",
     "schema": {
       "pattern": 1
