@@ -411,6 +411,32 @@ func TestExtractAnnotations(t *testing.T) {
 			t.Errorf("title: got %q, want %q", schema.Title, "this is title")
 		}
 	})
+
+	t.Run("examples", func(t *testing.T) {
+		compiler := jsonschema.NewCompiler()
+		compiler.ExtractAnnotations = true
+
+		err := compiler.AddResource("test.json", strings.NewReader(`{
+			"title": "this is title",
+			"format": "date-time",
+			"examples": ["2019-04-09T21:54:56.052Z"]
+		}`))
+		if err != nil {
+			t.Fatalf("addResource failed. reason: %v\n", err)
+		}
+
+		schema, err := compiler.Compile("test.json")
+		if err != nil {
+			t.Fatalf("schema compilation failed. reason: %v\n", err)
+		}
+
+		if schema.Title != "this is title" {
+			t.Errorf("title: got %q, want %q", schema.Title, "this is title")
+		}
+		if schema.Examples[0] != "2019-04-09T21:54:56.052Z" {
+			t.Errorf("example: got %q, want %q", schema.Examples[0], "2019-04-09T21:54:56.052Z")
+		}
+	})
 }
 
 func toFileURL(path string) string {
