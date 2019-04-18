@@ -14,11 +14,12 @@ import (
 	"time"
 )
 
-// The Format type is a function, to check
-// whether given string is in valid format.
-type Format func(interface{}) bool
-
-var formats = map[string]Format{
+// Formats is a registry of functions, which know how to validate
+// a specific format.
+//
+// New Formats can be registered by adding to this map. Key is format name,
+// value is function that knows how to validate that format.
+var Formats = map[string]func(interface{}) bool{
 	"date-time":             isDateTime,
 	"date":                  isDate,
 	"time":                  isTime,
@@ -36,17 +37,6 @@ var formats = map[string]Format{
 	"regex":                 isRegex,
 	"json-pointer":          isJSONPointer,
 	"relative-json-pointer": isRelativeJSONPointer,
-}
-
-// Register registers Format object for given format name.
-func RegisterFormat(name string, f Format) {
-	formats[name] = f
-}
-
-// Get returns Format object for given format name, if found.
-func GetFormat(name string) (Format, bool) {
-	f, ok := formats[name]
-	return f, ok
 }
 
 // isDateTime tells whether given string is a valid date representation

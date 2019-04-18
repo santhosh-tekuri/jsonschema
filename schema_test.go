@@ -494,7 +494,7 @@ func TestPanic(t *testing.T) {
 }
 
 func TestNonStringFormat(t *testing.T) {
-	jsonschema.RegisterFormat("even-number", func(v interface{}) bool {
+	jsonschema.Formats["even-number"] = func(v interface{}) bool {
 		switch v := v.(type) {
 		case json.Number:
 			i, err := v.Int64()
@@ -505,7 +505,7 @@ func TestNonStringFormat(t *testing.T) {
 		default:
 			return false
 		}
-	})
+	}
 	schema := `{"type": "integer", "format": "even-number"}`
 	c := jsonschema.NewCompiler()
 	if err := c.AddResource("schema.json", strings.NewReader(schema)); err != nil {

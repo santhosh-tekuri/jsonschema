@@ -14,22 +14,22 @@ import (
 )
 
 func init() {
-	RegisterFormat("encoding", func(v interface{}) bool {
+	Formats["encoding"] = func(v interface{}) bool {
 		s, ok := v.(string)
 		if !ok {
 			return false
 		}
-		_, ok = GetDecoder(s)
+		_, ok = Decoders[s]
 		return ok
-	})
-	RegisterFormat("mediatype", func(v interface{}) bool {
+	}
+	Formats["mediatype"] = func(v interface{}) bool {
 		s, ok := v.(string)
 		if !ok {
 			return false
 		}
-		_, ok = GetMediaType(s)
+		_, ok = MediaTypes[s]
 		return ok
-	})
+	}
 }
 
 // A Draft represents json-schema draft
@@ -44,7 +44,7 @@ var latest = Draft7
 func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
 	if meta := draft.meta; meta != nil {
 		if err := meta.validate(v); err != nil {
-			addContext(ptr, "", err)
+			_ = addContext(ptr, "", err)
 			finishSchemaContext(err, meta)
 			finishInstanceContext(err)
 			var instancePtr string
@@ -429,7 +429,7 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 
 	if format, ok := m["format"]; ok {
 		s.FormatName = format.(string)
-		s.Format, _ = GetFormat(s.FormatName)
+		s.Format, _ = Formats[s.FormatName]
 	}
 
 	loadFloat := func(pname string) *big.Float {
@@ -500,11 +500,11 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 		}
 		if encoding, ok := m["contentEncoding"]; ok {
 			s.ContentEncoding = encoding.(string)
-			s.Decoder, _ = GetDecoder(s.ContentEncoding)
+			s.Decoder, _ = Decoders[s.ContentEncoding]
 		}
 		if mediaType, ok := m["contentMediaType"]; ok {
 			s.ContentMediaType = mediaType.(string)
-			s.MediaType, _ = GetMediaType(s.ContentMediaType)
+			s.MediaType, _ = MediaTypes[s.ContentMediaType]
 		}
 		if c.ExtractAnnotations {
 			if readOnly, ok := m["readOnly"]; ok {

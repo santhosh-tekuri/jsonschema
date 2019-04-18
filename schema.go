@@ -22,7 +22,7 @@ type Schema struct {
 	Ptr string // json-pointer to schema. always starts with `#`.
 
 	// type agnostic validations
-	Format     Format
+	Format     func(interface{}) bool
 	FormatName string
 	Always     *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
 	Ref        *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
@@ -62,9 +62,9 @@ type Schema struct {
 	MaxLength        int // -1 if not specified.
 	Pattern          *regexp.Regexp
 	ContentEncoding  string
-	Decoder          Decoder
+	Decoder          func(string) ([]byte, error)
 	ContentMediaType string
-	MediaType        MediaType
+	MediaType        func([]byte) error
 
 	// number validators
 	Minimum          *big.Float
