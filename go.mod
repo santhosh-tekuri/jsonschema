@@ -1,1 +1,1 @@
-module github.com/santhosh-tekuri/jsonschema
+module github.com/santhosh-tekuri/jsonschema/v2
