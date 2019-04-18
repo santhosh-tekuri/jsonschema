@@ -16,7 +16,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/santhosh-tekuri/jsonschema/decoders"
-	"github.com/santhosh-tekuri/jsonschema/formats"
 	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
@@ -26,7 +25,7 @@ type Schema struct {
 	Ptr string // json-pointer to schema. always starts with `#`.
 
 	// type agnostic validations
-	Format     formats.Format
+	Format     Format
 	FormatName string
 	Always     *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
 	Ref        *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
@@ -322,7 +321,7 @@ func (s *Schema) validate(v interface{}) error {
 
 		if s.RegexProperties {
 			for pname := range v {
-				if !formats.IsRegex(pname) {
+				if !isRegex(pname) {
 					return validationError("", "patternProperty %q is not valid regex", pname)
 				}
 			}

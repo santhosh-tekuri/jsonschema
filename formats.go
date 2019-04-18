@@ -2,11 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package formats provides functions to check string against format.
-//
-// It allows developers to register custom formats, that can be used
-// in json-schema for validation.
-package formats
+package jsonschema
 
 import (
 	"net"
@@ -23,41 +19,41 @@ import (
 type Format func(interface{}) bool
 
 var formats = map[string]Format{
-	"date-time":             IsDateTime,
-	"date":                  IsDate,
-	"time":                  IsTime,
-	"hostname":              IsHostname,
-	"email":                 IsEmail,
-	"ip-address":            IsIPV4,
-	"ipv4":                  IsIPV4,
-	"ipv6":                  IsIPV6,
-	"uri":                   IsURI,
-	"iri":                   IsURI,
-	"uri-reference":         IsURIReference,
-	"uriref":                IsURIReference,
-	"iri-reference":         IsURIReference,
-	"uri-template":          IsURITemplate,
-	"regex":                 IsRegex,
-	"json-pointer":          IsJSONPointer,
-	"relative-json-pointer": IsRelativeJSONPointer,
+	"date-time":             isDateTime,
+	"date":                  isDate,
+	"time":                  isTime,
+	"hostname":              isHostname,
+	"email":                 isEmail,
+	"ip-address":            isIPV4,
+	"ipv4":                  isIPV4,
+	"ipv6":                  isIPV6,
+	"uri":                   isURI,
+	"iri":                   isURI,
+	"uri-reference":         isURIReference,
+	"uriref":                isURIReference,
+	"iri-reference":         isURIReference,
+	"uri-template":          isURITemplate,
+	"regex":                 isRegex,
+	"json-pointer":          isJSONPointer,
+	"relative-json-pointer": isRelativeJSONPointer,
 }
 
 // Register registers Format object for given format name.
-func Register(name string, f Format) {
+func RegisterFormat(name string, f Format) {
 	formats[name] = f
 }
 
 // Get returns Format object for given format name, if found.
-func Get(name string) (Format, bool) {
+func GetFormat(name string) (Format, bool) {
 	f, ok := formats[name]
 	return f, ok
 }
 
-// IsDateTime tells whether given string is a valid date representation
+// isDateTime tells whether given string is a valid date representation
 // as defined by RFC 3339, section 5.6.
 //
 // Note: this is unable to parse UTC leap seconds. See https://github.com/golang/go/issues/8728.
-func IsDateTime(v interface{}) bool {
+func isDateTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -71,9 +67,9 @@ func IsDateTime(v interface{}) bool {
 	return false
 }
 
-// IsDate tells whether given string is a valid full-date production
+// isDate tells whether given string is a valid full-date production
 // as defined by RFC 3339, section 5.6.
-func IsDate(v interface{}) bool {
+func isDate(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -82,9 +78,9 @@ func IsDate(v interface{}) bool {
 	return err == nil
 }
 
-// IsTime tells whether given string is a valid full-time production
+// isTime tells whether given string is a valid full-time production
 // as defined by RFC 3339, section 5.6.
-func IsTime(v interface{}) bool {
+func isTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -98,12 +94,12 @@ func IsTime(v interface{}) bool {
 	return false
 }
 
-// IsHostname tells whether given string is a valid representation
+// isHostname tells whether given string is a valid representation
 // for an Internet host name, as defined by RFC 1034 section 3.1 and
 // RFC 1123 section 2.1.
 //
 // See https://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names, for details.
-func IsHostname(v interface{}) bool {
+func isHostname(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -145,11 +141,11 @@ func IsHostname(v interface{}) bool {
 	return true
 }
 
-// IsEmail tells whether given string is a valid Internet email address
+// isEmail tells whether given string is a valid Internet email address
 // as defined by RFC 5322, section 3.4.1.
 //
 // See https://en.wikipedia.org/wiki/Email_address, for details.
-func IsEmail(v interface{}) bool {
+func isEmail(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -173,7 +169,7 @@ func IsEmail(v interface{}) bool {
 	}
 
 	// domain must match the requirements for a hostname
-	if !IsHostname(domain) {
+	if !isHostname(domain) {
 		return false
 	}
 
@@ -181,9 +177,9 @@ func IsEmail(v interface{}) bool {
 	return err == nil
 }
 
-// IsIPV4 tells whether given string is a valid representation of an IPv4 address
+// isIPV4 tells whether given string is a valid representation of an IPv4 address
 // according to the "dotted-quad" ABNF syntax as defined in RFC 2673, section 3.2.
-func IsIPV4(v interface{}) bool {
+func isIPV4(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -204,9 +200,9 @@ func IsIPV4(v interface{}) bool {
 	return true
 }
 
-// IsIPV6 tells whether given string is a valid representation of an IPv6 address
+// isIPV6 tells whether given string is a valid representation of an IPv6 address
 // as defined in RFC 2373, section 2.2.
-func IsIPV6(v interface{}) bool {
+func isIPV6(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -217,8 +213,8 @@ func IsIPV6(v interface{}) bool {
 	return net.ParseIP(s) != nil
 }
 
-// IsURI tells whether given string is valid URI, according to RFC 3986.
-func IsURI(v interface{}) bool {
+// isURI tells whether given string is valid URI, according to RFC 3986.
+func isURI(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -227,9 +223,9 @@ func IsURI(v interface{}) bool {
 	return err == nil && u.IsAbs()
 }
 
-// IsURIReference tells whether given string is a valid URI Reference
+// isURIReference tells whether given string is a valid URI Reference
 // (either a URI or a relative-reference), according to RFC 3986.
-func IsURIReference(v interface{}) bool {
+func isURIReference(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -238,11 +234,11 @@ func IsURIReference(v interface{}) bool {
 	return err == nil
 }
 
-// IsURITemplate tells whether given string is a valid URI Template
+// isURITemplate tells whether given string is a valid URI Template
 // according to RFC6570.
 //
 // Current implementation does minimal validation.
-func IsURITemplate(v interface{}) bool {
+func isURITemplate(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -274,11 +270,11 @@ func IsURITemplate(v interface{}) bool {
 	return true
 }
 
-// IsRegex tells whether given string is a valid regular expression,
+// isRegex tells whether given string is a valid regular expression,
 // according to the ECMA 262 regular expression dialect.
 //
 // The implementation uses go-lang regexp package.
-func IsRegex(v interface{}) bool {
+func isRegex(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -287,10 +283,10 @@ func IsRegex(v interface{}) bool {
 	return err == nil
 }
 
-// IsJSONPointer tells whether given string is a valid JSON Pointer.
+// isJSONPointer tells whether given string is a valid JSON Pointer.
 //
 // Note: It returns false for JSON Pointer URI fragments.
-func IsJSONPointer(v interface{}) bool {
+func isJSONPointer(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -316,10 +312,10 @@ func IsJSONPointer(v interface{}) bool {
 	return true
 }
 
-// IsRelativeJSONPointer tells whether given string is a valid Relative JSON Pointer.
+// isRelativeJSONPointer tells whether given string is a valid Relative JSON Pointer.
 //
 // see https://tools.ietf.org/html/draft-handrews-relative-json-pointer-01#section-3
-func IsRelativeJSONPointer(v interface{}) bool {
+func isRelativeJSONPointer(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return false
@@ -336,5 +332,5 @@ func IsRelativeJSONPointer(v interface{}) bool {
 	} else {
 		return false
 	}
-	return s == "#" || IsJSONPointer(s)
+	return s == "#" || isJSONPointer(s)
 }

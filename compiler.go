@@ -13,13 +13,12 @@ import (
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/decoders"
-	"github.com/santhosh-tekuri/jsonschema/formats"
 	"github.com/santhosh-tekuri/jsonschema/loader"
 	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
 func init() {
-	formats.Register("encoding", func(v interface{}) bool {
+	RegisterFormat("encoding", func(v interface{}) bool {
 		s, ok := v.(string)
 		if !ok {
 			return false
@@ -27,7 +26,7 @@ func init() {
 		_, ok = decoders.Get(s)
 		return ok
 	})
-	formats.Register("mediatype", func(v interface{}) bool {
+	RegisterFormat("mediatype", func(v interface{}) bool {
 		s, ok := v.(string)
 		if !ok {
 			return false
@@ -434,7 +433,7 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 
 	if format, ok := m["format"]; ok {
 		s.FormatName = format.(string)
-		s.Format, _ = formats.Get(s.FormatName)
+		s.Format, _ = GetFormat(s.FormatName)
 	}
 
 	loadFloat := func(pname string) *big.Float {

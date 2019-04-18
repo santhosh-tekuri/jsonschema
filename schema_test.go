@@ -18,8 +18,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/formats"
-
 	"github.com/santhosh-tekuri/jsonschema"
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
 )
@@ -496,7 +494,7 @@ func TestPanic(t *testing.T) {
 }
 
 func TestNonStringFormat(t *testing.T) {
-	formats.Register("even-number", func(v interface{}) bool {
+	jsonschema.RegisterFormat("even-number", func(v interface{}) bool {
 		switch v := v.(type) {
 		case json.Number:
 			i, err := v.Int64()

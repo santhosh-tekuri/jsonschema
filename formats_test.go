@@ -2,13 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package formats_test
+package jsonschema
 
 import (
 	"strings"
 	"testing"
-
-	"github.com/santhosh-tekuri/jsonschema/formats"
 )
 
 type test struct {
@@ -28,7 +26,7 @@ func TestIsDateTime(t *testing.T) {
 		{"2013-350T01:01:01", false},
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsDateTime(test.str) {
+		if test.valid != isDateTime(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -41,7 +39,7 @@ func TestIsDate(t *testing.T) {
 		{"2013-350", false}, // only RFC3339 not all of ISO 8601 are valid
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsDate(test.str) {
+		if test.valid != isDate(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -54,7 +52,7 @@ func TestIsTime(t *testing.T) {
 		{"01:01:01,1111", false}, // only RFC3339 not all of ISO 8601 are valid
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsTime(test.str) {
+		if test.valid != isTime(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -73,7 +71,7 @@ func TestIsHostname(t *testing.T) {
 		{"www.example-.com", false}, // label ends with a hyphen
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsHostname(test.str) {
+		if test.valid != isHostname(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -88,7 +86,7 @@ func TestIsEmail(t *testing.T) {
 		{"santhosh@-google.com", false},                   // invalid domain name
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsEmail(test.str) {
+		if test.valid != isEmail(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -104,7 +102,7 @@ func TestIsIPV4(t *testing.T) {
 		{"0x7f000001", false},      // an integer
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsIPV4(test.str) {
+		if test.valid != isIPV4(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -119,7 +117,7 @@ func TestIsIPV6(t *testing.T) {
 		{"::laptop", false},                        // containing illegal characters
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsIPV6(test.str) {
+		if test.valid != isIPV6(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -133,7 +131,7 @@ func TestIsURI(t *testing.T) {
 		{"abc", false},                     // an invalid URI though valid URI reference
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsURI(test.str) {
+		if test.valid != isURI(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -147,7 +145,7 @@ func TestIsURITemplate(t *testing.T) {
 		{"dictionary/{term:1}/{term}", true},    // relative url-template
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsURITemplate(test.str) {
+		if test.valid != isURITemplate(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -159,7 +157,7 @@ func TestIsRegex(t *testing.T) {
 		{"^(abc]", false}, // unclosed parenthesis
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsRegex(test.str) {
+		if test.valid != isRegex(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -199,7 +197,7 @@ func TestIsJSONPointer(t *testing.T) {
 		{"a/a", false},
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsJSONPointer(test.str) {
+		if test.valid != isJSONPointer(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
@@ -214,7 +212,7 @@ func TestRelativeJSONPointer(t *testing.T) {
 		{"/foo/bar", false},     // valid json-pointer, but invalid RJP
 	}
 	for i, test := range tests {
-		if test.valid != formats.IsRelativeJSONPointer(test.str) {
+		if test.valid != isRelativeJSONPointer(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
 		}
 	}
