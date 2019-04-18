@@ -26,19 +26,21 @@ type Schema struct {
 	Ptr string // json-pointer to schema. always starts with `#`.
 
 	// type agnostic validations
-	Always    *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref       *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
-	Types     []string      // allowed types.
-	Constant  []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
-	Enum      []interface{} // allowed values.
-	enumError string        // error message for enum fail. captured here to avoid constructing error message every time.
-	Not       *Schema
-	AllOf     []*Schema
-	AnyOf     []*Schema
-	OneOf     []*Schema
-	If        *Schema
-	Then      *Schema // nil, when If is nil.
-	Else      *Schema // nil, when If is nil.
+	Format     formats.Format
+	FormatName string
+	Always     *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref        *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
+	Types      []string      // allowed types.
+	Constant   []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
+	Enum       []interface{} // allowed values.
+	enumError  string        // error message for enum fail. captured here to avoid constructing error message every time.
+	Not        *Schema
+	AllOf      []*Schema
+	AnyOf      []*Schema
+	OneOf      []*Schema
+	If         *Schema
+	Then       *Schema // nil, when If is nil.
+	Else       *Schema // nil, when If is nil.
 
 	// object validations
 	MinProperties        int      // -1 if not specified.
@@ -63,8 +65,6 @@ type Schema struct {
 	MinLength        int // -1 if not specified.
 	MaxLength        int // -1 if not specified.
 	Pattern          *regexp.Regexp
-	Format           formats.Format
-	FormatName       string
 	ContentEncoding  string
 	Decoder          decoders.Decoder
 	ContentMediaType string
@@ -206,6 +206,10 @@ func (s *Schema) validate(v interface{}) error {
 		if !matched {
 			return validationError("enum", s.enumError)
 		}
+	}
+
+	if s.Format != nil && !s.Format(v) {
+		return validationError("format", "%q is not valid %q", v, s.FormatName)
 	}
 
 	if s.Not != nil && s.Not.validate(v) == nil {
@@ -442,10 +446,6 @@ func (s *Schema) validate(v interface{}) error {
 		if s.Pattern != nil && !s.Pattern.MatchString(v) {
 			return validationError("pattern", "does not match pattern %q", s.Pattern)
 		}
-		if s.Format != nil && !s.Format(v) {
-			return validationError("format", "%q is not valid %q", v, s.FormatName)
-		}
-
 		var content []byte
 		if s.Decoder != nil {
 			b, err := s.Decoder(v)

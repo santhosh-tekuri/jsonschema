@@ -19,12 +19,20 @@ import (
 )
 
 func init() {
-	formats.Register("encoding", func(s string) bool {
-		_, ok := decoders.Get(s)
+	formats.Register("encoding", func(v interface{}) bool {
+		s, ok := v.(string)
+		if !ok {
+			return false
+		}
+		_, ok = decoders.Get(s)
 		return ok
 	})
-	formats.Register("mediatype", func(s string) bool {
-		_, ok := mediatypes.Get(s)
+	formats.Register("mediatype", func(v interface{}) bool {
+		s, ok := v.(string)
+		if !ok {
+			return false
+		}
+		_, ok = mediatypes.Get(s)
 		return ok
 	})
 }

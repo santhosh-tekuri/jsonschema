@@ -20,7 +20,7 @@ import (
 
 // The Format type is a function, to check
 // whether given string is in valid format.
-type Format func(string) bool
+type Format func(interface{}) bool
 
 var formats = map[string]Format{
 	"date-time":             IsDateTime,
@@ -57,7 +57,11 @@ func Get(name string) (Format, bool) {
 // as defined by RFC 3339, section 5.6.
 //
 // Note: this is unable to parse UTC leap seconds. See https://github.com/golang/go/issues/8728.
-func IsDateTime(s string) bool {
+func IsDateTime(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	if _, err := time.Parse(time.RFC3339, s); err == nil {
 		return true
 	}
@@ -69,14 +73,22 @@ func IsDateTime(s string) bool {
 
 // IsDate tells whether given string is a valid full-date production
 // as defined by RFC 3339, section 5.6.
-func IsDate(s string) bool {
+func IsDate(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	_, err := time.Parse("2006-01-02", s)
 	return err == nil
 }
 
 // IsTime tells whether given string is a valid full-time production
 // as defined by RFC 3339, section 5.6.
-func IsTime(s string) bool {
+func IsTime(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	if _, err := time.Parse("15:04:05Z07:00", s); err == nil {
 		return true
 	}
@@ -91,7 +103,11 @@ func IsTime(s string) bool {
 // RFC 1123 section 2.1.
 //
 // See https://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names, for details.
-func IsHostname(s string) bool {
+func IsHostname(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	// entire hostname (including the delimiting dots but not a trailing dot) has a maximum of 253 ASCII characters
 	s = strings.TrimSuffix(s, ".")
 	if len(s) > 253 {
@@ -133,7 +149,11 @@ func IsHostname(s string) bool {
 // as defined by RFC 5322, section 3.4.1.
 //
 // See https://en.wikipedia.org/wiki/Email_address, for details.
-func IsEmail(s string) bool {
+func IsEmail(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	// entire email address to be no more than 254 characters long
 	if len(s) > 254 {
 		return false
@@ -163,7 +183,11 @@ func IsEmail(s string) bool {
 
 // IsIPV4 tells whether given string is a valid representation of an IPv4 address
 // according to the "dotted-quad" ABNF syntax as defined in RFC 2673, section 3.2.
-func IsIPV4(s string) bool {
+func IsIPV4(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	groups := strings.Split(s, ".")
 	if len(groups) != 4 {
 		return false
@@ -182,7 +206,11 @@ func IsIPV4(s string) bool {
 
 // IsIPV6 tells whether given string is a valid representation of an IPv6 address
 // as defined in RFC 2373, section 2.2.
-func IsIPV6(s string) bool {
+func IsIPV6(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	if !strings.Contains(s, ":") {
 		return false
 	}
@@ -190,14 +218,22 @@ func IsIPV6(s string) bool {
 }
 
 // IsURI tells whether given string is valid URI, according to RFC 3986.
-func IsURI(s string) bool {
+func IsURI(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	u, err := url.Parse(s)
 	return err == nil && u.IsAbs()
 }
 
 // IsURIReference tells whether given string is a valid URI Reference
 // (either a URI or a relative-reference), according to RFC 3986.
-func IsURIReference(s string) bool {
+func IsURIReference(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	_, err := url.Parse(s)
 	return err == nil
 }
@@ -206,7 +242,11 @@ func IsURIReference(s string) bool {
 // according to RFC6570.
 //
 // Current implementation does minimal validation.
-func IsURITemplate(s string) bool {
+func IsURITemplate(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	u, err := url.Parse(s)
 	if err != nil {
 		return false
@@ -238,7 +278,11 @@ func IsURITemplate(s string) bool {
 // according to the ECMA 262 regular expression dialect.
 //
 // The implementation uses go-lang regexp package.
-func IsRegex(s string) bool {
+func IsRegex(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	_, err := regexp.Compile(s)
 	return err == nil
 }
@@ -246,7 +290,11 @@ func IsRegex(s string) bool {
 // IsJSONPointer tells whether given string is a valid JSON Pointer.
 //
 // Note: It returns false for JSON Pointer URI fragments.
-func IsJSONPointer(s string) bool {
+func IsJSONPointer(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	if s != "" && !strings.HasPrefix(s, "/") {
 		return false
 	}
@@ -271,7 +319,11 @@ func IsJSONPointer(s string) bool {
 // IsRelativeJSONPointer tells whether given string is a valid Relative JSON Pointer.
 //
 // see https://tools.ietf.org/html/draft-handrews-relative-json-pointer-01#section-3
-func IsRelativeJSONPointer(s string) bool {
+func IsRelativeJSONPointer(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
 	if s == "" {
 		return false
 	}

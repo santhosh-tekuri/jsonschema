@@ -18,6 +18,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/santhosh-tekuri/jsonschema/formats"
+
 	"github.com/santhosh-tekuri/jsonschema"
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
 )
@@ -480,11 +482,45 @@ func TestPanic(t *testing.T) {
 	`
 	c := jsonschema.NewCompiler()
 	c.Draft = jsonschema.Draft7
-	c.AddResource("schema.json", strings.NewReader(schema_d))
-	c.AddResource("defs.json", strings.NewReader(defs_d))
+	if err := c.AddResource("schema.json", strings.NewReader(schema_d)); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.AddResource("defs.json", strings.NewReader(defs_d)); err != nil {
+		t.Fatal(err)
+	}
 
 	if _, err := c.Compile("schema.json"); err != nil {
 		t.Error("no error expected")
 		return
+	}
+}
+
+func TestNonStringFormat(t *testing.T) {
+	formats.Register("even-number", func(v interface{}) bool {
+		switch v := v.(type) {
+		case json.Number:
+			i, err := v.Int64()
+			if err != nil {
+				return false
+			}
+			return i%2 == 0
+		default:
+			return false
+		}
+	})
+	schema := `{"type": "integer", "format": "even-number"}`
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource("schema.json", strings.NewReader(schema)); err != nil {
+		t.Fatal(err)
+	}
+	s, err := c.Compile("schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Validate(strings.NewReader("5")); err == nil {
+		t.Fatal("error expected")
+	}
+	if err = s.Validate(strings.NewReader("6")); err != nil {
+		t.Fatal(err)
 	}
 }
