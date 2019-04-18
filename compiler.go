@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/loader"
-	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
 func init() {
@@ -30,7 +29,7 @@ func init() {
 		if !ok {
 			return false
 		}
-		_, ok = mediatypes.Get(s)
+		_, ok = GetMediaType(s)
 		return ok
 	})
 }
@@ -507,7 +506,7 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 		}
 		if mediaType, ok := m["contentMediaType"]; ok {
 			s.ContentMediaType = mediaType.(string)
-			s.MediaType, _ = mediatypes.Get(s.ContentMediaType)
+			s.MediaType, _ = GetMediaType(s.ContentMediaType)
 		}
 		if c.ExtractAnnotations {
 			if readOnly, ok := m["readOnly"]; ok {

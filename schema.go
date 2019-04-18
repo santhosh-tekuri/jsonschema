@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
 // A Schema represents compiled version of json-schema.
@@ -66,7 +64,7 @@ type Schema struct {
 	ContentEncoding  string
 	Decoder          Decoder
 	ContentMediaType string
-	MediaType        mediatypes.MediaType
+	MediaType        MediaType
 
 	// number validators
 	Minimum          *big.Float
