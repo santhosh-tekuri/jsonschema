@@ -15,7 +15,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/santhosh-tekuri/jsonschema/decoders"
 	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
 
@@ -65,7 +64,7 @@ type Schema struct {
 	MaxLength        int // -1 if not specified.
 	Pattern          *regexp.Regexp
 	ContentEncoding  string
-	Decoder          decoders.Decoder
+	Decoder          Decoder
 	ContentMediaType string
 	MediaType        mediatypes.MediaType
 

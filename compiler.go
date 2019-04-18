@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/santhosh-tekuri/jsonschema/decoders"
 	"github.com/santhosh-tekuri/jsonschema/loader"
 	"github.com/santhosh-tekuri/jsonschema/mediatypes"
 )
@@ -23,7 +22,7 @@ func init() {
 		if !ok {
 			return false
 		}
-		_, ok = decoders.Get(s)
+		_, ok = GetDecoder(s)
 		return ok
 	})
 	RegisterFormat("mediatype", func(v interface{}) bool {
@@ -504,7 +503,7 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 		}
 		if encoding, ok := m["contentEncoding"]; ok {
 			s.ContentEncoding = encoding.(string)
-			s.Decoder, _ = decoders.Get(s.ContentEncoding)
+			s.Decoder, _ = GetDecoder(s.ContentEncoding)
 		}
 		if mediaType, ok := m["contentMediaType"]; ok {
 			s.ContentMediaType = mediaType.(string)
