@@ -11,8 +11,6 @@ import (
 	"math/big"
 	"regexp"
 	"strings"
-
-	"github.com/santhosh-tekuri/jsonschema/loader"
 )
 
 func init() {
@@ -119,7 +117,7 @@ func (c *Compiler) MustCompile(url string) *Schema {
 func (c *Compiler) Compile(url string) (*Schema, error) {
 	base, fragment := split(url)
 	if _, ok := c.resources[base]; !ok {
-		r, err := loader.Load(base)
+		r, err := LoadURL(base)
 		if err != nil {
 			return nil, err
 		}

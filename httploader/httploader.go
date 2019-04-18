@@ -17,15 +17,13 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/santhosh-tekuri/jsonschema/loader"
+	"github.com/santhosh-tekuri/jsonschema"
 )
 
 // Client is the default HTTP Client used to Get the resource.
 var Client = http.DefaultClient
 
-type httpLoader struct{}
-
-func (httpLoader) Load(url string) (io.ReadCloser, error) {
+func Load(url string) (io.ReadCloser, error) {
 	resp, err := Client.Get(url)
 	if err != nil {
 		return nil, err
@@ -38,6 +36,6 @@ func (httpLoader) Load(url string) (io.ReadCloser, error) {
 }
 
 func init() {
-	loader.Register("http", httpLoader{})
-	loader.Register("https", httpLoader{})
+	jsonschema.Loaders["http"] = Load
+	jsonschema.Loaders["https"] = Load
 }

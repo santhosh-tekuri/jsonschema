@@ -10,7 +10,6 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema"
 	_ "github.com/santhosh-tekuri/jsonschema/httploader"
-	"github.com/santhosh-tekuri/jsonschema/loader"
 )
 
 func main() {
@@ -26,7 +25,7 @@ func main() {
 	}
 
 	for _, f := range os.Args[2:] {
-		r, err := loader.Load(f)
+		r, err := jsonschema.LoadURL(f)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error in reading %q. reason: \n%v\n", f, err)
 			os.Exit(1)
