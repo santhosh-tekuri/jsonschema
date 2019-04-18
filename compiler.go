@@ -494,20 +494,7 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 			if s.Else, err = loadSchema("else"); err != nil {
 				return err
 			}
-
-			if c.ExtractAnnotations {
-				if readOnly, ok := m["readOnly"]; ok {
-					s.ReadOnly = readOnly.(bool)
-				}
-				if writeOnly, ok := m["writeOnly"]; ok {
-					s.WriteOnly = writeOnly.(bool)
-				}
-				if examples, ok := m["examples"]; ok {
-					s.Examples = examples.([]interface{})
-				}
-			}
 		}
-
 		if encoding, ok := m["contentEncoding"]; ok {
 			s.ContentEncoding = encoding.(string)
 			s.Decoder, _ = decoders.Get(s.ContentEncoding)
@@ -515,6 +502,17 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 		if mediaType, ok := m["contentMediaType"]; ok {
 			s.ContentMediaType = mediaType.(string)
 			s.MediaType, _ = mediatypes.Get(s.ContentMediaType)
+		}
+		if c.ExtractAnnotations {
+			if readOnly, ok := m["readOnly"]; ok {
+				s.ReadOnly = readOnly.(bool)
+			}
+			if writeOnly, ok := m["writeOnly"]; ok {
+				s.WriteOnly = writeOnly.(bool)
+			}
+			if examples, ok := m["examples"]; ok {
+				s.Examples = examples.([]interface{})
+			}
 		}
 	}
 
