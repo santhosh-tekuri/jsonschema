@@ -93,11 +93,11 @@ This package supports json string formats:
 - relative-json-pointer
 - uri-template (limited validation)
 
-Developers can register their own formats using package "github.com/santhosh-tekuri/jsonschema/formats".
+Developers can register their own formats by adding them to `jsonschema.Formats` map.
 
-"base64" contentEncoding is supported. Custom decoders can be registered using package "github.com/santhosh-tekuri/jsonschema/decoders".
+"base64" contentEncoding is supported. Custom decoders can be registered by adding them to `jsonschema.Decoders` map.
 
-"application/json" contentMediaType is supported. Custom mediatypes can be registered using package "github.com/santhosh-tekuri/jsonschema/mediatypes".
+"application/json" contentMediaType is supported. Custom mediatypes can be registered by adding them to `jsonschema.MediaTypes` map.
 
 ## ValidationError
 
