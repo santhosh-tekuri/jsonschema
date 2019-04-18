@@ -172,12 +172,10 @@ func init() {
 				"format": "format"
 			},
 			"contentMediaType": {
-				"type": "string",
-				"format": "mediatype"
+				"type": "string"
 			},
 			"contentEncoding": {
-				"type": "string",
-				"format": "encoding"
+				"type": "string"
 			},
 			"if": {"$ref": "#"},
 			"then": {"$ref": "#"},

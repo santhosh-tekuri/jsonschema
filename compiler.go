@@ -13,25 +13,6 @@ import (
 	"strings"
 )
 
-func init() {
-	Formats["encoding"] = func(v interface{}) bool {
-		s, ok := v.(string)
-		if !ok {
-			return false
-		}
-		_, ok = Decoders[s]
-		return ok
-	}
-	Formats["mediatype"] = func(v interface{}) bool {
-		s, ok := v.(string)
-		if !ok {
-			return false
-		}
-		_, ok = MediaTypes[s]
-		return ok
-	}
-}
-
 // A Draft represents json-schema draft
 type Draft struct {
 	meta    *Schema

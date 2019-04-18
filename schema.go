@@ -442,15 +442,17 @@ func (s *Schema) validate(v interface{}) error {
 		if s.Pattern != nil && !s.Pattern.MatchString(v) {
 			return validationError("pattern", "does not match pattern %q", s.Pattern)
 		}
+
+		decoded := s.ContentEncoding == ""
 		var content []byte
 		if s.Decoder != nil {
 			b, err := s.Decoder(v)
 			if err != nil {
 				return validationError("contentEncoding", "%q is not %s encoded", v, s.ContentEncoding)
 			}
-			content = b
+			content, decoded = b, true
 		}
-		if s.MediaType != nil {
+		if decoded && s.MediaType != nil {
 			if s.Decoder == nil {
 				content = []byte(v)
 			}
