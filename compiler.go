@@ -409,8 +409,8 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 	}
 
 	if format, ok := m["format"]; ok {
-		s.FormatName = format.(string)
-		s.Format, _ = Formats[s.FormatName]
+		s.Format = format.(string)
+		s.format, _ = Formats[s.Format]
 	}
 
 	loadFloat := func(pname string) *big.Float {
@@ -481,11 +481,11 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 		}
 		if encoding, ok := m["contentEncoding"]; ok {
 			s.ContentEncoding = encoding.(string)
-			s.Decoder, _ = Decoders[s.ContentEncoding]
+			s.decoder, _ = Decoders[s.ContentEncoding]
 		}
 		if mediaType, ok := m["contentMediaType"]; ok {
 			s.ContentMediaType = mediaType.(string)
-			s.MediaType, _ = MediaTypes[s.ContentMediaType]
+			s.mediaType, _ = MediaTypes[s.ContentMediaType]
 		}
 		if c.ExtractAnnotations {
 			if readOnly, ok := m["readOnly"]; ok {

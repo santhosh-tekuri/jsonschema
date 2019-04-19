@@ -22,21 +22,21 @@ type Schema struct {
 	Ptr string // json-pointer to schema. always starts with `#`.
 
 	// type agnostic validations
-	Format     func(interface{}) bool
-	FormatName string
-	Always     *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref        *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
-	Types      []string      // allowed types.
-	Constant   []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
-	Enum       []interface{} // allowed values.
-	enumError  string        // error message for enum fail. captured here to avoid constructing error message every time.
-	Not        *Schema
-	AllOf      []*Schema
-	AnyOf      []*Schema
-	OneOf      []*Schema
-	If         *Schema
-	Then       *Schema // nil, when If is nil.
-	Else       *Schema // nil, when If is nil.
+	format    func(interface{}) bool
+	Format    string
+	Always    *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref       *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
+	Types     []string      // allowed types.
+	Constant  []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
+	Enum      []interface{} // allowed values.
+	enumError string        // error message for enum fail. captured here to avoid constructing error message every time.
+	Not       *Schema
+	AllOf     []*Schema
+	AnyOf     []*Schema
+	OneOf     []*Schema
+	If        *Schema
+	Then      *Schema // nil, when If is nil.
+	Else      *Schema // nil, when If is nil.
 
 	// object validations
 	MinProperties        int      // -1 if not specified.
@@ -62,9 +62,9 @@ type Schema struct {
 	MaxLength        int // -1 if not specified.
 	Pattern          *regexp.Regexp
 	ContentEncoding  string
-	Decoder          func(string) ([]byte, error)
+	decoder          func(string) ([]byte, error)
 	ContentMediaType string
-	MediaType        func([]byte) error
+	mediaType        func([]byte) error
 
 	// number validators
 	Minimum          *big.Float
@@ -204,8 +204,8 @@ func (s *Schema) validate(v interface{}) error {
 		}
 	}
 
-	if s.Format != nil && !s.Format(v) {
-		return validationError("format", "%q is not valid %q", v, s.FormatName)
+	if s.format != nil && !s.format(v) {
+		return validationError("format", "%q is not valid %q", v, s.Format)
 	}
 
 	if s.Not != nil && s.Not.validate(v) == nil {
@@ -445,18 +445,18 @@ func (s *Schema) validate(v interface{}) error {
 
 		decoded := s.ContentEncoding == ""
 		var content []byte
-		if s.Decoder != nil {
-			b, err := s.Decoder(v)
+		if s.decoder != nil {
+			b, err := s.decoder(v)
 			if err != nil {
 				return validationError("contentEncoding", "%q is not %s encoded", v, s.ContentEncoding)
 			}
 			content, decoded = b, true
 		}
-		if decoded && s.MediaType != nil {
-			if s.Decoder == nil {
+		if decoded && s.mediaType != nil {
+			if s.decoder == nil {
 				content = []byte(v)
 			}
-			if err := s.MediaType(content); err != nil {
+			if err := s.mediaType(content); err != nil {
 				return validationError("contentMediaType", "value is not of mediatype %q", s.ContentMediaType)
 			}
 		}
