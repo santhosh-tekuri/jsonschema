@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/santhosh-tekuri/jsonschema"
-	_ "github.com/santhosh-tekuri/jsonschema/httploader"
+	"github.com/santhosh-tekuri/jsonschema/v2"
+	_ "github.com/santhosh-tekuri/jsonschema/v2/httploader"
 )
 
 func main() {
