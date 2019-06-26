@@ -62,6 +62,11 @@ type Compiler struct {
 	// ExtractAnnotations tells whether schema annotations has to be extracted
 	// in compiled Schema or not.
 	ExtractAnnotations bool
+
+	// LoadURL loads the document at given URL.
+	//
+	// If nil, package global LoadURL is used.
+	LoadURL func(s string) (io.ReadCloser, error)
 }
 
 // NewCompiler returns a json-schema Compiler object.
@@ -98,7 +103,7 @@ func (c *Compiler) MustCompile(url string) *Schema {
 func (c *Compiler) Compile(url string) (*Schema, error) {
 	base, fragment := split(url)
 	if _, ok := c.resources[base]; !ok {
-		r, err := LoadURL(base)
+		r, err := c.loadURL(base)
 		if err != nil {
 			return nil, err
 		}
@@ -130,6 +135,13 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 		}
 	}
 	return c.compileRef(r, r.url, fragment)
+}
+
+func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
+	if c.LoadURL != nil {
+		return c.LoadURL(s)
+	}
+	return LoadURL(s)
 }
 
 func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
