@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -520,5 +522,34 @@ func TestNonStringFormat(t *testing.T) {
 	}
 	if err = s.Validate(strings.NewReader("6")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCompiler_LoadURL(t *testing.T) {
+	const (
+		base   = `{ "type": "string" }`
+		schema = `{ "allOf": [{ "$ref": "base.json" }, { "maxLength": 3 }] }`
+	)
+
+	c := jsonschema.NewCompiler()
+	c.LoadURL = func(s string) (io.ReadCloser, error) {
+		switch s {
+		case "base.json":
+			return ioutil.NopCloser(strings.NewReader(base)), nil
+		case "schema.json":
+			return ioutil.NopCloser(strings.NewReader(schema)), nil
+		default:
+			return nil, errors.New("unsupported schema")
+		}
+	}
+	s, err := c.Compile("schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Validate(strings.NewReader(`"foo"`)); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Validate(strings.NewReader(`"long"`)); err == nil {
+		t.Fatal("error expected")
 	}
 }

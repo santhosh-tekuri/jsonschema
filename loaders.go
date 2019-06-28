@@ -49,7 +49,8 @@ func (s SchemeNotRegisteredError) Error() string {
 // uses Loaders registry to lookup by schema and uses that loader.
 //
 // Users can change this variable, if they would like to take complete
-// responsibility of loading given URL
+// responsibility of loading given URL. Used by Compiler if its LoadURL
+// field is nil.
 var LoadURL = func(s string) (io.ReadCloser, error) {
 	u, err := url.Parse(s)
 	if err != nil {
