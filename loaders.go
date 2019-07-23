@@ -14,7 +14,7 @@ func loadFile(path string) (io.ReadCloser, error) {
 	return os.Open(path)
 }
 
-func loadFileUrl(s string) (io.ReadCloser, error) {
+func loadFileURL(s string) (io.ReadCloser, error) {
 	u, err := url.Parse(s)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func loadFileUrl(s string) (io.ReadCloser, error) {
 // value is function that knows how to load url of that schema
 var Loaders = map[string]func(url string) (io.ReadCloser, error){
 	"":     loadFile,
-	"file": loadFileUrl,
+	"file": loadFileURL,
 }
 
 // SchemeNotRegisteredError is the error type returned by Load function.
