@@ -32,6 +32,7 @@ type Compiler struct {
 	Draft     *Draft
 	resources map[string]*resource
 
+	// Extensions is used to register extensions.
 	Extensions map[string]Extension
 
 	// ExtractAnnotations tells whether schema annotations has to be extracted
