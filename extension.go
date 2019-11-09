@@ -4,8 +4,6 @@
 
 package jsonschema
 
-var Extensions = make(map[string]Extension)
-
 type Extension struct {
 	Meta     *Schema
 	Compile  func(ctx CompilerContext, m map[string]interface{}) (interface{}, error)
