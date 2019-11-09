@@ -81,7 +81,7 @@ type Schema struct {
 	WriteOnly   bool
 	Examples    []interface{}
 
-	// User defined extensions
+	// user defined extensions
 	Extensions map[string]interface{}
 	extensions map[string]func(ctx ValidationContext, s interface{}, v interface{}) error
 }
@@ -89,7 +89,6 @@ type Schema struct {
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
 //
-// The json-schema is validated with draft4 specification.
 // Returned error can be *SchemaError
 func Compile(url string) (*Schema, error) {
 	return NewCompiler().Compile(url)
@@ -99,6 +98,15 @@ func Compile(url string) (*Schema, error) {
 // It simplifies safe initialization of global variables holding compiled Schemas.
 func MustCompile(url string) *Schema {
 	return NewCompiler().MustCompile(url)
+}
+
+// CompileString parses and compiles the given schema with given base url.
+func CompileString(url, schema string) (*Schema, error) {
+	c := NewCompiler()
+	if err := c.AddResource(url, strings.NewReader(schema)); err != nil {
+		return nil, err
+	}
+	return c.Compile(url)
 }
 
 // Validate validates the given json data, against the json-schema.
