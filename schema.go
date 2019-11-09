@@ -80,6 +80,10 @@ type Schema struct {
 	ReadOnly    bool
 	WriteOnly   bool
 	Examples    []interface{}
+
+	// User defined extensions
+	Extensions map[string]interface{}
+	extensions map[string]func(ctx ValidationContext, s interface{}, v interface{}) error
 }
 
 // Compile parses json-schema at given url returns, if successful,
@@ -477,6 +481,13 @@ func (s *Schema) validate(v interface{}) error {
 			if q := new(big.Float).Quo(num, s.MultipleOf); !q.IsInt() {
 				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
 			}
+		}
+	}
+
+	for name, cs := range s.Extensions {
+		validate := s.extensions[name]
+		if err := validate(ValidationContext{}, cs, v); err != nil {
+			errors = append(errors, err)
 		}
 	}
 

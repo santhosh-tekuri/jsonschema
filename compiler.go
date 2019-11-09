@@ -23,7 +23,10 @@ type Draft struct {
 var latest = Draft7
 
 func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
-	if meta := draft.meta; meta != nil {
+	validate := func(meta *Schema) error {
+		if meta == nil {
+			return nil
+		}
 		if err := meta.validate(v); err != nil {
 			_ = addContext(ptr, "", err)
 			finishSchemaContext(err, meta)
@@ -44,6 +47,16 @@ func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
 					Causes:      []*ValidationError{err.(*ValidationError)},
 				},
 			}
+		}
+		return nil
+	}
+
+	if err := validate(draft.meta); err != nil {
+		return err
+	}
+	for _, ext := range Extensions {
+		if err := validate(ext.Meta); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -144,7 +157,7 @@ func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
 	return LoadURL(s)
 }
 
-func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
+func (c *Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 	var err error
 	if rootFragment(ref) {
 		if _, ok := r.schemas["#"]; !ok {
@@ -209,7 +222,7 @@ func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 	return c.Compile(refURL)
 }
 
-func (c Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*Schema, error) {
+func (c *Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*Schema, error) {
 	if s == nil {
 		s = new(Schema)
 		s.URL, _ = split(base)
@@ -223,7 +236,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*
 	}
 }
 
-func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]interface{}) error {
+func (c *Compiler) compileMap(r *resource, s *Schema, base string, m map[string]interface{}) error {
 	var err error
 
 	if id, ok := m[r.draft.id]; ok {
@@ -509,6 +522,21 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 			if examples, ok := m["examples"]; ok {
 				s.Examples = examples.([]interface{})
 			}
+		}
+	}
+
+	for name, ext := range Extensions {
+		cs, err := ext.Compile(CompilerContext{c, r, base}, m)
+		if err != nil {
+			return err
+		}
+		if cs != nil {
+			if s.Extensions == nil {
+				s.Extensions = make(map[string]interface{})
+				s.extensions = make(map[string]func(ctx ValidationContext, s interface{}, v interface{}) error)
+			}
+			s.Extensions[name] = cs
+			s.extensions[name] = ext.Validate
 		}
 	}
 
