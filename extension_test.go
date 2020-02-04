@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ory/jsonschema/v3"
+ 	"github.com/santhosh-tekuri/jsonschema/v2"
 )
 
 func powerOfExt() jsonschema.Extension {
