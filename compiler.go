@@ -22,33 +22,6 @@ type Draft struct {
 
 var latest = Draft7
 
-func (draft *Draft) validateSchema(url, ptr string, v interface{}) error {
-	if meta := draft.meta; meta != nil {
-		if err := meta.validate(v); err != nil {
-			_ = addContext(ptr, "", err)
-			finishSchemaContext(err, meta)
-			finishInstanceContext(err)
-			var instancePtr string
-			if ptr == "" {
-				instancePtr = "#"
-			} else {
-				instancePtr = "#/" + ptr
-			}
-			return &SchemaError{
-				url,
-				&ValidationError{
-					Message:     fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
-					InstancePtr: instancePtr,
-					SchemaURL:   meta.URL,
-					SchemaPtr:   "#",
-					Causes:      []*ValidationError{err.(*ValidationError)},
-				},
-			}
-		}
-	}
-	return nil
-}
-
 // A Compiler represents a json-schema compiler.
 //
 // Currently draft4, draft6 and draft7 are supported
@@ -58,6 +31,9 @@ type Compiler struct {
 	// This defaults to latest draft (currently draft7).
 	Draft     *Draft
 	resources map[string]*resource
+
+	// Extensions is used to register extensions.
+	Extensions map[string]Extension
 
 	// ExtractAnnotations tells whether schema annotations has to be extracted
 	// in compiled Schema or not.
@@ -73,7 +49,7 @@ type Compiler struct {
 // if '$schema' attribute is missing, it is treated as draft7. to change this
 // behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
-	return &Compiler{Draft: latest, resources: make(map[string]*resource)}
+	return &Compiler{Draft: latest, resources: make(map[string]*resource), Extensions: make(map[string]Extension)}
 }
 
 // AddResource adds in-memory resource to the compiler.
@@ -144,11 +120,11 @@ func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
 	return LoadURL(s)
 }
 
-func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
+func (c *Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 	var err error
 	if rootFragment(ref) {
 		if _, ok := r.schemas["#"]; !ok {
-			if err := r.draft.validateSchema(r.url, "", r.doc); err != nil {
+			if err := c.validateSchema(r, "", r.doc); err != nil {
 				return nil, err
 			}
 			s := &Schema{URL: r.url, Ptr: "#"}
@@ -166,7 +142,7 @@ func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 			if err != nil {
 				return nil, err
 			}
-			if err := r.draft.validateSchema(r.url, strings.TrimPrefix(ref, "#/"), doc); err != nil {
+			if err := c.validateSchema(r, strings.TrimPrefix(ref, "#/"), doc); err != nil {
 				return nil, err
 			}
 			r.schemas[ref] = &Schema{URL: base, Ptr: ref}
@@ -190,7 +166,7 @@ func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 		return nil, err
 	}
 	if v, ok := ids[refURL]; ok {
-		if err := r.draft.validateSchema(r.url, "", v); err != nil {
+		if err := c.validateSchema(r, "", v); err != nil {
 			return nil, err
 		}
 		u, f := split(refURL)
@@ -209,7 +185,7 @@ func (c Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 	return c.Compile(refURL)
 }
 
-func (c Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*Schema, error) {
+func (c *Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*Schema, error) {
 	if s == nil {
 		s = new(Schema)
 		s.URL, _ = split(base)
@@ -223,7 +199,7 @@ func (c Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*
 	}
 }
 
-func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]interface{}) error {
+func (c *Compiler) compileMap(r *resource, s *Schema, base string, m map[string]interface{}) error {
 	var err error
 
 	if id, ok := m[r.draft.id]; ok {
@@ -512,6 +488,61 @@ func (c Compiler) compileMap(r *resource, s *Schema, base string, m map[string]i
 		}
 	}
 
+	for name, ext := range c.Extensions {
+		cs, err := ext.Compile(CompilerContext{c, r, base}, m)
+		if err != nil {
+			return err
+		}
+		if cs != nil {
+			if s.Extensions == nil {
+				s.Extensions = make(map[string]interface{})
+				s.extensions = make(map[string]func(ctx ValidationContext, s interface{}, v interface{}) error)
+			}
+			s.Extensions[name] = cs
+			s.extensions[name] = ext.Validate
+		}
+	}
+
+	return nil
+}
+
+func (c *Compiler) validateSchema(r *resource, ptr string, v interface{}) error {
+	validate := func(meta *Schema) error {
+		if meta == nil {
+			return nil
+		}
+		if err := meta.validate(v); err != nil {
+			_ = addContext(ptr, "", err)
+			finishSchemaContext(err, meta)
+			finishInstanceContext(err)
+			var instancePtr string
+			if ptr == "" {
+				instancePtr = "#"
+			} else {
+				instancePtr = "#/" + ptr
+			}
+			return &SchemaError{
+				r.url,
+				&ValidationError{
+					Message:     fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
+					InstancePtr: instancePtr,
+					SchemaURL:   meta.URL,
+					SchemaPtr:   "#",
+					Causes:      []*ValidationError{err.(*ValidationError)},
+				},
+			}
+		}
+		return nil
+	}
+
+	if err := validate(r.draft.meta); err != nil {
+		return err
+	}
+	for _, ext := range c.Extensions {
+		if err := validate(ext.Meta); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

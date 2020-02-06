@@ -80,12 +80,15 @@ type Schema struct {
 	ReadOnly    bool
 	WriteOnly   bool
 	Examples    []interface{}
+
+	// user defined extensions
+	Extensions map[string]interface{}
+	extensions map[string]func(ctx ValidationContext, s interface{}, v interface{}) error
 }
 
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
 //
-// The json-schema is validated with draft4 specification.
 // Returned error can be *SchemaError
 func Compile(url string) (*Schema, error) {
 	return NewCompiler().Compile(url)
@@ -95,6 +98,15 @@ func Compile(url string) (*Schema, error) {
 // It simplifies safe initialization of global variables holding compiled Schemas.
 func MustCompile(url string) *Schema {
 	return NewCompiler().MustCompile(url)
+}
+
+// CompileString parses and compiles the given schema with given base url.
+func CompileString(url, schema string) (*Schema, error) {
+	c := NewCompiler()
+	if err := c.AddResource(url, strings.NewReader(schema)); err != nil {
+		return nil, err
+	}
+	return c.Compile(url)
 }
 
 // Validate validates the given json data, against the json-schema.
@@ -477,6 +489,13 @@ func (s *Schema) validate(v interface{}) error {
 			if q := new(big.Float).Quo(num, s.MultipleOf); !q.IsInt() {
 				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
 			}
+		}
+	}
+
+	for name, cs := range s.Extensions {
+		validate := s.extensions[name]
+		if err := validate(ValidationContext{}, cs, v); err != nil {
+			errors = append(errors, err)
 		}
 	}
 
