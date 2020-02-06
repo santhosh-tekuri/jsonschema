@@ -59,7 +59,7 @@ func TestPowerOfExt(t *testing.T) {
 	t.Run("invalidSchema", func(t *testing.T) {
 		c := jsonschema.NewCompiler()
 		c.Extensions["powerOf"] = powerOfExt()
-		if err := c.AddResource("test.json", strings.NewReader(`{"multipleOf": "hello"}`)); err != nil {
+		if err := c.AddResource("test.json", strings.NewReader(`{"powerOf": "hello"}`)); err != nil {
 			t.Fatal(err)
 		}
 		_, err := c.Compile("test.json")
@@ -71,7 +71,7 @@ func TestPowerOfExt(t *testing.T) {
 	t.Run("validSchema", func(t *testing.T) {
 		c := jsonschema.NewCompiler()
 		c.Extensions["powerOf"] = powerOfExt()
-		if err := c.AddResource("test.json", strings.NewReader(`{"multipleOf": 10}`)); err != nil {
+		if err := c.AddResource("test.json", strings.NewReader(`{"powerOf": 10}`)); err != nil {
 			t.Fatal(err)
 		}
 		sch, err := c.Compile("test.json")
@@ -87,6 +87,9 @@ func TestPowerOfExt(t *testing.T) {
 			if err := sch.Validate(strings.NewReader(`111`)); err == nil {
 				t.Fatal("validation must fail")
 			} else {
+				if !strings.Contains(err.Error(), "111 not powerOf 10") {
+					t.Fatal("validation error expected to contain powerOf message")
+				}
 				t.Log(err)
 			}
 		})
