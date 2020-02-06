@@ -137,6 +137,10 @@ Here `I` stands for instance document and `S` stands for schema document.
 The json-fragments that caused error in instance and schema documents are represented using json-pointer notation.  
 Nested causes are printed with indent.
 
+## Custom Extensions
+
+Custom Extensions can be registered as shown in `extension_test.go`
+
 ## CLI
 
 ```bash

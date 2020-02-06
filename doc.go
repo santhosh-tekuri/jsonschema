@@ -73,5 +73,7 @@ adding them to jsonschema.Formats map.
 
 The ValidationError returned by Validate method contains detailed context to understand why and where the error is.
 
+Custom Extensions can be registered as shown in extension_test.go
+
 */
 package jsonschema
