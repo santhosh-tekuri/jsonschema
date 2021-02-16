@@ -127,7 +127,7 @@ func (c *Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 			if err := c.validateSchema(r, "", r.doc); err != nil {
 				return nil, err
 			}
-			s := &Schema{URL: r.url, Ptr: "#"}
+			s := &Schema{URL: r.url, Ptr: "#", Source: r.doc}
 			r.schemas["#"] = s
 			if _, err := c.compile(r, s, base, r.doc); err != nil {
 				return nil, err
@@ -145,7 +145,7 @@ func (c *Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 			if err := c.validateSchema(r, strings.TrimPrefix(ref, "#/"), doc); err != nil {
 				return nil, err
 			}
-			r.schemas[ref] = &Schema{URL: base, Ptr: ref}
+			r.schemas[ref] = &Schema{URL: base, Ptr: ref, Source: doc}
 			if _, err := c.compile(r, r.schemas[ref], ptrBase, doc); err != nil {
 				return nil, err
 			}
@@ -170,7 +170,7 @@ func (c *Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 			return nil, err
 		}
 		u, f := split(refURL)
-		s := &Schema{URL: u, Ptr: f}
+		s := &Schema{URL: u, Ptr: f, Source: v}
 		r.schemas[refURL] = s
 		if err := c.compileMap(r, s, refURL, v); err != nil {
 			return nil, err
@@ -190,6 +190,7 @@ func (c *Compiler) compile(r *resource, s *Schema, base string, m interface{}) (
 		s = new(Schema)
 		s.URL, _ = split(base)
 	}
+	s.Source = m
 	switch m := m.(type) {
 	case bool:
 		s.Always = &m

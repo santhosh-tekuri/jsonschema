@@ -18,8 +18,9 @@ import (
 
 // A Schema represents compiled version of json-schema.
 type Schema struct {
-	URL string // absolute url of the resource.
-	Ptr string // json-pointer to schema. always starts with `#`.
+	URL    string      // absolute url of the resource.
+	Ptr    string      // json-pointer to schema. always starts with `#`.
+	Source interface{} // The source document of this schema
 
 	// type agnostic validations
 	format    func(interface{}) bool
