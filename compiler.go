@@ -77,6 +77,14 @@ func (c *Compiler) MustCompile(url string) *Schema {
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
 func (c *Compiler) Compile(url string) (*Schema, error) {
+	switch url {
+	case "http://json-schema.org/draft-07/schema#":
+		return Draft7.meta, nil
+	case "http://json-schema.org/draft-06/schema#":
+		return Draft6.meta, nil
+	case "http://json-schema.org/draft-04/schema#":
+		return Draft4.meta, nil
+	}
 	base, fragment := split(url)
 	if _, ok := c.resources[base]; !ok {
 		r, err := c.loadURL(base)
