@@ -46,7 +46,7 @@ var Formats = map[string]func(interface{}) bool{
 func isDateTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	if _, err := time.Parse(time.RFC3339, s); err == nil {
 		return true
@@ -62,7 +62,7 @@ func isDateTime(v interface{}) bool {
 func isDate(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	_, err := time.Parse("2006-01-02", s)
 	return err == nil
@@ -73,7 +73,7 @@ func isDate(v interface{}) bool {
 func isTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	if _, err := time.Parse("15:04:05Z07:00", s); err == nil {
 		return true
@@ -92,7 +92,7 @@ func isTime(v interface{}) bool {
 func isHostname(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	// entire hostname (including the delimiting dots but not a trailing dot) has a maximum of 253 ASCII characters
 	s = strings.TrimSuffix(s, ".")
@@ -138,7 +138,7 @@ func isHostname(v interface{}) bool {
 func isEmail(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	// entire email address to be no more than 254 characters long
 	if len(s) > 254 {
@@ -172,7 +172,7 @@ func isEmail(v interface{}) bool {
 func isIPV4(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	groups := strings.Split(s, ".")
 	if len(groups) != 4 {
@@ -195,7 +195,7 @@ func isIPV4(v interface{}) bool {
 func isIPV6(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	if !strings.Contains(s, ":") {
 		return false
@@ -207,7 +207,7 @@ func isIPV6(v interface{}) bool {
 func isURI(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	u, err := url.Parse(s)
 	return err == nil && u.IsAbs()
@@ -218,7 +218,7 @@ func isURI(v interface{}) bool {
 func isURIReference(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	_, err := url.Parse(s)
 	return err == nil
@@ -231,7 +231,7 @@ func isURIReference(v interface{}) bool {
 func isURITemplate(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	u, err := url.Parse(s)
 	if err != nil {
@@ -267,7 +267,7 @@ func isURITemplate(v interface{}) bool {
 func isRegex(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	_, err := regexp.Compile(s)
 	return err == nil
@@ -279,7 +279,7 @@ func isRegex(v interface{}) bool {
 func isJSONPointer(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	if s != "" && !strings.HasPrefix(s, "/") {
 		return false
@@ -308,7 +308,7 @@ func isJSONPointer(v interface{}) bool {
 func isRelativeJSONPointer(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
-		return false
+		return true
 	}
 	if s == "" {
 		return false
