@@ -222,7 +222,7 @@ func isURIReference(v interface{}) bool {
 		return true
 	}
 	_, err := url.Parse(s)
-	return err == nil
+	return err == nil && !strings.Contains(s, `\`)
 }
 
 // isURITemplate tells whether given string is a valid URI Template
