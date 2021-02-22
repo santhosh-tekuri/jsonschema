@@ -175,7 +175,8 @@ func (s *Schema) validate(v interface{}) error {
 				matched = true
 				break
 			} else if t == "integer" && vType == "number" {
-				if _, ok := new(big.Int).SetString(fmt.Sprint(v), 10); ok {
+				num, _ := new(big.Float).SetString(fmt.Sprint(v))
+				if num.IsInt() {
 					matched = true
 					break
 				}
