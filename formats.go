@@ -48,6 +48,7 @@ func isDateTime(v interface{}) bool {
 	if !ok {
 		return true
 	}
+	s = strings.ToUpper(s) // to support case-insensitive T and Z
 	if _, err := time.Parse(time.RFC3339, s); err == nil {
 		return true
 	}
