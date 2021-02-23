@@ -67,11 +67,11 @@ type Schema struct {
 	mediaType        func([]byte) error
 
 	// number validators
-	Minimum          *big.Float
-	ExclusiveMinimum *big.Float
-	Maximum          *big.Float
-	ExclusiveMaximum *big.Float
-	MultipleOf       *big.Float
+	Minimum          *big.Rat
+	ExclusiveMinimum *big.Rat
+	Maximum          *big.Rat
+	ExclusiveMaximum *big.Rat
+	MultipleOf       *big.Rat
 
 	// annotations. captured only when Compiler.ExtractAnnotations is true.
 	Title       string
@@ -175,7 +175,7 @@ func (s *Schema) validate(v interface{}) error {
 				matched = true
 				break
 			} else if t == "integer" && vType == "number" {
-				num, _ := new(big.Float).SetString(fmt.Sprint(v))
+				num, _ := new(big.Rat).SetString(fmt.Sprint(v))
 				if num.IsInt() {
 					matched = true
 					break
@@ -473,7 +473,7 @@ func (s *Schema) validate(v interface{}) error {
 		}
 
 	case json.Number, float64, int, int32, int64:
-		num, _ := new(big.Float).SetString(fmt.Sprint(v))
+		num, _ := new(big.Rat).SetString(fmt.Sprint(v))
 		if s.Minimum != nil && num.Cmp(s.Minimum) < 0 {
 			errors = append(errors, validationError("minimum", "must be >= %v but found %v", s.Minimum, v))
 		}
@@ -487,7 +487,7 @@ func (s *Schema) validate(v interface{}) error {
 			errors = append(errors, validationError("exclusiveMaximum", "must be < %v but found %v", s.ExclusiveMaximum, v))
 		}
 		if s.MultipleOf != nil {
-			if q := new(big.Float).Quo(num, s.MultipleOf); !q.IsInt() {
+			if q := new(big.Rat).Quo(num, s.MultipleOf); !q.IsInt() {
 				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
 			}
 		}
@@ -565,8 +565,8 @@ func equals(v1, v2 interface{}) bool {
 		}
 		return true
 	case "number":
-		num1, _ := new(big.Float).SetString(string(v1.(json.Number)))
-		num2, _ := new(big.Float).SetString(string(v2.(json.Number)))
+		num1, _ := new(big.Rat).SetString(string(v1.(json.Number)))
+		num2, _ := new(big.Rat).SetString(string(v2.(json.Number)))
 		return num1.Cmp(num2) == 0
 	default:
 		return v1 == v2

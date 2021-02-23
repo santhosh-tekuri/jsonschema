@@ -409,37 +409,37 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base string, m map[string]
 		s.format, _ = Formats[s.Format]
 	}
 
-	loadFloat := func(pname string) *big.Float {
+	loadRat := func(pname string) *big.Rat {
 		if num, ok := m[pname]; ok {
-			r, _ := new(big.Float).SetString(string(num.(json.Number)))
+			r, _ := new(big.Rat).SetString(string(num.(json.Number)))
 			return r
 		}
 		return nil
 	}
 
-	s.Minimum = loadFloat("minimum")
+	s.Minimum = loadRat("minimum")
 	if exclusive, ok := m["exclusiveMinimum"]; ok {
 		if exclusive, ok := exclusive.(bool); ok {
 			if exclusive {
 				s.Minimum, s.ExclusiveMinimum = nil, s.Minimum
 			}
 		} else {
-			s.ExclusiveMinimum = loadFloat("exclusiveMinimum")
+			s.ExclusiveMinimum = loadRat("exclusiveMinimum")
 		}
 	}
 
-	s.Maximum = loadFloat("maximum")
+	s.Maximum = loadRat("maximum")
 	if exclusive, ok := m["exclusiveMaximum"]; ok {
 		if exclusive, ok := exclusive.(bool); ok {
 			if exclusive {
 				s.Maximum, s.ExclusiveMaximum = nil, s.Maximum
 			}
 		} else {
-			s.ExclusiveMaximum = loadFloat("exclusiveMaximum")
+			s.ExclusiveMaximum = loadRat("exclusiveMaximum")
 		}
 	}
 
-	s.MultipleOf = loadFloat("multipleOf")
+	s.MultipleOf = loadRat("multipleOf")
 
 	if c.ExtractAnnotations {
 		if title, ok := m["title"]; ok {
