@@ -5,6 +5,7 @@
 package jsonschema
 
 import (
+	"errors"
 	"net"
 	"net/mail"
 	"net/url"
@@ -210,8 +211,27 @@ func isURI(v interface{}) bool {
 	if !ok {
 		return true
 	}
-	u, err := url.Parse(s)
+	u, err := urlParse(s)
 	return err == nil && u.IsAbs()
+}
+
+func urlParse(s string) (*url.URL, error) {
+	u, err := url.Parse(s)
+	if err!=nil {
+		return nil, err
+	}
+
+	// if hostname is ipv6, validate it
+	hostname := u.Hostname()
+	if strings.IndexByte(hostname, ':')!=-1 {
+		if strings.IndexByte(u.Host, '[')==-1 || strings.IndexByte(u.Host, ']')==-1 {
+			return nil, errors.New("ipv6 address is not enclosed in brackets")
+		}
+		if !isIPV6(hostname) {
+			return nil, errors.New("invalid ipv6 address")
+		}
+	}
+	return u, nil
 }
 
 // isURIReference tells whether given string is a valid URI Reference
@@ -221,7 +241,7 @@ func isURIReference(v interface{}) bool {
 	if !ok {
 		return true
 	}
-	_, err := url.Parse(s)
+	_, err := urlParse(s)
 	return err == nil && !strings.Contains(s, `\`)
 }
 
@@ -234,7 +254,7 @@ func isURITemplate(v interface{}) bool {
 	if !ok {
 		return true
 	}
-	u, err := url.Parse(s)
+	u, err := urlParse(s)
 	if err != nil {
 		return false
 	}
