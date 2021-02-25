@@ -217,14 +217,14 @@ func isURI(v interface{}) bool {
 
 func urlParse(s string) (*url.URL, error) {
 	u, err := url.Parse(s)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 
 	// if hostname is ipv6, validate it
 	hostname := u.Hostname()
-	if strings.IndexByte(hostname, ':')!=-1 {
-		if strings.IndexByte(u.Host, '[')==-1 || strings.IndexByte(u.Host, ']')==-1 {
+	if strings.IndexByte(hostname, ':') != -1 {
+		if strings.IndexByte(u.Host, '[') == -1 || strings.IndexByte(u.Host, ']') == -1 {
 			return nil, errors.New("ipv6 address is not enclosed in brackets")
 		}
 		if !isIPV6(hostname) {

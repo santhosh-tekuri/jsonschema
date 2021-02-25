@@ -25,48 +25,48 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v2/httploader"
 )
 
-var skipTests = map[string]string {
-	"TestDraft4/optional/zeroTerminatedFloats.json/some_languages_do_not_distinguish_between_different_types_of_numeric_value": "this behavior is changed in new drafts",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches": "\\s does not match vertical tab",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches": "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches": "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)": "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)": "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match": "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match": "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match": "\\S matches unicode whitespace",
+var skipTests = map[string]string{
+	"TestDraft4/optional/zeroTerminatedFloats.json/some_languages_do_not_distinguish_between_different_types_of_numeric_value":                      "this behavior is changed in new drafts",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches":                                  "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches":                                       "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)":                       "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)":                                  "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match":                       "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match":            "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match":                 "\\S matches unicode whitespace",
 	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)": "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter": "\\cX is not supported",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter": "\\cX is not supported",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)":            "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter":                                      "\\cX is not supported",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter":                                      "\\cX is not supported",
 	//
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches": "\\s does not match vertical tab",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches": "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches": "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)": "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)": "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match": "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match": "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches":                                  "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches":                                       "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)":                       "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)":                                  "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match":                       "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match":            "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match":                 "\\S matches unicode whitespace",
 	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)": "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter": "\\cX is not supported",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter": "\\cX is not supported",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)":            "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter":                                      "\\cX is not supported",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter":                                      "\\cX is not supported",
 	//
-	"TestDraft7/optional/format/idn-hostname.json": "idn-hostname format is not implemented",
-	"TestDraft7/optional/format/idn-email.json": "idn-email format is not implemented",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches": "\\s does not match vertical tab",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches": "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches": "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)": "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)": "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match": "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match": "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match": "\\S matches unicode whitespace",
+	//"TestDraft7/optional/format/idn-hostname.json": "idn-hostname format is not implemented",
+	"TestDraft7/optional/format/idn-email.json":                                                                                                     "idn-email format is not implemented",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches":                                  "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches":                                       "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)":                       "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)":                                  "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match":                       "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match":            "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match":                 "\\S matches unicode whitespace",
 	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)": "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter": "\\cX is not supported",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter": "\\cX is not supported",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)":            "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter":                                      "\\cX is not supported",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter":                                      "\\cX is not supported",
 }
 
 func TestDraft4(t *testing.T) {
@@ -104,7 +104,7 @@ func TestMain(m *testing.M) {
 
 func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 	fis, err := ioutil.ReadDir(folder)
-	if err!=nil {
+	if err != nil {
 		t.Fatal(err)
 	}
 	for _, fi := range fis {
@@ -114,7 +114,7 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 			})
 			continue
 		}
-		if path.Ext(fi.Name())!=".json" {
+		if path.Ext(fi.Name()) != ".json" {
 			continue
 		}
 		t.Run(fi.Name(), func(t *testing.T) {
