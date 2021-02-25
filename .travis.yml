@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - 1.12.5
+  - 1.15.6
 
 script:
   - ./go.test.sh
