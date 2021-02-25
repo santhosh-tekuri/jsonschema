@@ -565,8 +565,8 @@ func equals(v1, v2 interface{}) bool {
 		}
 		return true
 	case "number":
-		num1, _ := new(big.Rat).SetString(string(v1.(json.Number)))
-		num2, _ := new(big.Rat).SetString(string(v2.(json.Number)))
+		num1, _ := new(big.Rat).SetString(fmt.Sprint(v1))
+		num2, _ := new(big.Rat).SetString(fmt.Sprint(v2))
 		return num1.Cmp(num2) == 0
 	default:
 		return v1 == v2
