@@ -473,21 +473,29 @@ func (s *Schema) validate(v interface{}) error {
 		}
 
 	case json.Number, float64, int, int32, int64:
-		num, _ := new(big.Rat).SetString(fmt.Sprint(v))
-		if s.Minimum != nil && num.Cmp(s.Minimum) < 0 {
+		// lazy convert to *big.Rat to avoid allocation
+		var numVal *big.Rat
+		num := func() *big.Rat {
+			if numVal == nil {
+				numVal, _ = new(big.Rat).SetString(fmt.Sprint(v))
+			}
+			return numVal
+		}
+
+		if s.Minimum != nil && num().Cmp(s.Minimum) < 0 {
 			errors = append(errors, validationError("minimum", "must be >= %v but found %v", s.Minimum, v))
 		}
-		if s.ExclusiveMinimum != nil && num.Cmp(s.ExclusiveMinimum) <= 0 {
+		if s.ExclusiveMinimum != nil && num().Cmp(s.ExclusiveMinimum) <= 0 {
 			errors = append(errors, validationError("exclusiveMinimum", "must be > %v but found %v", s.ExclusiveMinimum, v))
 		}
-		if s.Maximum != nil && num.Cmp(s.Maximum) > 0 {
+		if s.Maximum != nil && num().Cmp(s.Maximum) > 0 {
 			errors = append(errors, validationError("maximum", "must be <= %v but found %v", s.Maximum, v))
 		}
-		if s.ExclusiveMaximum != nil && num.Cmp(s.ExclusiveMaximum) >= 0 {
+		if s.ExclusiveMaximum != nil && num().Cmp(s.ExclusiveMaximum) >= 0 {
 			errors = append(errors, validationError("exclusiveMaximum", "must be < %v but found %v", s.ExclusiveMaximum, v))
 		}
 		if s.MultipleOf != nil {
-			if q := new(big.Rat).Quo(num, s.MultipleOf); !q.IsInt() {
+			if q := new(big.Rat).Quo(num(), s.MultipleOf); !q.IsInt() {
 				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
 			}
 		}
