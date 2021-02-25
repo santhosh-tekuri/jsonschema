@@ -53,7 +53,7 @@ var skipTests = map[string]string{
 	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter":                                      "\\cX is not supported",
 	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter":                                      "\\cX is not supported",
 	//
-	//"TestDraft7/optional/format/idn-hostname.json": "idn-hostname format is not implemented",
+	"TestDraft7/optional/format/idn-hostname.json":                                                                                                  "idn-hostname format is not implemented",
 	"TestDraft7/optional/format/idn-email.json":                                                                                                     "idn-email format is not implemented",
 	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
 	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches":                                  "\\s does not match unicode whitespace",
