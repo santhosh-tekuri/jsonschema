@@ -328,9 +328,9 @@ func TestCompileURL(t *testing.T) {
 
 func TestValidateInterface(t *testing.T) {
 	files := []string{
-		"testdata/draft4/type.json",
-		"testdata/draft4/minimum.json",
-		"testdata/draft4/maximum.json",
+		"testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4/type.json",
+		"testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4/minimum.json",
+		"testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4/maximum.json",
 	}
 	for _, file := range files {
 		t.Log(filepath.Base(file))
