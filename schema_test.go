@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v2"
-	_ "github.com/santhosh-tekuri/jsonschema/v2/httploader"
+	"github.com/santhosh-tekuri/jsonschema/v3"
+	_ "github.com/santhosh-tekuri/jsonschema/v3/httploader"
 )
 
 var skipTests = map[string]string{

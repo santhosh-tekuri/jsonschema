@@ -1,7 +1,7 @@
-# jsonschema v2.2.0
+# jsonschema v3.0.0
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://godoc.org/github.com/santhosh-tekuri/jsonschema)
+[![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v3)
 [![Go Report Card](https://goreportcard.com/badge/github.com/santhosh-tekuri/jsonschema)](https://goreportcard.com/report/github.com/santhosh-tekuri/jsonschema)
 [![Build Status](https://travis-ci.org/santhosh-tekuri/jsonschema.svg?branch=master)](https://travis-ci.org/santhosh-tekuri/jsonschema)
 [![codecov.io](https://codecov.io/github/santhosh-tekuri/jsonschema/coverage.svg?branch=master)](https://codecov.io/github/santhosh-tekuri/jsonschema?branch=master)
@@ -10,11 +10,19 @@ Package jsonschema provides json-schema compilation and validation.
 
 This implementation of JSON Schema, supports draft4, draft6 and draft7.
 
-Passes all tests(including optional) in https://github.com/json-schema/JSON-Schema-Test-Suite
+Passes all tests in https://github.com/json-schema/JSON-Schema-Test-Suite with following exceptions:
+- format `idn-hostname` and `idn-email` is not implemented
+- since this library uses `regexp` package, some optional ECMA-262 related tests will fail
+- in draft4 `1.0` is a not a valid integer but in draft6 and draft7 it is valid integer.
+  This library treats `1.0` as integer even in draft4.
+
+For breaking changes from v2 to v3 check github releases page.
 
 An example of using this package:
 
 ```go
+import "github.com/santhosh-tekuri/jsonschema/v3"
+
 schema, err := jsonschema.Compile("schemas/purchaseOrder.json")
 if err != nil {
     return err

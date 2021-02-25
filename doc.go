@@ -37,7 +37,7 @@ This package supports loading json-schema from filePath and fileURL.
 
 To load json-schema from HTTPURL, add following import:
 
-	import _ "github.com/santhosh-tekuri/jsonschema/v2/httploader"
+	import _ "github.com/santhosh-tekuri/jsonschema/v3/httploader"
 
 Loading from urls for other schemes (such as ftp), can be plugged in. see package jsonschema/httploader
 for an example

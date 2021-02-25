@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v2"
+	"github.com/santhosh-tekuri/jsonschema/v3"
 )
 
 func powerOfExt() jsonschema.Extension {

@@ -17,12 +17,13 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/santhosh-tekuri/jsonschema/v2"
+	"github.com/santhosh-tekuri/jsonschema/v3"
 )
 
 // Client is the default HTTP Client used to Get the resource.
 var Client = http.DefaultClient
 
+// Load loads resource from given http(s) url.
 func Load(url string) (io.ReadCloser, error) {
 	resp, err := Client.Get(url)
 	if err != nil {
