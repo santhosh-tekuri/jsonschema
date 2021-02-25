@@ -1,0 +1,146 @@
+[
+  {
+    "description": "ignore unknown formats",
+    "schema": {"type": "string", "format": "palindrome"},
+    "tests": [
+      {
+        "description": "value is palindrome",
+        "data": "racecar",
+        "valid": true
+      },
+      {
+        "description": "value is not palindrome",
+        "data": "sample",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "multipleOf small value",
+    "schema": {"multipleOf": 0.01},
+    "tests": [
+      {
+        "description": "value is valid",
+        "data": 19.99,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "enum with single value",
+    "schema": {"enum": [1]},
+    "tests": [
+      {
+        "description": "value is invalid",
+        "data": 5,
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "enum with array value",
+    "schema": {"enum": [[ "one", "two", "three"]]},
+    "tests": [
+      {
+        "description": "array size does not match",
+        "data": [ "one", "two" ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "enum with object value",
+    "schema": {"enum": [{ "one": 1, "two": 2, "three": 3}]},
+    "tests": [
+      {
+        "description": "object size does not match",
+        "data": { "one": 1 },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "enum with object having null property",
+    "schema": {"enum": [{ "foo": null }]},
+    "tests": [
+      {
+        "description": "valid",
+        "data": { "foo": null },
+        "valid": true
+      },
+      {
+        "description": "no props is invalid",
+        "data": { },
+        "valid": false
+      },
+      {
+        "description": "missing null prop is invalid",
+        "data": { "bar": null },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "enum with empty object",
+    "schema": {"enum": [{}]},
+    "tests": [
+      {
+        "description": "valid",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "null prop is invalid",
+        "data": { "foo": null },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "$ref to $id",
+    "schema": {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "definitions": {
+        "name": {
+          "id": "#nm",
+          "type": "string"
+        },
+        "email" : {
+          "id": "email.json",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "name": { "$ref": "#nm" },
+        "email": { "$ref": "email.json"}
+      }
+    },
+    "tests": [
+      {
+        "description": "valid",
+        "data": {
+          "name": "Santhosh Kumar Tekuri",
+          "email": "santhosh.tekuri@gmail.com"
+        },
+        "valid": true
+      },
+      {
+        "description": "invalid1",
+        "data": {
+          "name": 0,
+          "email": "santhosh.tekuri@gmail.com"
+        },
+        "valid": false
+      },
+      {
+        "description": "valid",
+        "data": {
+          "name": "Santhosh Kumar Tekuri",
+          "email": 0
+        },
+        "valid": false
+      }
+    ]
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "description": "ignore unknown contentEncoding",
+    "schema": {"type": "string", "contentEncoding": "base32"},
+    "tests": [
+      {
+        "description": "value is base32 encoded",
+        "data": "ONQW24DMMU======",
+        "valid": true
+      },
+      {
+        "description": "value is not base32 encoded",
+        "data": "sample",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "ignore unknown contentMediaType",
+    "schema": {"type": "string", "contentMediaType": "application/xml"},
+    "tests": [
+      {
+        "description": "value is xml",
+        "data": "<doc/>",
+        "valid": true
+      },
+      {
+        "description": "value is not xml",
+        "data": "doc",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "known contentEncoding, known contentMediaType",
+    "schema": {"type": "string", "contentEncoding": "base64", "contentMediaType":"application/json"},
+    "tests": [
+      {
+        "description": "base64 encoded json",
+        "data": "e30=",
+        "valid": true
+      },
+      {
+        "description": "base64 encoded non-json",
+        "data": "ew==",
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unknown contentEncoding, known contentMediaType",
+    "schema": {"type": "string", "contentEncoding": "base32", "contentMediaType":"application/json"},
+    "tests": [
+      {
+        "description": "base32 encoded json",
+        "data": "PN6Q====",
+        "valid": true
+      },
+      {
+        "description": "base64 encoded non-json",
+        "data": "PM======",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "known contentEncoding, unknown contentMediaType",
+    "schema": {"type": "string", "contentEncoding": "base64", "contentMediaType":"application/xml"},
+    "tests": [
+      {
+        "description": "base64 encoded xml",
+        "data": "PGRvYy8+",
+        "valid": true
+      },
+      {
+        "description": "base64 encoded non-xml",
+        "data": "ZG9j",
+        "valid": true
+      },
+      {
+        "description": "base64 encoded non-xml",
+        "data": "ZG9j",
+        "valid": true
+      },
+      {
+        "description": "value is not base64 encoded",
+        "data": ".",
+        "valid": false
+      }
+    ]
+  }
+]

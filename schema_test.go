@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -41,16 +42,61 @@ func init() {
 		panic(err)
 	}
 }
+
+var skipTests = map[string]string {
+	"TestDraft4/optional/zeroTerminatedFloats.json/some_languages_do_not_distinguish_between_different_types_of_numeric_value": "this behavior is changed in new drafts",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches": "\\s does not match vertical tab",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches": "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches": "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)": "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)": "\\s does not match unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)": "\\S matches unicode whitespace",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter": "\\cX is not supported",
+	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter": "\\cX is not supported",
+	//
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches": "\\s does not match vertical tab",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches": "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches": "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)": "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)": "\\s does not match unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)": "\\S matches unicode whitespace",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter": "\\cX is not supported",
+	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter": "\\cX is not supported",
+	//
+	"TestDraft7/optional/format/idn-hostname.json": "idn-hostname format is not implemented",
+	"TestDraft7/optional/format/idn-email.json": "idn-email format is not implemented",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches": "\\s does not match vertical tab",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches": "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches": "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)": "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)": "\\s does not match unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match": "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)": "\\S matches unicode whitespace",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter": "\\cX is not supported",
+	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter": "\\cX is not supported",
+}
+
 func TestDraft4(t *testing.T) {
-	testFolder(t, "testdata/draft4", jsonschema.Draft4)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4", jsonschema.Draft4)
 }
 
 func TestDraft6(t *testing.T) {
-	testFolder(t, "testdata/draft6", jsonschema.Draft6)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft6", jsonschema.Draft6)
 }
 
 func TestDraft7(t *testing.T) {
-	testFolder(t, "testdata/draft7", jsonschema.Draft7)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft7", jsonschema.Draft7)
 }
 
 type testGroup struct {
@@ -64,87 +110,89 @@ type testGroup struct {
 	}
 }
 
-func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
-	server := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir("testdata/remotes"))}
+func TestMain(m *testing.M) {
+	server := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir("testdata/JSON-Schema-Test-Suite@8daea3f/remotes"))}
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			t.Fatal(err)
+			panic(err)
 		}
 	}()
-	defer server.Close()
+	os.Exit(m.Run())
+}
 
-	err := filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			t.Error(err)
-			return nil
-		}
-		if info.IsDir() {
-			return nil
-		}
-		if filepath.Ext(info.Name()) != ".json" {
-			return nil
-		}
-
-		t.Log(info.Name())
-		data, err := ioutil.ReadFile(path)
-		if err != nil {
-			t.Errorf("  FAIL: %v\n", err)
-			return nil
-		}
-		var tg []testGroup
-		if err = json.Unmarshal(data, &tg); err != nil {
-			t.Errorf("  FAIL: %v\n", err)
-			return nil
-		}
-		for _, group := range tg {
-			t.Logf("  %s\n", group.Description)
-			c := jsonschema.NewCompiler()
-			if err := c.AddResource("http://json-schema.org/draft-04/schema", bytes.NewReader(draft4)); err != nil {
-				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
-				continue
-			}
-			if err := c.AddResource("http://json-schema.org/draft-06/schema", bytes.NewReader(draft6)); err != nil {
-				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
-				continue
-			}
-			if err := c.AddResource("http://json-schema.org/draft-07/schema", bytes.NewReader(draft7)); err != nil {
-				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
-				continue
-			}
-			c.Draft = draft
-			if err := c.AddResource("test.json", bytes.NewReader(group.Schema)); err != nil {
-				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
-				continue
-			}
-			schema, err := c.Compile("test.json")
-			if err != nil {
-				t.Errorf("    FAIL: schema compilation failed, reason: %v\n", err)
-				continue
-			}
-			for _, test := range group.Tests {
-				t.Logf("      %s\n", test.Description)
-				if test.Skip != nil {
-					t.Logf("        skipping: %s\n", *test.Skip)
-					continue
-				}
-				err = schema.Validate(bytes.NewReader(test.Data))
-				valid := err == nil
-				if !valid {
-					for _, line := range strings.Split(err.Error(), "\n") {
-						t.Logf("        %s\n", line)
-					}
-				}
-				if test.Valid != valid {
-					t.Errorf("        FAIL: expected valid=%t got valid=%t\n", test.Valid, valid)
-				}
-			}
-		}
-		return nil
-	})
-	if err != nil {
+func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
+	fis, err := ioutil.ReadDir(folder)
+	if err!=nil {
 		t.Fatal(err)
 	}
+	for _, fi := range fis {
+		if fi.IsDir() {
+			t.Run(fi.Name(), func(t *testing.T) {
+				testFolder(t, path.Join(folder, fi.Name()), draft)
+			})
+			continue
+		}
+		if path.Ext(fi.Name())!=".json" {
+			continue
+		}
+		t.Run(fi.Name(), func(t *testing.T) {
+			if reason, ok := skipTests[t.Name()]; ok {
+				t.Skip(reason)
+			}
+			data, err := ioutil.ReadFile(path.Join(folder, fi.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var tg []struct {
+				Description string
+				Schema      json.RawMessage
+				Tests       []struct {
+					Description string
+					Data        json.RawMessage
+					Valid       bool
+				}
+			}
+			if err = json.Unmarshal(data, &tg); err != nil {
+				t.Fatal(err)
+			}
+			for _, group := range tg {
+				t.Run(group.Description, func(t *testing.T) {
+					if reason, ok := skipTests[t.Name()]; ok {
+						t.Skip(reason)
+					}
+					c := jsonschema.NewCompiler()
+					c.Draft = draft
+					if err := c.AddResource("schema.json", bytes.NewReader(group.Schema)); err != nil {
+						t.Fatal(err)
+					}
+					schema, err := c.Compile("schema.json")
+					if err != nil {
+						t.Fatal(err)
+					}
+					for _, test := range group.Tests {
+						t.Run(test.Description, func(t *testing.T) {
+							if reason, ok := skipTests[t.Name()]; ok {
+								t.Skip(reason)
+							}
+							err = schema.Validate(bytes.NewReader(test.Data))
+							valid := err == nil
+							if !valid {
+								for _, line := range strings.Split(err.Error(), "\n") {
+									t.Logf("        %s\n", line)
+								}
+							}
+							if test.Valid != valid {
+								t.Fatalf("valid: got %v, want %v", valid, test.Valid)
+							}
+						})
+					}
+				})
+			}
+		})
+	}
+}
 
+func TestInvalidDocs(t *testing.T) {
 	invalidDocTests := []struct {
 		description string
 		doc         string
