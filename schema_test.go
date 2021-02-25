@@ -25,24 +25,6 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v2/httploader"
 )
 
-var draft4, draft6, draft7 []byte
-
-func init() {
-	var err error
-	draft4, err = ioutil.ReadFile("testdata/draft4.json")
-	if err != nil {
-		panic(err)
-	}
-	draft6, err = ioutil.ReadFile("testdata/draft6.json")
-	if err != nil {
-		panic(err)
-	}
-	draft7, err = ioutil.ReadFile("testdata/draft7.json")
-	if err != nil {
-		panic(err)
-	}
-}
-
 var skipTests = map[string]string {
 	"TestDraft4/optional/zeroTerminatedFloats.json/some_languages_do_not_distinguish_between_different_types_of_numeric_value": "this behavior is changed in new drafts",
 	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches": "\\s does not match vertical tab",
