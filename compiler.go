@@ -78,11 +78,11 @@ func (c *Compiler) MustCompile(url string) *Schema {
 // a Schema object that can be used to match against json.
 func (c *Compiler) Compile(url string) (*Schema, error) {
 	switch url {
-	case "http://json-schema.org/draft-07/schema#":
+	case "http://json-schema.org/draft-07/schema#", "https://json-schema.org/draft-07/schema#":
 		return Draft7.meta, nil
-	case "http://json-schema.org/draft-06/schema#":
+	case "http://json-schema.org/draft-06/schema#", "https://json-schema.org/draft-06/schema#":
 		return Draft6.meta, nil
-	case "http://json-schema.org/draft-04/schema#":
+	case "http://json-schema.org/draft-04/schema#", "https://json-schema.org/draft-04/schema#":
 		return Draft4.meta, nil
 	}
 	base, fragment := split(url)
@@ -100,14 +100,17 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	if r.draft == nil {
 		if m, ok := r.doc.(map[string]interface{}); ok {
 			if url, ok := m["$schema"]; ok {
-				switch url {
-				case "http://json-schema.org/schema#":
+				if _, ok = url.(string); !ok {
+					return nil, fmt.Errorf("invalid $schema %v", url)
+				}
+				switch normalize(url.(string)) {
+				case "http://json-schema.org/schema#", "https://json-schema.org/schema#":
 					r.draft = latest
-				case "http://json-schema.org/draft-07/schema#":
+				case "http://json-schema.org/draft-07/schema#", "https://json-schema.org/draft-07/schema#":
 					r.draft = Draft7
-				case "http://json-schema.org/draft-06/schema#":
+				case "http://json-schema.org/draft-06/schema#", "https://json-schema.org/draft-06/schema#":
 					r.draft = Draft6
-				case "http://json-schema.org/draft-04/schema#":
+				case "http://json-schema.org/draft-04/schema#", "https://json-schema.org/draft-04/schema#":
 					r.draft = Draft4
 				default:
 					return nil, fmt.Errorf("unknown $schema %q", url)

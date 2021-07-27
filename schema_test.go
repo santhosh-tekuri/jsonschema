@@ -583,3 +583,25 @@ func TestCompiler_LoadURL(t *testing.T) {
 		t.Fatal("error expected")
 	}
 }
+
+func TestCompiler_dollar_schema(t *testing.T) {
+	tests := []struct {
+		name   string
+		schema string
+	}{
+		{"http_trailing_hash", `{"$schema":"http://json-schema.org/draft-07/schema#"}`},
+		{"http_no_trailing_hash", `{"$schema":"http://json-schema.org/draft-07/schema"}`},
+		{"https_trailing_hash", `{"$schema":"https://json-schema.org/draft-07/schema#"}`},
+		{"https_no_trailing_hash", `{"$schema":"https://json-schema.org/draft-07/schema"}`},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			c := jsonschema.NewCompiler()
+			c.AddResource("test.json", strings.NewReader(tt.schema))
+			if _, err := c.Compile("test.json"); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
