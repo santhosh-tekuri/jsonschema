@@ -66,6 +66,25 @@ To load json-schema from in-memory:
 ```go
 data := `{"type": "string"}`
 url := "sch.json"
+schema, err := jsonschema.CompileString(url, data)
+if err != nil {
+    return err
+}
+f, err := os.Open("doc.json")
+if err != nil {
+    return err
+}
+defer f.Close()
+if err = schema.Validate(f); err != nil {
+    return err
+}
+```
+
+alternatively:
+
+```go
+data := `{"type": "string"}`
+url := "sch.json"
 compiler := jsonschema.NewCompiler()
 if err := compiler.AddResource(url, strings.NewReader(data)); err != nil {
     return err
