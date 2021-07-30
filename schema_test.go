@@ -25,6 +25,8 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v3/httploader"
 )
 
+var testSuite = "testdata/JSON-Schema-Test-Suite@8daea3f"
+
 var skipTests = map[string]string{
 	"TestDraft4/optional/zeroTerminatedFloats.json/some_languages_do_not_distinguish_between_different_types_of_numeric_value":                      "this behavior is changed in new drafts",
 	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
@@ -70,15 +72,15 @@ var skipTests = map[string]string{
 }
 
 func TestDraft4(t *testing.T) {
-	testFolder(t, "testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4", jsonschema.Draft4)
+	testFolder(t, testSuite+"/tests/draft4", jsonschema.Draft4)
 }
 
 func TestDraft6(t *testing.T) {
-	testFolder(t, "testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft6", jsonschema.Draft6)
+	testFolder(t, testSuite+"/tests/draft6", jsonschema.Draft6)
 }
 
 func TestDraft7(t *testing.T) {
-	testFolder(t, "testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft7", jsonschema.Draft7)
+	testFolder(t, testSuite+"/tests/draft7", jsonschema.Draft7)
 }
 
 type testGroup struct {
@@ -93,7 +95,7 @@ type testGroup struct {
 }
 
 func TestMain(m *testing.M) {
-	server := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir("testdata/JSON-Schema-Test-Suite@8daea3f/remotes"))}
+	server := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir(testSuite + "/remotes"))}
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			panic(err)
@@ -328,9 +330,9 @@ func TestCompileURL(t *testing.T) {
 
 func TestValidateInterface(t *testing.T) {
 	files := []string{
-		"testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4/type.json",
-		"testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4/minimum.json",
-		"testdata/JSON-Schema-Test-Suite@8daea3f/tests/draft4/maximum.json",
+		testSuite + "/tests/draft4/type.json",
+		testSuite + "/tests/draft4/minimum.json",
+		testSuite + "/tests/draft4/maximum.json",
 	}
 	for _, file := range files {
 		t.Log(filepath.Base(file))
