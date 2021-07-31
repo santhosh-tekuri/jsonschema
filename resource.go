@@ -83,13 +83,19 @@ func resolveURL(base, ref string) (string, error) {
 	return filepath.Join(dir, ref) + fragment, nil
 }
 
-func (r *resource) resolvePtr(ptr string, doc interface{}) (resource, interface{}, error) {
+func isPtrFragment(f string) bool {
+	if !strings.HasPrefix(f, "#") {
+		panic(fmt.Sprintf("BUG: isPtrFragment(%q)", f))
+	}
+	return len(f) == 1 || f[1] == '/'
+}
+
+func (r *resource) resolvePtr(ptr string, base resource) (resource, interface{}, error) {
 	if !strings.HasPrefix(ptr, "#/") {
 		panic(fmt.Sprintf("BUG: resolvePtr(%q)", ptr))
 	}
-	base := r.url
+	doc := base.doc
 	p := strings.TrimPrefix(ptr, "#/")
-	basedoc := doc
 	for _, item := range strings.Split(p, "/") {
 		item = strings.Replace(item, "~1", "/", -1)
 		item = strings.Replace(item, "~0", "~", -1)
@@ -101,8 +107,8 @@ func (r *resource) resolvePtr(ptr string, doc interface{}) (resource, interface{
 		case map[string]interface{}:
 			if id, ok := d[r.draft.id]; ok {
 				if id, ok := id.(string); ok {
-					basedoc = d
-					if base, err = resolveURL(base, id); err != nil {
+					base.doc = d
+					if base.url, err = resolveURL(base.url, id); err != nil {
 						return resource{}, nil, err
 					}
 				}
@@ -121,7 +127,7 @@ func (r *resource) resolvePtr(ptr string, doc interface{}) (resource, interface{
 			return resource{}, nil, errors.New("invalid $ref " + ptr)
 		}
 	}
-	return resource{url: base, doc: basedoc}, doc, nil
+	return base, doc, nil
 }
 
 func split(uri string) (string, string) {

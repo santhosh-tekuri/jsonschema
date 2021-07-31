@@ -83,6 +83,10 @@ func TestDraft7(t *testing.T) {
 	testFolder(t, testSuite+"/tests/draft7", jsonschema.Draft7)
 }
 
+func TestExtra(t *testing.T) {
+	testFolder(t, "testdata/tests/draft7", jsonschema.Draft7)
+}
+
 type testGroup struct {
 	Description string
 	Schema      json.RawMessage

@@ -132,74 +132,57 @@ func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
 }
 
 func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, error) {
-	var err error
-	if rootFragment(ref) {
-		ref = normalize(base.url)
-		if _, ok := r.schemas[ref]; !ok {
-			if err := c.validateSchema(r, "", base.doc); err != nil {
-				return nil, err
-			}
-			s := &Schema{URL: base.url, Ptr: "#"}
-			r.schemas[ref] = s
-			if _, err := c.compile(r, s, base, r.doc); err != nil {
-				return nil, err
-			}
-		}
-		return r.schemas[ref], nil
-	}
-
-	if strings.HasPrefix(ref, "#/") {
-		refURL, err := resolveURL(base.url, ref)
-		if err != nil {
-			return nil, err
-		}
-		if _, ok := r.schemas[refURL]; !ok {
-			ptrBase, doc, err := r.resolvePtr(ref, base.doc)
-			if err != nil {
-				return nil, err
-			}
-			if err := c.validateSchema(r, strings.TrimPrefix(ref, "#/"), doc); err != nil {
-				return nil, err
-			}
-			r.schemas[refURL] = &Schema{URL: base.url, Ptr: ref}
-			if _, err := c.compile(r, r.schemas[refURL], ptrBase, doc); err != nil {
-				return nil, err
-			}
-		}
-		return r.schemas[refURL], nil
-	}
-
-	refURL, err := resolveURL(base.url, ref)
+	ref, err := resolveURL(base.url, ref)
 	if err != nil {
 		return nil, err
 	}
-	if rs, ok := r.schemas[refURL]; ok {
-		return rs, nil
-	}
-
-	ids := make(map[string]map[string]interface{})
-	if err := resolveIDs(r.draft, r.url, r.doc, ids); err != nil {
-		return nil, err
-	}
-	if v, ok := ids[refURL]; ok {
-		if err := c.validateSchema(r, "", v); err != nil {
-			return nil, err
-		}
-		u, f := split(refURL)
-		s := &Schema{URL: u, Ptr: f}
-		r.schemas[refURL] = s
-		base = resource{url: u, doc: v}
-		if err := c.compileMap(r, s, base, v); err != nil {
-			return nil, err
-		}
+	if s, ok := r.schemas[ref]; ok {
 		return s, nil
 	}
 
-	b, _ := split(refURL)
-	if b == r.url {
-		return nil, fmt.Errorf("invalid ref: %q", refURL)
+	u, f := split(ref)
+	if u != base.url || !isPtrFragment(f) {
+		ids := make(map[string]map[string]interface{})
+		if err := resolveIDs(r.draft, r.url, r.doc, ids); err != nil {
+			return nil, err
+		}
+		id := normalize(u)
+		if !isPtrFragment(f) {
+			id = ref
+		}
+		if v, ok := ids[id]; ok {
+			base = resource{url: u, doc: v}
+		} else {
+			// external resource
+			b, _ := split(ref)
+			if b == r.url {
+				// infinite loop detected
+				return nil, fmt.Errorf("invalid ref: %q", ref)
+			}
+			return c.Compile(ref)
+		}
 	}
-	return c.Compile(refURL)
+
+	doc := base.doc
+	if !rootFragment(f) && isPtrFragment(f) {
+		base, doc, err = r.resolvePtr(f, base)
+		if err != nil {
+			return nil, err
+		}
+	}
+	ptr := f
+	if rootFragment(ptr) {
+		ptr = f
+	} else {
+		ptr = strings.TrimPrefix(ptr, "#/")
+	}
+	if err := c.validateSchema(r, ptr, doc); err != nil {
+		return nil, err
+	}
+
+	s := &Schema{URL: u, Ptr: f}
+	r.schemas[ref] = s
+	return c.compile(r, s, base, doc)
 }
 
 func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{}) (*Schema, error) {
