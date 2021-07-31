@@ -402,7 +402,7 @@ func TestInvalidJsonTypeError(t *testing.T) {
 	err = schema.ValidateInterface(v)
 	switch err.(type) {
 	case jsonschema.InvalidJSONTypeError:
-		// passed
+		// passed: struct is not valid json type
 	default:
 		t.Fatalf("got %v. want InvalidJSONTypeErr", err)
 	}
