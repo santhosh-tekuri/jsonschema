@@ -83,26 +83,27 @@ func resolveURL(base, ref string) (string, error) {
 	return filepath.Join(dir, ref) + fragment, nil
 }
 
-func (r *resource) resolvePtr(ptr string) (string, interface{}, error) {
+func (r *resource) resolvePtr(ptr string, doc interface{}) (resource, interface{}, error) {
 	if !strings.HasPrefix(ptr, "#/") {
 		panic(fmt.Sprintf("BUG: resolvePtr(%q)", ptr))
 	}
 	base := r.url
 	p := strings.TrimPrefix(ptr, "#/")
-	doc := r.doc
+	basedoc := doc
 	for _, item := range strings.Split(p, "/") {
 		item = strings.Replace(item, "~1", "/", -1)
 		item = strings.Replace(item, "~0", "~", -1)
 		item, err := url.PathUnescape(item)
 		if err != nil {
-			return "", nil, errors.New("unable to url unscape: " + item)
+			return resource{}, nil, errors.New("unable to url unescape: " + item)
 		}
 		switch d := doc.(type) {
 		case map[string]interface{}:
 			if id, ok := d[r.draft.id]; ok {
 				if id, ok := id.(string); ok {
+					basedoc = d
 					if base, err = resolveURL(base, id); err != nil {
-						return "", nil, err
+						return resource{}, nil, err
 					}
 				}
 			}
@@ -110,17 +111,17 @@ func (r *resource) resolvePtr(ptr string) (string, interface{}, error) {
 		case []interface{}:
 			index, err := strconv.Atoi(item)
 			if err != nil {
-				return "", nil, fmt.Errorf("invalid $ref %q, reason: %s", ptr, err)
+				return resource{}, nil, fmt.Errorf("invalid $ref %q, reason: %s", ptr, err)
 			}
 			if index < 0 || index >= len(d) {
-				return "", nil, fmt.Errorf("invalid $ref %q, reason: array index outofrange", ptr)
+				return resource{}, nil, fmt.Errorf("invalid $ref %q, reason: array index outofrange", ptr)
 			}
 			doc = d[index]
 		default:
-			return "", nil, errors.New("invalid $ref " + ptr)
+			return resource{}, nil, errors.New("invalid $ref " + ptr)
 		}
 	}
-	return base, doc, nil
+	return resource{url: base, doc: basedoc}, doc, nil
 }
 
 func split(uri string) (string, string) {

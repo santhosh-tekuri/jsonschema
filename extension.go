@@ -28,7 +28,7 @@ type Extension struct {
 type CompilerContext struct {
 	c    *Compiler
 	r    *resource
-	base string
+	base resource
 }
 
 // Compile compiles given value v into *Schema. This is useful in implementing
@@ -39,8 +39,8 @@ func (ctx CompilerContext) Compile(v interface{}) (*Schema, error) {
 
 // CompileRef compiles the schema referenced by ref uri
 func (ctx CompilerContext) CompileRef(ref string) (*Schema, error) {
-	b, _ := split(ctx.base)
-	return ctx.c.compileRef(ctx.r, b, ref)
+	//b, _ := split(ctx.base.url)
+	return ctx.c.compileRef(ctx.r, ctx.base, ref)
 }
 
 // ValidationContext provides additional context required in validating for extension.

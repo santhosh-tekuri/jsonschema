@@ -121,7 +121,7 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 			r.draft = c.Draft
 		}
 	}
-	return c.compileRef(r, r.url, fragment)
+	return c.compileRef(r, *r, fragment)
 }
 
 func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
@@ -131,40 +131,45 @@ func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
 	return LoadURL(s)
 }
 
-func (c *Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
+func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, error) {
 	var err error
 	if rootFragment(ref) {
-		if _, ok := r.schemas["#"]; !ok {
-			if err := c.validateSchema(r, "", r.doc); err != nil {
-				return nil, err
-			}
-			s := &Schema{URL: r.url, Ptr: "#"}
-			r.schemas["#"] = s
-			if _, err := c.compile(r, s, base, r.doc); err != nil {
-				return nil, err
-			}
-		}
-		return r.schemas["#"], nil
-	}
-
-	if strings.HasPrefix(ref, "#/") {
+		ref = normalize(base.url)
 		if _, ok := r.schemas[ref]; !ok {
-			ptrBase, doc, err := r.resolvePtr(ref)
-			if err != nil {
+			if err := c.validateSchema(r, "", base.doc); err != nil {
 				return nil, err
 			}
-			if err := c.validateSchema(r, strings.TrimPrefix(ref, "#/"), doc); err != nil {
-				return nil, err
-			}
-			r.schemas[ref] = &Schema{URL: base, Ptr: ref}
-			if _, err := c.compile(r, r.schemas[ref], ptrBase, doc); err != nil {
+			s := &Schema{URL: base.url, Ptr: "#"}
+			r.schemas[ref] = s
+			if _, err := c.compile(r, s, base, r.doc); err != nil {
 				return nil, err
 			}
 		}
 		return r.schemas[ref], nil
 	}
 
-	refURL, err := resolveURL(base, ref)
+	if strings.HasPrefix(ref, "#/") {
+		refURL, err := resolveURL(base.url, ref)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := r.schemas[refURL]; !ok {
+			ptrBase, doc, err := r.resolvePtr(ref, base.doc)
+			if err != nil {
+				return nil, err
+			}
+			if err := c.validateSchema(r, strings.TrimPrefix(ref, "#/"), doc); err != nil {
+				return nil, err
+			}
+			r.schemas[refURL] = &Schema{URL: base.url, Ptr: ref}
+			if _, err := c.compile(r, r.schemas[refURL], ptrBase, doc); err != nil {
+				return nil, err
+			}
+		}
+		return r.schemas[refURL], nil
+	}
+
+	refURL, err := resolveURL(base.url, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -183,23 +188,24 @@ func (c *Compiler) compileRef(r *resource, base, ref string) (*Schema, error) {
 		u, f := split(refURL)
 		s := &Schema{URL: u, Ptr: f}
 		r.schemas[refURL] = s
-		if err := c.compileMap(r, s, refURL, v); err != nil {
+		base = resource{url: u, doc: v}
+		if err := c.compileMap(r, s, base, v); err != nil {
 			return nil, err
 		}
 		return s, nil
 	}
 
-	base, _ = split(refURL)
-	if base == r.url {
+	b, _ := split(refURL)
+	if b == r.url {
 		return nil, fmt.Errorf("invalid ref: %q", refURL)
 	}
 	return c.Compile(refURL)
 }
 
-func (c *Compiler) compile(r *resource, s *Schema, base string, m interface{}) (*Schema, error) {
+func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{}) (*Schema, error) {
 	if s == nil {
 		s = new(Schema)
-		s.URL, _ = split(base)
+		s.URL, _ = split(base.url)
 	}
 	switch m := m.(type) {
 	case bool:
@@ -210,18 +216,20 @@ func (c *Compiler) compile(r *resource, s *Schema, base string, m interface{}) (
 	}
 }
 
-func (c *Compiler) compileMap(r *resource, s *Schema, base string, m map[string]interface{}) error {
+func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[string]interface{}) error {
 	var err error
 
 	if id, ok := m[r.draft.id]; ok {
-		if base, err = resolveURL(base, id.(string)); err != nil {
+		b, err := resolveURL(base.url, id.(string))
+		if err != nil {
 			return err
 		}
+		b, _ = split(b)
+		base = resource{url: b, doc: m}
 	}
 
 	if ref, ok := m["$ref"]; ok {
-		b, _ := split(base)
-		s.Ref, err = c.compileRef(r, b, ref.(string))
+		s.Ref, err = c.compileRef(r, base, ref.(string))
 		if err != nil {
 			return err
 		}
