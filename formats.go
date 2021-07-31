@@ -188,6 +188,9 @@ func isIPV4(v interface{}) bool {
 		if n < 0 || n > 255 {
 			return false
 		}
+		if n != 0 && group[0] == '0' {
+			return false // leading zeroes should be rejected, as they are treated as octals
+		}
 	}
 	return true
 }
