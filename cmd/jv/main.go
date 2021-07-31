@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -13,18 +14,33 @@ import (
 )
 
 func main() {
-	if len(os.Args) == 1 {
-		fmt.Fprintln(os.Stderr, "jv <json-schema> [<json-doc>]...")
+	draft := flag.Int("draft", 7, "draft used when '$schema' attribute is missing")
+	flag.Parse()
+	if len(flag.Args()) == 0 {
+		fmt.Fprintln(os.Stderr, "jv [-draft INT] <json-schema> [<json-doc>]...")
+		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	schema, err := jsonschema.Compile(os.Args[1])
+	compiler := jsonschema.NewCompiler()
+	switch *draft {
+	case 4:
+		compiler.Draft = jsonschema.Draft4
+	case 6:
+		compiler.Draft = jsonschema.Draft6
+	case 7:
+		compiler.Draft = jsonschema.Draft7
+	default:
+		fmt.Fprintln(os.Stderr, "draft must be 4, 5 or 7")
+		os.Exit(1)
+	}
+	schema, err := compiler.Compile(flag.Arg(0))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	for _, f := range os.Args[2:] {
+	for _, f := range flag.Args()[1:] {
 		r, err := jsonschema.LoadURL(f)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error in reading %q. reason: \n%v\n", f, err)
