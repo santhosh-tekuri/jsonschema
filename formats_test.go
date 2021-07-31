@@ -49,7 +49,22 @@ func TestIsTime(t *testing.T) {
 	tests := []test{
 		{"08:30:06.283185Z", true},
 		{"08:30:06 PST", false},
-		{"01:01:01,1111", false}, // only RFC3339 not all of ISO 8601 are valid
+		{"01:01:01,1111", false},   // only RFC3339 not all of ISO 8601 are valid
+		{"23:59:60Z", true},        // with leap second
+		{"15:59:60-08:00", true},   // with leap second with offset
+		{"23:20:50.52Z", true},     // with second fraction
+		{"08:30:06.283185Z", true}, // with precise second fraction
+		{"08:30:06+00:20", true},   // with plus offset
+		{"08:30:06-08:00", true},   // with minus offset
+		{"08:30:06z", true},        // with case-insensitive Z
+		{"24:00:00Z", false},       // invalid hour
+		{"00:60:00Z", false},       // invalid minute
+		{"00:00:61Z", false},       // invalid second
+		{"22:59:60Z", false},       // invalid leap second (wrong hour)
+		{"23:58:60Z", false},       // invalid leap second (wrong minute)
+		{"01:02:03+24:00", false},  // invalid time numoffset hour
+		{"01:02:03+00:60", false},  // invalid time numoffset minute
+		{"01:02:03Z+00:30", false}, // invalid time with both Z and numoffset
 	}
 	for i, test := range tests {
 		if test.valid != isTime(test.str) {

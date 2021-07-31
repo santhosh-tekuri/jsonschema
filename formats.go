@@ -72,18 +72,113 @@ func isDate(v interface{}) bool {
 
 // isTime tells whether given string is a valid full-time production
 // as defined by RFC 3339, section 5.6.
+// see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
 func isTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return true
 	}
-	if _, err := time.Parse("15:04:05Z07:00", s); err == nil {
-		return true
+
+	// golang time package does not support leap seconds.
+	// so we are parsing it manually here.
+
+	// hh:mm:ss
+	// 01234567
+	if len(s) < 9 {
+		return false
 	}
-	if _, err := time.Parse("15:04:05.999999999Z07:00", s); err == nil {
-		return true
+	if s[2] != ':' || s[5] != ':' {
+		return false
 	}
-	return false
+	isInRange := func(s string, min, max int) (int, bool) {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return 0, false
+		}
+		if n < min || n > max {
+			return 0, false
+		}
+		return n, true
+	}
+	hh, ok := isInRange(s[0:2], 0, 23)
+	if !ok {
+		return false
+	}
+	mm, ok := isInRange(s[3:5], 0, 59)
+	if !ok {
+		return false
+	}
+	ss, ok := isInRange(s[6:8], 0, 60)
+	if !ok { // ss
+		return false
+	}
+
+	s = s[8:]
+	if s[0] == '.' { // secfrac: dot following any number of digits
+		s = s[1:]
+		for {
+			if len(s) == 0 {
+				break
+			}
+			if s[0] < '0' || s[0] > '9' {
+				break
+			}
+			s = s[1:]
+		}
+	}
+
+	if len(s) == 0 {
+		return false
+	}
+	if s[0] == 'z' || s[0] == 'Z' {
+		if ss == 60 { // leap second
+			if hh != 23 || mm != 59 {
+				return false
+			}
+		}
+		return len(s) == 1
+	}
+
+	// time-numoffset
+	// +hh:mm
+	// 012345
+	if len(s) != 6 {
+		return false
+	}
+	var sign int
+	if s[0] == '+' {
+		sign = -1
+	} else if s[0] == '-' {
+		sign = +1
+	} else {
+		return false
+	}
+	if s[3] != ':' {
+		return len(s) == 1
+	}
+
+	h, ok := isInRange(s[1:3], 0, 23)
+	if !ok {
+		return false
+	}
+	m, ok := isInRange(s[4:6], 0, 59)
+	if !ok {
+		return false
+	}
+
+	// apply timezone offset
+	hhmm := hh*60 + mm
+	hm := h*60 + m
+	hhmm += hm * sign
+	hh = hhmm / 60
+	mm = hhmm % 60
+	if ss == 60 { // leap second
+		if hh != 23 || mm != 59 {
+			return false
+		}
+	}
+
+	return true
 }
 
 // isHostname tells whether given string is a valid representation
