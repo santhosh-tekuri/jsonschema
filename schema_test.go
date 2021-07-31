@@ -522,8 +522,7 @@ func TestPanic(t *testing.T) {
 	}
 
 	if _, err := c.Compile("schema.json"); err != nil {
-		t.Error("no error expected")
-		return
+		t.Fatal(err)
 	}
 }
 
@@ -600,7 +599,9 @@ func TestCompiler_dollar_schema(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			c := jsonschema.NewCompiler()
-			c.AddResource("test.json", strings.NewReader(tt.schema))
+			if err := c.AddResource("test.json", strings.NewReader(tt.schema)); err != nil {
+				t.Fatal(err)
+			}
 			if _, err := c.Compile("test.json"); err != nil {
 				t.Fatal(err)
 			}
