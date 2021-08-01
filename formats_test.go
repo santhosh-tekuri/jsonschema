@@ -16,14 +16,21 @@ type test struct {
 
 func TestIsDateTime(t *testing.T) {
 	tests := []test{
+		{"1963-06-19T08:30:06.283185Z", true},    // with second fraction
+		{"1963-06-19T08:30:06Z", true},           // without second fraction
+		{"1937-01-01T12:00:27.87+00:20", true},   // with plus offset
+		{"1990-12-31T15:59:50.123-08:00", true},  // with minus offset
+		{"1990-02-31T15:59:60.123-08:00", false}, // invalid day
+		{"1990-12-31T15:59:60-24:00", false},     // invalid offset
+		{"06/19/1963 08:30:06 PST", false},       // invalid date delimiters
+		{"1963-06-19t08:30:06.283185z", true},    // case-insensitive T and Z
+		{"2013-350T01:01:01", false},             // invalid: only RFC3339 not all of ISO 8601 are valid
+		{"1963-6-19T08:30:06.283185Z", false},    //invalid: non-padded month
+		{"1963-06-1T08:30:06.283185Z", false},    // invalid: non-padded day
 		{"1985-04-12T23:20:50.52Z", true},
 		{"1996-12-19T16:39:57-08:00", true},
 		{"1990-12-31T23:59:59Z", true},
 		{"1990-12-31T15:59:59-08:00", true},
-		{"1937-01-01T12:00:27.87+00:20", true},
-		{"1963-06-19T08:30:06.283185Z", true},
-		{"06/19/1963 08:30:06 PST", false},
-		{"2013-350T01:01:01", false},
 	}
 	for i, test := range tests {
 		if test.valid != isDateTime(test.str) {
