@@ -42,8 +42,37 @@ func TestIsDateTime(t *testing.T) {
 func TestIsDate(t *testing.T) {
 	tests := []test{
 		{"1963-06-19", true},
-		{"06/19/1963", false},
-		{"2013-350", false}, // only RFC3339 not all of ISO 8601 are valid
+		{"2020-01-31", true},  // valid: 31 days in January
+		{"2020-01-32", false}, // invalid: 32 days in January
+		{"2021-02-28", true},  // valid: 28 days in February (normal)
+		{"2021-02-29", false}, // invalid: 29 days in February (normal)
+		{"2020-02-29", true},  // valid: 29 days in February (leap)
+		{"2020-02-30", false}, // invalid: 30 days in February (leap)
+		{"2020-03-31", true},  // valid: 31 days in March
+		{"2020-03-32", false}, // invalid: 32 days in March
+		{"2020-04-30", true},  // valid: 30 days in April
+		{"2020-04-31", false}, // invalid: 31 days in April
+		{"2020-05-31", true},  // valid: 31 days in May
+		{"2020-05-32", false}, // invalid: 32 days in May
+		{"2020-06-30", true},  // valid: 30 days in June
+		{"2020-06-31", false}, // invalid: 31 days in June
+		{"2020-07-31", true},  // valid: 31 days in July
+		{"2020-07-32", false}, // invalid: 32 days in July
+		{"2020-08-31", true},  // valid: 31 days in August
+		{"2020-08-32", false}, // invalid: 32 days in August
+		{"2020-09-30", true},  // valid: 30 days in September
+		{"2020-09-31", false}, // invalid: 31 days in September
+		{"2020-10-31", true},  // valid: 31 days in October
+		{"2020-10-32", false}, // invalid: 32 days in October
+		{"2020-11-30", true},  // valid: 30 days in November
+		{"2020-11-31", false}, // invalid: 31 days in November
+		{"2020-12-31", true},  // valid: 31 days in December
+		{"2020-12-32", false}, // invalid: 32 days in December
+		{"2020-13-01", false}, // invalid month
+		{"06/19/1963", false}, // invalid: wrong delimiters
+		{"2013-350", false},   // invalid: only RFC3339 not all of ISO 8601 are valid
+		{"1998-1-20", false},  // invalid: non-padded month
+		{"1998-01-1", false},  // invalid: non-padded day
 	}
 	for i, test := range tests {
 		if test.valid != isDate(test.str) {
