@@ -296,3 +296,25 @@ func TestRelativeJSONPointer(t *testing.T) {
 		}
 	}
 }
+
+func TestIsUUID(t *testing.T) {
+	tests := []test{
+		{"2EB8AA08-AA98-11EA-B4AA-73B441D16380", true},  // valid: all upper-case
+		{"2eb8aa08-aa98-11ea-b4aa-73b441d16380", true},  // valid: all lower-case
+		{"2eb8aa08-AA98-11ea-B4Aa-73B441D16380", true},  // valid: mixed case
+		{"00000000-0000-0000-0000-000000000000", true},  // valid: all zeroes
+		{"2eb8aa08-aa98-11ea-b4aa-73b441d1638", false},  // invalid: wrong length
+		{"2eb8aa08-aa98-11ea-73b441d16380", false},      // invalid: missing section
+		{"2eb8aa08-aa98-11ea-b4ga-73b441d16380", false}, // invalid: bad characters (not hex)
+		{"2eb8aa08aa9811eab4aa73b441d16380", false},     // invalid: no dashes
+		{"98d80576-482e-427f-8434-7f86890ab222", true},  // valid: version 4
+		{"99c17cbb-656f-564a-940f-1a4568f03487", true},  // valid: version 5
+		{"99c17cbb-656f-664a-940f-1a4568f03487", true},  // valid: hypothetical version 6
+		{"99c17cbb-656f-f64a-940f-1a4568f03487", true},  // valid: hypothetical version 15
+	}
+	for i, test := range tests {
+		if test.valid != isUUID(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}

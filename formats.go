@@ -39,6 +39,7 @@ var Formats = map[string]func(interface{}) bool{
 	"regex":                 isRegex,
 	"json-pointer":          isJSONPointer,
 	"relative-json-pointer": isRelativeJSONPointer,
+	"uuid":                  isUUID,
 }
 
 // isDateTime tells whether given string is a valid date representation
@@ -507,4 +508,43 @@ func isRelativeJSONPointer(v interface{}) bool {
 		return false
 	}
 	return s == "#" || isJSONPointer(s)
+}
+
+// isUUID tells whether given string is a valid uuid format
+// as specified in RFC4122.
+//
+// see https://datatracker.ietf.org/doc/html/rfc4122#page-4, for details
+func isUUID(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return true
+	}
+	parseHex := func(n int) bool {
+		for n > 0 {
+			if len(s) == 0 {
+				return false
+			}
+			hex := (s[0] >= '0' && s[0] <= '9') || (s[0] >= 'a' && s[0] <= 'f') || (s[0] >= 'A' && s[0] <= 'F')
+			if !hex {
+				return false
+			}
+			s = s[1:]
+			n--
+		}
+		return true
+	}
+	groups := []int{8, 4, 4, 4, 12}
+	for i, numDigits := range groups {
+		if !parseHex(numDigits) {
+			return false
+		}
+		if i == len(groups)-1 {
+			return len(s) == 0
+		}
+		if len(s) == 0 || s[0] != '-' {
+			return false
+		}
+		s = s[1:]
+	}
+	return true
 }
