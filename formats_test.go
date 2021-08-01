@@ -54,6 +54,7 @@ func TestIsTime(t *testing.T) {
 		{"15:59:60-08:00", true},   // with leap second with offset
 		{"23:20:50.52Z", true},     // with second fraction
 		{"08:30:06.283185Z", true}, // with precise second fraction
+		{"23:20:50.Z", false},      // invalid (no digit after dot in second fraction)
 		{"08:30:06+00:20", true},   // with plus offset
 		{"08:30:06-08:00", true},   // with minus offset
 		{"08:30:06z", true},        // with case-insensitive Z

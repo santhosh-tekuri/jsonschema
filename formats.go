@@ -114,8 +114,9 @@ func isTime(v interface{}) bool {
 	}
 
 	s = s[8:]
-	if s[0] == '.' { // secfrac: dot following any number of digits
+	if s[0] == '.' { // secfrac: dot following more than one digit
 		s = s[1:]
+		frac := false
 		for {
 			if len(s) == 0 {
 				break
@@ -123,7 +124,11 @@ func isTime(v interface{}) bool {
 			if s[0] < '0' || s[0] > '9' {
 				break
 			}
+			frac = true
 			s = s[1:]
+		}
+		if !frac {
+			return false // no digit after dot
 		}
 	}
 
