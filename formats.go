@@ -42,21 +42,18 @@ var Formats = map[string]func(interface{}) bool{
 
 // isDateTime tells whether given string is a valid date representation
 // as defined by RFC 3339, section 5.6.
-//
-// Note: this is unable to parse UTC leap seconds. See https://github.com/golang/go/issues/8728.
 func isDateTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return true
 	}
-	s = strings.ToUpper(s) // to support case-insensitive T and Z
-	if _, err := time.Parse(time.RFC3339, s); err == nil {
-		return true
+	if len(s) < 20 { // yyyy-mm-ddThh:mm:ssZ
+		return false
 	}
-	if _, err := time.Parse(time.RFC3339Nano, s); err == nil {
-		return true
+	if s[10] != 'T' && s[10] != 't' {
+		return false
 	}
-	return false
+	return isDate(s[:10]) && isTime(s[11:])
 }
 
 // isDate tells whether given string is a valid full-date production
