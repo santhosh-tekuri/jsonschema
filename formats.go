@@ -24,6 +24,7 @@ var Formats = map[string]func(interface{}) bool{
 	"date-time":             isDateTime,
 	"date":                  isDate,
 	"time":                  isTime,
+	"duration":              isDuration,
 	"hostname":              isHostname,
 	"email":                 isEmail,
 	"ip-address":            isIPV4,
@@ -42,6 +43,8 @@ var Formats = map[string]func(interface{}) bool{
 
 // isDateTime tells whether given string is a valid date representation
 // as defined by RFC 3339, section 5.6.
+//
+// see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6, for details
 func isDateTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
@@ -58,6 +61,8 @@ func isDateTime(v interface{}) bool {
 
 // isDate tells whether given string is a valid full-date production
 // as defined by RFC 3339, section 5.6.
+//
+// see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6, for details
 func isDate(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
@@ -69,7 +74,8 @@ func isDate(v interface{}) bool {
 
 // isTime tells whether given string is a valid full-time production
 // as defined by RFC 3339, section 5.6.
-// see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
+//
+// see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6, for details
 func isTime(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
@@ -181,6 +187,63 @@ func isTime(v interface{}) bool {
 	}
 
 	return true
+}
+
+// isDuration tells whether given string is a valid duration format
+// from the ISO 8601 ABNF as given in Appendix A of RFC 3339.
+//
+// see https://datatracker.ietf.org/doc/html/rfc3339#appendix-A, for details
+func isDuration(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return true
+	}
+	if len(s) == 0 || s[0] != 'P' {
+		return false
+	}
+	s = s[1:]
+	parseUnits := func() (units string, ok bool) {
+		for len(s) > 0 && s[0] != 'T' {
+			digits := false
+			for {
+				if len(s) == 0 {
+					break
+				}
+				if s[0] < '0' || s[0] > '9' {
+					break
+				}
+				digits = true
+				s = s[1:]
+			}
+			if !digits || len(s) == 0 {
+				return units, false
+			}
+			units += s[:1]
+			s = s[1:]
+		}
+		return units, true
+	}
+	units, ok := parseUnits()
+	if !ok {
+		return false
+	}
+	if units == "W" {
+		return len(s) == 0 // P_W
+	}
+	if len(units) > 0 {
+		if strings.Index("YMD", units) == -1 {
+			return false
+		}
+		if len(s) == 0 {
+			return true // "P" dur-date
+		}
+	}
+	if len(s) == 0 || s[0] != 'T' {
+		return false
+	}
+	s = s[1:]
+	units, ok = parseUnits()
+	return ok && len(s) == 0 && len(units) > 0 && strings.Index("HMS", units) != -1
 }
 
 // isHostname tells whether given string is a valid representation

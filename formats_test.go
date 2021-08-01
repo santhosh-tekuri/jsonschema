@@ -110,6 +110,33 @@ func TestIsTime(t *testing.T) {
 	}
 }
 
+func TestIsDuration(t *testing.T) {
+	tests := []test{
+		{"P4DT12H30M5S", true},
+		{"PT1D", false},   // invalid: days after 'T'
+		{"P", false},      // invalid: no elements
+		{"P1YT", false},   // invalid: no time elements after 'T'
+		{"PT", false},     // invalid: no date or time elements
+		{"P2D1Y", false},  // invalid: elements out of order
+		{"P1D2H", false},  // invalid: missing time separator
+		{"P2S", false},    // invalid: time element in the date position
+		{"P4Y", true},     // valid: four years duration
+		{"PT0S", true},    // valid: zero time, in seconds
+		{"P0D", true},     // valid: zero time, in days
+		{"P1M", true},     // valid: one month duration
+		{"PT1M", true},    // valid: one minute duration
+		{"PT36H", true},   // valid: one and a half days, in hours
+		{"P1DT12H", true}, // valid: one and a half days, in days and hours
+		{"P2W", true},     // valid: two weeks
+		{"P1Y2W", false},  // invalid: weeks cannot be combined with other units
+	}
+	for i, test := range tests {
+		if test.valid != isDuration(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
+
 func TestIsHostname(t *testing.T) {
 	tests := []test{
 		{"www.example.com", true},
