@@ -12,7 +12,7 @@ This implementation of JSON Schema, supports draft4, draft6 and draft7.
 
 Passes all tests in https://github.com/json-schema/JSON-Schema-Test-Suite with following exceptions:
 - format `idn-hostname` and `idn-email` is not implemented
-- since this library uses `regexp` package, some optional ECMA-262 related tests will fail
+- since this library uses `regexp` package, some optional ECMA-262 related and unicode tests will fail
 - in draft4 `1.0` is a not a valid integer but in draft6 and draft7 it is valid integer.
   This library treats `1.0` as integer even in draft4.
 
