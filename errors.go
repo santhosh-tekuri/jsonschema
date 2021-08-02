@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// InvalidJSONTypeError is the error type returned by ValidateInteface.
+// InvalidJSONTypeError is the error type returned by ValidateInterface.
 // this tells that specified go object is not valid jsonType.
 type InvalidJSONTypeError string
 
@@ -30,7 +30,11 @@ type SchemaError struct {
 }
 
 func (se *SchemaError) Error() string {
-	return fmt.Sprintf("json-schema %q compilation failed. Reason:\n%s", se.SchemaURL, se.Err)
+	return fmt.Sprintf("json-schema %q compilation failed", se.SchemaURL)
+}
+
+func (se *SchemaError) GoString() string {
+	return fmt.Sprintf("json-schema %q compilation failed. Reason:\n%#v", se.SchemaURL, se.Err)
 }
 
 // ValidationError is the error type returned by Validate.
@@ -56,21 +60,27 @@ type ValidationError struct {
 
 func (ve *ValidationError) add(causes ...error) error {
 	for _, cause := range causes {
-		addContext(ve.InstancePtr, ve.SchemaPtr, cause)
+		_ = addContext(ve.InstancePtr, ve.SchemaPtr, cause)
 		ve.Causes = append(ve.Causes, cause.(*ValidationError))
 	}
 	return ve
 }
 
 // MessageFmt returns the Message formatted, but does not include child Cause messages.
+//
+// Deprecated: use Error method
 func (ve *ValidationError) MessageFmt() string {
-	return fmt.Sprintf("I[%s] S[%s] %s", ve.InstancePtr, ve.SchemaPtr, ve.Message)
+	return ve.Error()
 }
 
 func (ve *ValidationError) Error() string {
-	msg := ve.MessageFmt()
+	return fmt.Sprintf("I[%s] S[%s] %s", ve.InstancePtr, ve.SchemaPtr, ve.Message)
+}
+
+func (ve *ValidationError) GoString() string {
+	msg := ve.Error()
 	for _, c := range ve.Causes {
-		for _, line := range strings.Split(c.Error(), "\n") {
+		for _, line := range strings.Split(c.GoString(), "\n") {
 			msg += "\n  " + line
 		}
 	}
@@ -88,7 +98,7 @@ func addContext(instancePtr, schemaPtr string, err error) error {
 		ve.SchemaPtr = joinPtr(schemaPtr, ve.SchemaPtr)
 	}
 	for _, cause := range ve.Causes {
-		addContext(instancePtr, schemaPtr, cause)
+		_ = addContext(instancePtr, schemaPtr, cause)
 	}
 	return ve
 }
