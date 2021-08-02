@@ -80,7 +80,7 @@ alternatively:
 		return err
 	}
 
-This package supports json string formats: date-time, date, time, hostname, email, ip-address, ipv4, ipv6, uri, uriref, regex,
+This package supports json string formats: date-time, date, time, duration, uuid, hostname, email, ip-address, ipv4, ipv6, uri, uriref, regex,
 format, json-pointer, relative-json-pointer, uri-template (limited validation). Developers can register their own formats by
 adding them to jsonschema.Formats map.
 

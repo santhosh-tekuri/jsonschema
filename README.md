@@ -107,6 +107,8 @@ This package supports json string formats:
 - date-time
 - date
 - time
+- duration
+- uuid
 - hostname
 - email
 - ip-address
