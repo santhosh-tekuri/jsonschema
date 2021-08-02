@@ -27,51 +27,71 @@ import (
 
 var testSuite = "testdata/JSON-Schema-Test-Suite@fd0aa9f"
 
-var skipTests = map[string]string{
-	"TestDraft4/optional/unicode.json": "golang regex works on ascii only",
-	"TestDraft4/optional/zeroTerminatedFloats.json/some_languages_do_not_distinguish_between_different_types_of_numeric_value":                      "this behavior is changed in new drafts",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches":                                  "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches":                                       "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)":                       "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)":                                  "\\s does not match unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match":                       "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match":            "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match":                 "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)":            "\\S matches unicode whitespace",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter":                                      "\\cX is not supported",
-	"TestDraft4/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter":                                      "\\cX is not supported",
+var skipTests = map[string]map[string][]string{
+	"TestDraft4/optional/unicode.json": {}, // golang regex works on ascii only
+	"TestDraft4/optional/zeroTerminatedFloats.json": {
+		"some languages do not distinguish between different types of numeric value": {}, // this behavior is changed in new drafts
+	},
+	"TestDraft4/optional/ecmascript-regex.json": {
+		"ECMA 262 \\s matches whitespace": {
+			"Line tabulation matches",                       // \s does not match vertical tab
+			"latin-1 non-breaking-space matches",            // \s does not match unicode whitespace
+			"zero-width whitespace matches",                 // \s does not match unicode whitespace
+			"paragraph separator matches (line terminator)", // \s does not match unicode whitespace
+			"EM SPACE matches (Space_Separator)",            // \s does not match unicode whitespace
+		},
+		"ECMA 262 \\S matches everything but whitespace": {
+			"Line tabulation does not match",                       // \S matches unicode whitespace
+			"latin-1 non-breaking-space does not match",            // \S matches unicode whitespace
+			"zero-width whitespace does not match",                 // \S matches unicode whitespace
+			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
+			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
+		},
+		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+	},
 	//
-	"TestDraft6/optional/unicode.json": "golang regex works on ascii only",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches":                                  "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches":                                       "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)":                       "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)":                                  "\\s does not match unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match":                       "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match":            "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match":                 "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)":            "\\S matches unicode whitespace",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter":                                      "\\cX is not supported",
-	"TestDraft6/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter":                                      "\\cX is not supported",
+	"TestDraft6/optional/unicode.json": {}, // golang regex works on ascii only
+	"TestDraft6/optional/ecmascript-regex.json": {
+		"ECMA 262 \\s matches whitespace": {
+			"Line tabulation matches",                       // \s does not match vertical tab
+			"latin-1 non-breaking-space matches",            // \s does not match unicode whitespace
+			"zero-width whitespace matches",                 // \s does not match unicode whitespace
+			"paragraph separator matches (line terminator)", // \s does not match unicode whitespace
+			"EM SPACE matches (Space_Separator)",            // \s does not match unicode whitespace
+		},
+		"ECMA 262 \\S matches everything but whitespace": {
+			"Line tabulation does not match",                       // \S matches unicode whitespace
+			"latin-1 non-breaking-space does not match",            // \S matches unicode whitespace
+			"zero-width whitespace does not match",                 // \S matches unicode whitespace
+			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
+			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
+		},
+		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+	},
 	//
-	"TestDraft7/optional/unicode.json":                                                                                                              "golang regex works on ascii only",
-	"TestDraft7/optional/format/idn-hostname.json":                                                                                                  "idn-hostname format is not implemented",
-	"TestDraft7/optional/format/idn-email.json":                                                                                                     "idn-email format is not implemented",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/Line_tabulation_matches":                                             "\\s does not match vertical tab",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/latin-1_non-breaking-space_matches":                                  "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/zero-width_whitespace_matches":                                       "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/paragraph_separator_matches_(line_terminator)":                       "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\s_matches_whitespace/EM_SPACE_matches_(Space_Separator)":                                  "\\s does not match unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/Line_tabulation_does_not_match":                       "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/latin-1_non-breaking-space_does_not_match":            "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/zero-width_whitespace_does_not_match":                 "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/paragraph_separator_does_not_match_(line_terminator)": "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_\\S_matches_everything_but_whitespace/EM_SPACE_does_not_match_(Space_Separator)":            "\\S matches unicode whitespace",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_upper_letter":                                      "\\cX is not supported",
-	"TestDraft7/optional/ecmascript-regex.json/ECMA_262_regex_escapes_control_codes_with_\\c_and_lower_letter":                                      "\\cX is not supported",
+	"TestDraft7/optional/unicode.json":             {}, // golang regex works on ascii only
+	"TestDraft7/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
+	"TestDraft7/optional/format/idn-email.json":    {}, // idn-email format is not implemented
+	"TestDraft7/optional/ecmascript-regex.json": {
+		"ECMA 262 \\s matches whitespace": {
+			"Line tabulation matches",                       // \s does not match vertical tab
+			"latin-1 non-breaking-space matches",            // \s does not match unicode whitespace
+			"zero-width whitespace matches",                 // \s does not match unicode whitespace
+			"paragraph separator matches (line terminator)", // \s does not match unicode whitespace
+			"EM SPACE matches (Space_Separator)",            // \s does not match unicode whitespace
+		},
+		"ECMA 262 \\S matches everything but whitespace": {
+			"Line tabulation does not match",                       // \S matches unicode whitespace
+			"latin-1 non-breaking-space does not match",            // \S matches unicode whitespace
+			"zero-width whitespace does not match",                 // \S matches unicode whitespace
+			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
+			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
+		},
+		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+	},
 }
 
 func TestDraft4(t *testing.T) {
@@ -127,8 +147,9 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 			continue
 		}
 		t.Run(fi.Name(), func(t *testing.T) {
-			if reason, ok := skipTests[t.Name()]; ok {
-				t.Skip(reason)
+			skip := skipTests[t.Name()]
+			if skip != nil && len(skip) == 0 {
+				t.Skip()
 			}
 			data, err := ioutil.ReadFile(path.Join(folder, fi.Name()))
 			if err != nil {
@@ -148,8 +169,9 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 			}
 			for _, group := range tg {
 				t.Run(group.Description, func(t *testing.T) {
-					if reason, ok := skipTests[t.Name()]; ok {
-						t.Skip(reason)
+					skip := skip[group.Description]
+					if skip != nil && len(skip) == 0 {
+						t.Skip()
 					}
 					c := jsonschema.NewCompiler()
 					c.Draft = draft
@@ -162,8 +184,10 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 					}
 					for _, test := range group.Tests {
 						t.Run(test.Description, func(t *testing.T) {
-							if reason, ok := skipTests[t.Name()]; ok {
-								t.Skip(reason)
+							for _, desc := range skip {
+								if test.Description == desc {
+									t.Skip()
+								}
 							}
 							err = schema.Validate(bytes.NewReader(test.Data))
 							valid := err == nil
