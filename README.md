@@ -16,6 +16,8 @@ Passes all tests in https://github.com/json-schema/JSON-Schema-Test-Suite with f
 - in draft4 `1.0` is a not a valid integer but in draft6 and draft7 it is valid integer.
   This library treats `1.0` as integer even in draft4.
 
+Exact list of skipped tests can be found [here](https://github.com/santhosh-tekuri/jsonschema/blob/master/schema_test.go#L30) and the reasons.
+
 For breaking changes from v2 to v3 check github releases page.
 
 An example of using this package:
