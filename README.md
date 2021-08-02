@@ -104,9 +104,9 @@ if err = schema.Validate(f); err != nil {
 ```
 
 This package supports json string formats: 
-- date-time
+- date-time (understands leap-second)
 - date
-- time
+- time (understands leap-second)
 - duration
 - uuid
 - hostname
