@@ -13,12 +13,17 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v3/httploader"
 )
 
+func usage() {
+	fmt.Fprintln(os.Stderr, "jv [-draft INT] <json-schema> [<json-doc>]...")
+	flag.PrintDefaults()
+}
+
 func main() {
 	draft := flag.Int("draft", 7, "draft used when '$schema' attribute is missing")
+	flag.Usage = usage
 	flag.Parse()
 	if len(flag.Args()) == 0 {
-		fmt.Fprintln(os.Stderr, "jv [-draft INT] <json-schema> [<json-doc>]...")
-		flag.PrintDefaults()
+		usage()
 		os.Exit(1)
 	}
 
