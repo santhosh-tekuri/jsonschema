@@ -183,6 +183,13 @@ if `$schema` attribute is missing in schema, it uses draft7. this can be overrid
 
 exit-code is 1, if there are any validation errors
 
-### Validating YAML Document
+## Validating YAML Document
 
-see https://play.golang.org/p/Oeo-noJtKk_N
+since yaml supports non-string keys, such yaml documents are rendered as invalid json documents.  
+yaml parser returns `map[interface{}]interface{}` for object, whereas json parser returns `map[string]interafce{}`.  
+this package accepts only `map[string]interface{}`, so we need to manually convert them to `map[string]interface{}`
+
+https://play.golang.org/p/Oeo-noJtKk_N
+
+the above example shows how to validate yaml document with jsonschema.  
+the convertion explained above is implemented by `toStringKeys` function
