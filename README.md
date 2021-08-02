@@ -175,9 +175,10 @@ Custom Extensions can be registered as shown in `extension_test.go`
 ## CLI
 
 ```bash
-jv <schema-file> [<json-doc>]...
+jv [-draft INT] <schema-file> [<json-doc>]...
 ```
 
-if no `<json-doc>` arguments are passed, it simply validates the `<schema-file>`.
+if no `<json-doc>` arguments are passed, it simply validates the `<schema-file>`.  
+if `$schema` attribute is missing in schema, it uses draft7. this can be overriden by passing `-draft` flag
 
 exit-code is 1, if there are any validation errors
