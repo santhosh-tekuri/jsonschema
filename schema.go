@@ -58,6 +58,8 @@ type Schema struct {
 	Items           interface{} // nil or *Schema or []*Schema
 	AdditionalItems interface{} // nil or bool or *Schema.
 	Contains        *Schema
+	MinContains     int // 1 if not specified
+	MaxContains     int // -1 if not specified
 
 	// string validations
 	MinLength        int // -1 if not specified.
@@ -441,19 +443,21 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		if s.Contains != nil {
-			matched := false
+		if s.Contains != nil && (s.MinContains != -1 || s.MaxContains != -1) {
+			matched := 0
 			var causes []error
 			for i, item := range v {
 				if err := s.Contains.validate(item); err != nil {
 					causes = append(causes, addContext(strconv.Itoa(i), "", err))
 				} else {
-					matched = true
-					break
+					matched++
 				}
 			}
-			if !matched {
-				errors = append(errors, validationError("contains", "contains failed").add(causes...))
+			if s.MinContains != -1 && matched < s.MinContains {
+				errors = append(errors, validationError("minContains", "valid must be >= %d, but got %d", s.MinContains, matched).add(causes...))
+			}
+			if s.MaxContains != -1 && matched > s.MaxContains {
+				errors = append(errors, validationError("maxContains", "valid must be <= %d, but got %d", s.MaxContains, matched))
 			}
 		}
 

@@ -480,6 +480,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		if s.Contains, err = loadSchema("contains"); err != nil {
 			return err
 		}
+		s.MinContains, s.MaxContains = 1, -1
 	}
 
 	if r.draft.version >= 7 {
@@ -512,6 +513,13 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 			if examples, ok := m["examples"]; ok {
 				s.Examples = examples.([]interface{})
 			}
+		}
+	}
+
+	if r.draft.version >= 2019 {
+		s.MinContains, s.MaxContains = loadInt("minContains"), loadInt("maxContains")
+		if s.MinContains == -1 {
+			s.MinContains = 1
 		}
 	}
 
