@@ -48,6 +48,8 @@ type Schema struct {
 	PatternProperties    map[*regexp.Regexp]*Schema
 	AdditionalProperties interface{}            // nil or false or *Schema.
 	Dependencies         map[string]interface{} // value is *Schema or []string.
+	DependentRequired    map[string][]string
+	DependentSchemas     map[string]*Schema
 
 	// array validations
 	MinItems        int // -1 if not specified.
@@ -376,6 +378,22 @@ func (s *Schema) validate(v interface{}) error {
 							errors = append(errors, validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %q is required, if %q property exists", pname, dname))
 						}
 					}
+				}
+			}
+		}
+		for dname, dvalue := range s.DependentRequired {
+			if _, ok := v[dname]; ok {
+				for i, pname := range dvalue {
+					if _, ok := v[pname]; !ok {
+						errors = append(errors, validationError("dependentRequired/"+escape(dname)+"/"+strconv.Itoa(i), "property %q is required, if %q property exists", pname, dname))
+					}
+				}
+			}
+		}
+		for dname, dvalue := range s.DependentSchemas {
+			if _, ok := v[dname]; ok {
+				if err := dvalue.validate(v); err != nil {
+					errors = append(errors, addContext("", "dependentSchemas/"+escape(dname), err))
 				}
 			}
 		}

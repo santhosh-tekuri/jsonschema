@@ -362,6 +362,27 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		}
 	}
 
+	if r.draft.version >= 2019 {
+		if deps, ok := m["dependentRequired"]; ok {
+			deps := deps.(map[string]interface{})
+			s.DependentRequired = make(map[string][]string, len(deps))
+			for pname, pvalue := range deps {
+				s.DependentRequired[pname] = toStrings(pvalue.([]interface{}))
+			}
+		}
+
+		if deps, ok := m["dependentSchemas"]; ok {
+			deps := deps.(map[string]interface{})
+			s.DependentSchemas = make(map[string]*Schema, len(deps))
+			for pname, pvalue := range deps {
+				s.DependentSchemas[pname], err = c.compile(r, nil, base, pvalue)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	s.MinItems, s.MaxItems = loadInt("minItems"), loadInt("maxItems")
 
 	if unique, ok := m["uniqueItems"]; ok {
