@@ -20,7 +20,7 @@ type Draft struct {
 	version int
 }
 
-var latest = Draft7
+var latest = Draft2019
 
 // A Compiler represents a json-schema compiler.
 //
@@ -78,6 +78,8 @@ func (c *Compiler) MustCompile(url string) *Schema {
 // a Schema object that can be used to match against json.
 func (c *Compiler) Compile(url string) (*Schema, error) {
 	switch url {
+	case "http://json-schema.org/draft/2019-09/schema#", "https://json-schema.org/draft/2019-09/schema#":
+		return Draft2019.meta, nil
 	case "http://json-schema.org/draft-07/schema#", "https://json-schema.org/draft-07/schema#":
 		return Draft7.meta, nil
 	case "http://json-schema.org/draft-06/schema#", "https://json-schema.org/draft-06/schema#":
@@ -106,6 +108,8 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 				switch normalize(url.(string)) {
 				case "http://json-schema.org/schema#", "https://json-schema.org/schema#":
 					r.draft = latest
+				case "http://json-schema.org/draft/2019-09/schema#", "https://json-schema.org/draft/2019-09/schema#":
+					r.draft = Draft2019
 				case "http://json-schema.org/draft-07/schema#", "https://json-schema.org/draft-07/schema#":
 					r.draft = Draft7
 				case "http://json-schema.org/draft-06/schema#", "https://json-schema.org/draft-06/schema#":
