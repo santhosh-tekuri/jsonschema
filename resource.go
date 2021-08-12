@@ -155,8 +155,16 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 	if !ok {
 		return nil
 	}
+
+	u := ""
 	if id, ok := m[draft.id]; ok {
-		b, err := resolveURL(base, id.(string))
+		u = id.(string)
+	}
+	if anchor, ok := m["$anchor"]; draft.version >= 2019 && ok {
+		u += "#" + anchor.(string)
+	}
+	if u != "" {
+		b, err := resolveURL(base, u)
 		if err != nil {
 			return err
 		}
@@ -182,7 +190,11 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		}
 	}
 
-	for _, pname := range []string{"definitions", "properties", "patternProperties", "dependencies"} {
+	mapKeys := []string{"definitions", "properties", "patternProperties", "dependencies"}
+	if draft.version >= 2019 {
+		mapKeys = append(mapKeys, "$defs")
+	}
+	for _, pname := range mapKeys {
 		if props, ok := m[pname]; ok {
 			for _, m := range props.(map[string]interface{}) {
 				if err := resolveIDs(draft, base, m, ids); err != nil {
