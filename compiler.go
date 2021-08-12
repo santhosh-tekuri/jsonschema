@@ -230,6 +230,15 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		return nil
 	}
 
+	if r.draft.version >= 2019 {
+		if ref, ok := m["$recursiveRef"]; ok {
+			s.Ref, err = c.compileRef(r, base, ref.(string))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	if t, ok := m["type"]; ok {
 		switch t := t.(type) {
 		case string:
