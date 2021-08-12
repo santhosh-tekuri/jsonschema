@@ -226,8 +226,10 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		if err != nil {
 			return err
 		}
-		// All other properties in a "$ref" object MUST be ignored
-		return nil
+		if r.draft.version < 2019 {
+			// All other properties in a "$ref" object MUST be ignored
+			return nil
+		}
 	}
 
 	if r.draft.version >= 2019 {
