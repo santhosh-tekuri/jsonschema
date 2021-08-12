@@ -190,15 +190,15 @@ func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, 
 		return nil, err
 	}
 
-	s := &Schema{URL: u, Ptr: f}
+	s := newSchema(u, f)
 	r.schemas[ref] = s
 	return c.compile(r, s, base, doc)
 }
 
 func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{}) (*Schema, error) {
 	if s == nil {
-		s = new(Schema)
-		s.URL, _ = split(base.url)
+		u, _ := split(base.url)
+		s = newSchema(u, "")
 	}
 	switch m := m.(type) {
 	case bool:

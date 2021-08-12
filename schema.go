@@ -90,6 +90,22 @@ type Schema struct {
 	extensions map[string]func(ctx ValidationContext, s interface{}, v interface{}) error
 }
 
+func newSchema(url, ptr string) *Schema {
+	// fill with default values
+	return &Schema{
+		URL:           url,
+		Ptr:           ptr,
+		MinProperties: -1,
+		MaxProperties: -1,
+		MinItems:      -1,
+		MaxItems:      -1,
+		MinContains:   1,
+		MaxContains:   -1,
+		MinLength:     -1,
+		MaxLength:     -1,
+	}
+}
+
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
 //
@@ -166,9 +182,6 @@ func (s *Schema) validate(v interface{}) error {
 			}
 			return validationError("$ref", "doesn't validate with %q", refURL).add(err)
 		}
-
-		// All other properties in a "$ref" object MUST be ignored
-		return nil
 	}
 
 	if len(s.Types) > 0 {
