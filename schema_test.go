@@ -92,6 +92,28 @@ var skipTests = map[string]map[string][]string{
 		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
 		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
 	},
+	//
+	"TestDraft2019/optional/unicode.json":             {}, // golang regex works on ascii only
+	"TestDraft2019/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
+	"TestDraft2019/optional/format/idn-email.json":    {}, // idn-email format is not implemented
+	"TestDraft2019/optional/ecmascript-regex.json": {
+		"ECMA 262 \\s matches whitespace": {
+			"Line tabulation matches",                       // \s does not match vertical tab
+			"latin-1 non-breaking-space matches",            // \s does not match unicode whitespace
+			"zero-width whitespace matches",                 // \s does not match unicode whitespace
+			"paragraph separator matches (line terminator)", // \s does not match unicode whitespace
+			"EM SPACE matches (Space_Separator)",            // \s does not match unicode whitespace
+		},
+		"ECMA 262 \\S matches everything but whitespace": {
+			"Line tabulation does not match",                       // \S matches unicode whitespace
+			"latin-1 non-breaking-space does not match",            // \S matches unicode whitespace
+			"zero-width whitespace does not match",                 // \S matches unicode whitespace
+			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
+			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
+		},
+		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+	},
 }
 
 func TestDraft4(t *testing.T) {
@@ -179,12 +201,15 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 					}
 					c := jsonschema.NewCompiler()
 					c.Draft = draft
+					if strings.Index(folder, "optional") != -1 {
+						c.AssertFormat = true
+					}
 					if err := c.AddResource("schema.json", bytes.NewReader(group.Schema)); err != nil {
 						t.Fatal(err)
 					}
 					schema, err := c.Compile("schema.json")
 					if err != nil {
-						t.Fatal(err)
+						t.Fatalf("%#v", err)
 					}
 					for _, test := range group.Tests {
 						t.Run(test.Description, func(t *testing.T) {

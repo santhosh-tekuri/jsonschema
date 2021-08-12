@@ -43,6 +43,12 @@ type Compiler struct {
 	//
 	// If nil, package global LoadURL is used.
 	LoadURL func(s string) (io.ReadCloser, error)
+
+	// AssertFormat for specifications >= draft2019-09.
+	AssertFormat bool
+
+	// AssertContent for specifications >= draft2019-09.
+	AssertContent bool
 }
 
 // NewCompiler returns a json-schema Compiler object.
@@ -517,6 +523,12 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 	}
 
 	if r.draft.version >= 2019 {
+		s.decoder = nil
+		s.mediaType = nil
+		if !c.AssertFormat {
+			s.format = nil
+		}
+
 		s.MinContains, s.MaxContains = loadInt("minContains"), loadInt("maxContains")
 		if s.MinContains == -1 {
 			s.MinContains = 1
