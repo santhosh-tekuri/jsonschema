@@ -356,9 +356,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 	if additionalProps, ok := m["additionalProperties"]; ok {
 		switch additionalProps := additionalProps.(type) {
 		case bool:
-			if !additionalProps {
-				s.AdditionalProperties = false
-			}
+			s.AdditionalProperties = additionalProps
 		case map[string]interface{}:
 			s.AdditionalProperties, err = c.compileInlined(r, base, additionalProps)
 			if err != nil {

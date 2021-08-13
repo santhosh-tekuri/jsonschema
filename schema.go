@@ -46,7 +46,7 @@ type Schema struct {
 	PropertyNames         *Schema
 	RegexProperties       bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
 	PatternProperties     map[*regexp.Regexp]*Schema
-	AdditionalProperties  interface{}            // nil or false or *Schema.
+	AdditionalProperties  interface{}            // nil or bool or *Schema.
 	Dependencies          map[string]interface{} // value is *Schema or []string.
 	DependentRequired     map[string][]string
 	DependentSchemas      map[string]*Schema
@@ -298,6 +298,8 @@ func (s *Schema) validate(v interface{}) error {
 		}
 	}
 
+	unevalProps := make(map[string]struct{})
+
 	switch v := v.(type) {
 	case map[string]interface{}:
 		if s.MinProperties != -1 && len(v) < s.MinProperties {
@@ -318,18 +320,14 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 
-		var additionalProps map[string]struct{}
-		if s.AdditionalProperties != nil {
-			additionalProps = make(map[string]struct{}, len(v))
-			for pname := range v {
-				additionalProps[pname] = struct{}{}
-			}
+		for pname := range v {
+			unevalProps[pname] = struct{}{}
 		}
 
 		if len(s.Properties) > 0 {
 			for pname, pschema := range s.Properties {
 				if pvalue, ok := v[pname]; ok {
-					delete(additionalProps, pname)
+					delete(unevalProps, pname)
 					if err := pschema.validate(pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "properties/"+escape(pname), err))
 					}
@@ -355,7 +353,7 @@ func (s *Schema) validate(v interface{}) error {
 		for pattern, pschema := range s.PatternProperties {
 			for pname, pvalue := range v {
 				if pattern.MatchString(pname) {
-					delete(additionalProps, pname)
+					delete(unevalProps, pname)
 					if err := pschema.validate(pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err))
 					}
@@ -363,17 +361,17 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 		if s.AdditionalProperties != nil {
-			if _, ok := s.AdditionalProperties.(bool); ok {
-				if len(additionalProps) != 0 {
-					pnames := make([]string, 0, len(additionalProps))
-					for pname := range additionalProps {
+			if allowed, ok := s.AdditionalProperties.(bool); ok {
+				if !allowed && len(unevalProps) > 0 {
+					pnames := make([]string, 0, len(unevalProps))
+					for pname := range unevalProps {
 						pnames = append(pnames, strconv.Quote(pname))
 					}
 					errors = append(errors, validationError("additionalProperties", "additionalProperties %s not allowed", strings.Join(pnames, ", ")))
 				}
 			} else {
 				schema := s.AdditionalProperties.(*Schema)
-				for pname := range additionalProps {
+				for pname := range unevalProps {
 					if pvalue, ok := v[pname]; ok {
 						if err := schema.validate(pvalue); err != nil {
 							errors = append(errors, addContext(escape(pname), "additionalProperties", err))
@@ -381,6 +379,7 @@ func (s *Schema) validate(v interface{}) error {
 					}
 				}
 			}
+			unevalProps = nil
 		}
 		for dname, dvalue := range s.Dependencies {
 			if _, ok := v[dname]; ok {
@@ -535,6 +534,21 @@ func (s *Schema) validate(v interface{}) error {
 			if q := new(big.Rat).Quo(num(), s.MultipleOf); !q.IsInt() {
 				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
 			}
+		}
+	}
+
+	// unevaluated ---
+	switch v := v.(type) {
+	case map[string]interface{}:
+		if s.UnevaluatedProperties != nil {
+			for pname := range unevalProps {
+				if pvalue, ok := v[pname]; ok {
+					if err := s.UnevaluatedProperties.validate(pvalue); err != nil {
+						errors = append(errors, addContext(escape(pname), "unevaluatedProperties", err))
+					}
+				}
+			}
+			unevalProps = nil
 		}
 	}
 
