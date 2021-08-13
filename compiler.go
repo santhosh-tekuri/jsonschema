@@ -131,7 +131,11 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 			r.draft = c.Draft
 		}
 	}
-	return c.compileRef(r, *r, fragment)
+	baseResource, err := r.resolveID(*r, r.doc)
+	if err != nil {
+		return nil, err
+	}
+	return c.compileRef(r, baseResource, fragment)
 }
 
 func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
@@ -195,6 +199,15 @@ func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, 
 	return c.compile(r, s, base, doc)
 }
 
+func (c *Compiler) compileInlined(r *resource, base resource, m interface{}) (*Schema, error) {
+	var err error
+	base, err = r.resolveID(base, m)
+	if err != nil {
+		return nil, err
+	}
+	return c.compile(r, nil, base, m)
+}
+
 func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{}) (*Schema, error) {
 	if s == nil {
 		u, _ := split(base.url)
@@ -211,15 +224,6 @@ func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{})
 
 func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[string]interface{}) error {
 	var err error
-
-	if id, ok := m[r.draft.id]; ok {
-		b, err := resolveURL(base.url, id.(string))
-		if err != nil {
-			return err
-		}
-		b, _ = split(b)
-		base = resource{url: b, doc: m}
-	}
 
 	if ref, ok := m["$ref"]; ok {
 		s.Ref, err = c.compileRef(r, base, ref.(string))
@@ -276,7 +280,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 
 	loadSchema := func(pname string) (*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
-			return c.compile(r, nil, base, pvalue)
+			return c.compileInlined(r, base, pvalue)
 		}
 		return nil, nil
 	}
@@ -290,7 +294,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
 			for i, v := range pvalue {
-				sch, err := c.compile(r, nil, base, v)
+				sch, err := c.compileInlined(r, base, v)
 				if err != nil {
 					return nil, err
 				}
@@ -327,7 +331,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		props := props.(map[string]interface{})
 		s.Properties = make(map[string]*Schema, len(props))
 		for pname, pmap := range props {
-			s.Properties[pname], err = c.compile(r, nil, base, pmap)
+			s.Properties[pname], err = c.compileInlined(r, base, pmap)
 			if err != nil {
 				return err
 			}
@@ -342,7 +346,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		patternProps := patternProps.(map[string]interface{})
 		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
 		for pattern, pmap := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compile(r, nil, base, pmap)
+			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compileInlined(r, base, pmap)
 			if err != nil {
 				return err
 			}
@@ -356,7 +360,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 				s.AdditionalProperties = false
 			}
 		case map[string]interface{}:
-			s.AdditionalProperties, err = c.compile(r, nil, base, additionalProps)
+			s.AdditionalProperties, err = c.compileInlined(r, base, additionalProps)
 			if err != nil {
 				return err
 			}
@@ -371,7 +375,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 			case []interface{}:
 				s.Dependencies[pname] = toStrings(pvalue)
 			default:
-				s.Dependencies[pname], err = c.compile(r, nil, base, pvalue)
+				s.Dependencies[pname], err = c.compileInlined(r, base, pvalue)
 				if err != nil {
 					return err
 				}
@@ -392,7 +396,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 			deps := deps.(map[string]interface{})
 			s.DependentSchemas = make(map[string]*Schema, len(deps))
 			for pname, pvalue := range deps {
-				s.DependentSchemas[pname], err = c.compile(r, nil, base, pvalue)
+				s.DependentSchemas[pname], err = c.compileInlined(r, base, pvalue)
 				if err != nil {
 					return err
 				}
@@ -418,7 +422,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 				case bool:
 					s.AdditionalItems = additionalItems
 				case map[string]interface{}:
-					s.AdditionalItems, err = c.compile(r, nil, base, additionalItems)
+					s.AdditionalItems, err = c.compileInlined(r, base, additionalItems)
 					if err != nil {
 						return err
 					}
@@ -427,7 +431,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 				s.AdditionalItems = true
 			}
 		default:
-			s.Items, err = c.compile(r, nil, base, items)
+			s.Items, err = c.compileInlined(r, base, items)
 			if err != nil {
 				return err
 			}

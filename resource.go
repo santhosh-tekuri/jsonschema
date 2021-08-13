@@ -90,6 +90,21 @@ func isPtrFragment(f string) bool {
 	return len(f) == 1 || f[1] == '/'
 }
 
+func (r *resource) resolveID(base resource, d interface{}) (newBase resource, err error) {
+	if d, ok := d.(map[string]interface{}); ok {
+		if id, ok := d[r.draft.id]; ok {
+			if id, ok := id.(string); ok {
+				url, err := resolveURL(base.url, id)
+				if err != nil {
+					return resource{}, err
+				}
+				return resource{url: url, doc: d}, nil
+			}
+		}
+	}
+	return base, nil
+}
+
 func (r *resource) resolvePtr(ptr string, base resource) (resource, interface{}, error) {
 	if !strings.HasPrefix(ptr, "#/") {
 		panic(fmt.Sprintf("BUG: resolvePtr(%q)", ptr))
@@ -105,14 +120,6 @@ func (r *resource) resolvePtr(ptr string, base resource) (resource, interface{},
 		}
 		switch d := doc.(type) {
 		case map[string]interface{}:
-			if id, ok := d[r.draft.id]; ok {
-				if id, ok := id.(string); ok {
-					base.doc = d
-					if base.url, err = resolveURL(base.url, id); err != nil {
-						return resource{}, nil, err
-					}
-				}
-			}
 			doc = d[item]
 		case []interface{}:
 			index, err := strconv.Atoi(item)
@@ -125,6 +132,10 @@ func (r *resource) resolvePtr(ptr string, base resource) (resource, interface{},
 			doc = d[index]
 		default:
 			return resource{}, nil, errors.New("invalid $ref " + ptr)
+		}
+		base, err = r.resolveID(base, doc)
+		if err != nil {
+			return resource{}, nil, err
 		}
 	}
 	return base, doc, nil
