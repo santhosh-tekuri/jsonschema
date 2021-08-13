@@ -430,8 +430,6 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 						return err
 					}
 				}
-			} else {
-				s.AdditionalItems = true
 			}
 		default:
 			s.Items, err = c.compileInlined(r, base, items)
@@ -576,7 +574,7 @@ func (c *Compiler) validateSchema(r *resource, ptr string, v interface{}) error 
 		if meta == nil {
 			return nil
 		}
-		if _, err := meta.validate(v); err != nil {
+		if _, _, err := meta.validate(v); err != nil {
 			_ = addContext(ptr, "", err)
 			finishSchemaContext(err, meta)
 			finishInstanceContext(err)
