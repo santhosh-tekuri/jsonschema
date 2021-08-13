@@ -39,27 +39,29 @@ type Schema struct {
 	Else      *Schema // nil, when If is nil.
 
 	// object validations
-	MinProperties        int      // -1 if not specified.
-	MaxProperties        int      // -1 if not specified.
-	Required             []string // list of required properties.
-	Properties           map[string]*Schema
-	PropertyNames        *Schema
-	RegexProperties      bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
-	PatternProperties    map[*regexp.Regexp]*Schema
-	AdditionalProperties interface{}            // nil or false or *Schema.
-	Dependencies         map[string]interface{} // value is *Schema or []string.
-	DependentRequired    map[string][]string
-	DependentSchemas     map[string]*Schema
+	MinProperties         int      // -1 if not specified.
+	MaxProperties         int      // -1 if not specified.
+	Required              []string // list of required properties.
+	Properties            map[string]*Schema
+	PropertyNames         *Schema
+	RegexProperties       bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
+	PatternProperties     map[*regexp.Regexp]*Schema
+	AdditionalProperties  interface{}            // nil or false or *Schema.
+	Dependencies          map[string]interface{} // value is *Schema or []string.
+	DependentRequired     map[string][]string
+	DependentSchemas      map[string]*Schema
+	UnevaluatedProperties *Schema
 
 	// array validations
-	MinItems        int // -1 if not specified.
-	MaxItems        int // -1 if not specified.
-	UniqueItems     bool
-	Items           interface{} // nil or *Schema or []*Schema
-	AdditionalItems interface{} // nil or bool or *Schema.
-	Contains        *Schema
-	MinContains     int // 1 if not specified
-	MaxContains     int // -1 if not specified
+	MinItems         int // -1 if not specified.
+	MaxItems         int // -1 if not specified.
+	UniqueItems      bool
+	Items            interface{} // nil or *Schema or []*Schema
+	AdditionalItems  interface{} // nil or bool or *Schema.
+	Contains         *Schema
+	MinContains      int // 1 if not specified
+	MaxContains      int // -1 if not specified
+	UnevaluatedItems *Schema
 
 	// string validations
 	MinLength        int // -1 if not specified.

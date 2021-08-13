@@ -183,7 +183,11 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		ids[base] = m
 	}
 
-	for _, pname := range []string{"not", "additionalProperties"} {
+	schemaKeys := []string{"not", "additionalProperties"}
+	if draft.version >= 2019 {
+		schemaKeys = append(schemaKeys, "unevaluatedProperties", "unevaluatedItems")
+	}
+	for _, pname := range schemaKeys {
 		if m, ok := m[pname]; ok {
 			if err := resolveIDs(draft, base, m, ids); err != nil {
 				return err

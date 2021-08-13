@@ -391,7 +391,6 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 				s.DependentRequired[pname] = toStrings(pvalue.([]interface{}))
 			}
 		}
-
 		if deps, ok := m["dependentSchemas"]; ok {
 			deps := deps.(map[string]interface{})
 			s.DependentSchemas = make(map[string]*Schema, len(deps))
@@ -401,6 +400,12 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 					return err
 				}
 			}
+		}
+		if s.UnevaluatedProperties, err = loadSchema("unevaluatedProperties"); err != nil {
+			return err
+		}
+		if s.UnevaluatedItems, err = loadSchema("unevaluatedItems"); err != nil {
+			return err
 		}
 	}
 
