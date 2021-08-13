@@ -203,7 +203,7 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 
 	mapKeys := []string{"definitions", "properties", "patternProperties", "dependencies"}
 	if draft.version >= 2019 {
-		mapKeys = append(mapKeys, "$defs")
+		mapKeys = append(mapKeys, "$defs", "dependentSchemas")
 	}
 	for _, pname := range mapKeys {
 		if props, ok := m[pname]; ok {
