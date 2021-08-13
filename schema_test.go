@@ -601,6 +601,7 @@ func TestNonStringFormat(t *testing.T) {
 	}
 	schema := `{"type": "integer", "format": "even-number"}`
 	c := jsonschema.NewCompiler()
+	c.AssertFormat = true
 	if err := c.AddResource("schema.json", strings.NewReader(schema)); err != nil {
 		t.Fatal(err)
 	}
