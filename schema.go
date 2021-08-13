@@ -181,19 +181,6 @@ func (s *Schema) validate(v interface{}) error {
 		return nil
 	}
 
-	if s.Ref != nil {
-		if err := s.Ref.validate(v); err != nil {
-			finishSchemaContext(err, s.Ref)
-			var refURL string
-			if s.URL == s.Ref.URL {
-				refURL = s.Ref.Ptr
-			} else {
-				refURL = s.Ref.URL + s.Ref.Ptr
-			}
-			return validationError("$ref", "doesn't validate with %q", refURL).add(err)
-		}
-	}
-
 	if len(s.Types) > 0 {
 		vType := jsonType(v)
 		matched := false
@@ -474,6 +461,19 @@ func (s *Schema) validate(v interface{}) error {
 			if q := new(big.Rat).Quo(num(), s.MultipleOf); !q.IsInt() {
 				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
 			}
+		}
+	}
+
+	if s.Ref != nil {
+		if err := s.Ref.validate(v); err != nil {
+			finishSchemaContext(err, s.Ref)
+			var refURL string
+			if s.URL == s.Ref.URL {
+				refURL = s.Ref.Ptr
+			} else {
+				refURL = s.Ref.URL + s.Ref.Ptr
+			}
+			return validationError("$ref", "doesn't validate with %q", refURL).add(err)
 		}
 	}
 
