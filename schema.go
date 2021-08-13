@@ -175,9 +175,11 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, err e
 	}
 	validateWith := func(schema *Schema) error {
 		ueProps, err := schema.validate(v)
-		for pname := range unevalProps {
-			if _, ok := ueProps[pname]; !ok {
-				delete(unevalProps, pname)
+		if err == nil {
+			for pname := range unevalProps {
+				if _, ok := ueProps[pname]; !ok {
+					delete(unevalProps, pname)
+				}
 			}
 		}
 		return err
