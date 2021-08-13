@@ -166,6 +166,14 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 
 // validate validates given value v with this schema.
 func (s *Schema) validate(v interface{}) error {
+	var unevalProps map[string]struct{}
+	if m, ok := v.(map[string]interface{}); ok {
+		unevalProps = make(map[string]struct{})
+		for pname := range m {
+			unevalProps[pname] = struct{}{}
+		}
+	}
+
 	if s.Always != nil {
 		if !*s.Always {
 			return validationError("", "always fail")
@@ -236,8 +244,6 @@ func (s *Schema) validate(v interface{}) error {
 		errors = append(errors, validationError("format", "%q is not valid %q", v, s.Format))
 	}
 
-	unevalProps := make(map[string]struct{})
-
 	switch v := v.(type) {
 	case map[string]interface{}:
 		if s.MinProperties != -1 && len(v) < s.MinProperties {
@@ -256,10 +262,6 @@ func (s *Schema) validate(v interface{}) error {
 			if len(missing) > 0 {
 				errors = append(errors, validationError("required", "missing properties: %s", strings.Join(missing, ", ")))
 			}
-		}
-
-		for pname := range v {
-			unevalProps[pname] = struct{}{}
 		}
 
 		if len(s.Properties) > 0 {
