@@ -236,68 +236,6 @@ func (s *Schema) validate(v interface{}) error {
 		errors = append(errors, validationError("format", "%q is not valid %q", v, s.Format))
 	}
 
-	if s.Not != nil && s.Not.validate(v) == nil {
-		errors = append(errors, validationError("not", "not failed"))
-	}
-
-	for i, sch := range s.AllOf {
-		if err := sch.validate(v); err != nil {
-			errors = append(errors, validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err))
-		}
-	}
-
-	if len(s.AnyOf) > 0 {
-		matched := false
-		var causes []error
-		for i, sch := range s.AnyOf {
-			if err := sch.validate(v); err == nil {
-				matched = true
-				break
-			} else {
-				causes = append(causes, addContext("", strconv.Itoa(i), err))
-			}
-		}
-		if !matched {
-			errors = append(errors, validationError("anyOf", "anyOf failed").add(causes...))
-		}
-	}
-
-	if len(s.OneOf) > 0 {
-		matched := -1
-		var causes []error
-		for i, sch := range s.OneOf {
-			if err := sch.validate(v); err == nil {
-				if matched == -1 {
-					matched = i
-				} else {
-					errors = append(errors, validationError("oneOf", "valid against schemas at indexes %d and %d", matched, i))
-					break
-				}
-			} else {
-				causes = append(causes, addContext("", strconv.Itoa(i), err))
-			}
-		}
-		if matched == -1 {
-			errors = append(errors, validationError("oneOf", "oneOf failed").add(causes...))
-		}
-	}
-
-	if s.If != nil {
-		if s.If.validate(v) == nil {
-			if s.Then != nil {
-				if err := s.Then.validate(v); err != nil {
-					errors = append(errors, validationError("then", "if-then failed").add(err))
-				}
-			}
-		} else {
-			if s.Else != nil {
-				if err := s.Else.validate(v); err != nil {
-					errors = append(errors, validationError("else", "if-else failed").add(err))
-				}
-			}
-		}
-	}
-
 	unevalProps := make(map[string]struct{})
 
 	switch v := v.(type) {
@@ -533,6 +471,68 @@ func (s *Schema) validate(v interface{}) error {
 		if s.MultipleOf != nil {
 			if q := new(big.Rat).Quo(num(), s.MultipleOf); !q.IsInt() {
 				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
+			}
+		}
+	}
+
+	if s.Not != nil && s.Not.validate(v) == nil {
+		errors = append(errors, validationError("not", "not failed"))
+	}
+
+	for i, sch := range s.AllOf {
+		if err := sch.validate(v); err != nil {
+			errors = append(errors, validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err))
+		}
+	}
+
+	if len(s.AnyOf) > 0 {
+		matched := false
+		var causes []error
+		for i, sch := range s.AnyOf {
+			if err := sch.validate(v); err == nil {
+				matched = true
+				break
+			} else {
+				causes = append(causes, addContext("", strconv.Itoa(i), err))
+			}
+		}
+		if !matched {
+			errors = append(errors, validationError("anyOf", "anyOf failed").add(causes...))
+		}
+	}
+
+	if len(s.OneOf) > 0 {
+		matched := -1
+		var causes []error
+		for i, sch := range s.OneOf {
+			if err := sch.validate(v); err == nil {
+				if matched == -1 {
+					matched = i
+				} else {
+					errors = append(errors, validationError("oneOf", "valid against schemas at indexes %d and %d", matched, i))
+					break
+				}
+			} else {
+				causes = append(causes, addContext("", strconv.Itoa(i), err))
+			}
+		}
+		if matched == -1 {
+			errors = append(errors, validationError("oneOf", "oneOf failed").add(causes...))
+		}
+	}
+
+	if s.If != nil {
+		if s.If.validate(v) == nil {
+			if s.Then != nil {
+				if err := s.Then.validate(v); err != nil {
+					errors = append(errors, validationError("then", "if-then failed").add(err))
+				}
+			}
+		} else {
+			if s.Else != nil {
+				if err := s.Else.validate(v); err != nil {
+					errors = append(errors, validationError("else", "if-else failed").add(err))
+				}
 			}
 		}
 	}
