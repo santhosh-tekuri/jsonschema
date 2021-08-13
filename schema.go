@@ -502,7 +502,6 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, err e
 		for i, sch := range s.AnyOf {
 			if err := validateWith(sch); err == nil {
 				matched = true
-				break
 			} else {
 				causes = append(causes, addContext("", strconv.Itoa(i), err))
 			}
