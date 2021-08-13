@@ -93,18 +93,18 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	case "http://json-schema.org/draft-04/schema#", "https://json-schema.org/draft-04/schema#":
 		return Draft4.meta, nil
 	}
-	base, fragment := split(url)
-	if _, ok := c.resources[base]; !ok {
-		r, err := c.loadURL(base)
+	b, f := split(url)
+	if _, ok := c.resources[b]; !ok {
+		r, err := c.loadURL(b)
 		if err != nil {
 			return nil, err
 		}
 		defer r.Close()
-		if err := c.AddResource(base, r); err != nil {
+		if err := c.AddResource(b, r); err != nil {
 			return nil, err
 		}
 	}
-	r := c.resources[base]
+	r := c.resources[b]
 	if r.draft == nil {
 		if m, ok := r.doc.(map[string]interface{}); ok {
 			if url, ok := m["$schema"]; ok {
@@ -131,11 +131,11 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 			r.draft = c.Draft
 		}
 	}
-	baseResource, err := r.resolveID(*r, r.doc)
+	base, err := r.resolveID(*r, r.doc)
 	if err != nil {
 		return nil, err
 	}
-	return c.compileRef(r, baseResource, fragment)
+	return c.compileRef(r, base, f)
 }
 
 func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
