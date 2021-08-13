@@ -156,7 +156,7 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 			}
 		}
 	}()
-	if err := s.validate(doc); err != nil {
+	if _, err := s.validate(doc); err != nil {
 		finishSchemaContext(err, s)
 		finishInstanceContext(err)
 		return err
@@ -165,20 +165,29 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 }
 
 // validate validates given value v with this schema.
-func (s *Schema) validate(v interface{}) error {
-	var unevalProps map[string]struct{}
+func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, err error) {
+	// populate unevalProps
 	if m, ok := v.(map[string]interface{}); ok {
 		unevalProps = make(map[string]struct{})
 		for pname := range m {
 			unevalProps[pname] = struct{}{}
 		}
 	}
+	validateWith := func(schema *Schema) error {
+		ueProps, err := schema.validate(v)
+		for pname := range unevalProps {
+			if _, ok := ueProps[pname]; !ok {
+				delete(unevalProps, pname)
+			}
+		}
+		return err
+	}
 
 	if s.Always != nil {
 		if !*s.Always {
-			return validationError("", "always fail")
+			return unevalProps, validationError("", "always fail")
 		}
-		return nil
+		return unevalProps, nil
 	}
 
 	if len(s.Types) > 0 {
@@ -197,7 +206,7 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 		if !matched {
-			return validationError("type", "expected %s, but got %s", strings.Join(s.Types, " or "), vType)
+			return unevalProps, validationError("type", "expected %s, but got %s", strings.Join(s.Types, " or "), vType)
 		}
 	}
 
@@ -255,7 +264,7 @@ func (s *Schema) validate(v interface{}) error {
 			for pname, pschema := range s.Properties {
 				if pvalue, ok := v[pname]; ok {
 					delete(unevalProps, pname)
-					if err := pschema.validate(pvalue); err != nil {
+					if _, err := pschema.validate(pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "properties/"+escape(pname), err))
 					}
 				}
@@ -264,7 +273,7 @@ func (s *Schema) validate(v interface{}) error {
 
 		if s.PropertyNames != nil {
 			for pname := range v {
-				if err := s.PropertyNames.validate(pname); err != nil {
+				if _, err := s.PropertyNames.validate(pname); err != nil {
 					errors = append(errors, addContext(escape(pname), "propertyNames", err))
 				}
 			}
@@ -281,7 +290,7 @@ func (s *Schema) validate(v interface{}) error {
 			for pname, pvalue := range v {
 				if pattern.MatchString(pname) {
 					delete(unevalProps, pname)
-					if err := pschema.validate(pvalue); err != nil {
+					if _, err := pschema.validate(pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err))
 					}
 				}
@@ -300,7 +309,7 @@ func (s *Schema) validate(v interface{}) error {
 				schema := s.AdditionalProperties.(*Schema)
 				for pname := range unevalProps {
 					if pvalue, ok := v[pname]; ok {
-						if err := schema.validate(pvalue); err != nil {
+						if _, err := schema.validate(pvalue); err != nil {
 							errors = append(errors, addContext(escape(pname), "additionalProperties", err))
 						}
 					}
@@ -312,7 +321,7 @@ func (s *Schema) validate(v interface{}) error {
 			if _, ok := v[dname]; ok {
 				switch dvalue := dvalue.(type) {
 				case *Schema:
-					if err := dvalue.validate(v); err != nil {
+					if err := validateWith(dvalue); err != nil {
 						errors = append(errors, addContext("", "dependencies/"+escape(dname), err))
 					}
 				case []string:
@@ -335,7 +344,7 @@ func (s *Schema) validate(v interface{}) error {
 		}
 		for dname, dvalue := range s.DependentSchemas {
 			if _, ok := v[dname]; ok {
-				if err := dvalue.validate(v); err != nil {
+				if err := validateWith(dvalue); err != nil {
 					errors = append(errors, addContext("", "dependentSchemas/"+escape(dname), err))
 				}
 			}
@@ -360,7 +369,7 @@ func (s *Schema) validate(v interface{}) error {
 		switch items := s.Items.(type) {
 		case *Schema:
 			for i, item := range v {
-				if err := items.validate(item); err != nil {
+				if _, err := items.validate(item); err != nil {
 					errors = append(errors, addContext(strconv.Itoa(i), "items", err))
 				}
 			}
@@ -372,11 +381,11 @@ func (s *Schema) validate(v interface{}) error {
 			}
 			for i, item := range v {
 				if i < len(items) {
-					if err := items[i].validate(item); err != nil {
+					if _, err := items[i].validate(item); err != nil {
 						errors = append(errors, addContext(strconv.Itoa(i), "items/"+strconv.Itoa(i), err))
 					}
 				} else if sch, ok := s.AdditionalItems.(*Schema); ok {
-					if err := sch.validate(item); err != nil {
+					if _, err := sch.validate(item); err != nil {
 						errors = append(errors, addContext(strconv.Itoa(i), "additionalItems", err))
 					}
 				} else {
@@ -388,7 +397,7 @@ func (s *Schema) validate(v interface{}) error {
 			matched := 0
 			var causes []error
 			for i, item := range v {
-				if err := s.Contains.validate(item); err != nil {
+				if _, err := s.Contains.validate(item); err != nil {
 					causes = append(causes, addContext(strconv.Itoa(i), "", err))
 				} else {
 					matched++
@@ -465,7 +474,7 @@ func (s *Schema) validate(v interface{}) error {
 	}
 
 	if s.Ref != nil {
-		if err := s.Ref.validate(v); err != nil {
+		if err := validateWith(s.Ref); err != nil {
 			finishSchemaContext(err, s.Ref)
 			var refURL string
 			if s.URL == s.Ref.URL {
@@ -473,16 +482,16 @@ func (s *Schema) validate(v interface{}) error {
 			} else {
 				refURL = s.Ref.URL + s.Ref.Ptr
 			}
-			return validationError("$ref", "doesn't validate with %q", refURL).add(err)
+			return unevalProps, validationError("$ref", "doesn't validate with %q", refURL).add(err)
 		}
 	}
 
-	if s.Not != nil && s.Not.validate(v) == nil {
+	if s.Not != nil && validateWith(s.Not) == nil {
 		errors = append(errors, validationError("not", "not failed"))
 	}
 
 	for i, sch := range s.AllOf {
-		if err := sch.validate(v); err != nil {
+		if err := validateWith(sch); err != nil {
 			errors = append(errors, validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err))
 		}
 	}
@@ -491,7 +500,7 @@ func (s *Schema) validate(v interface{}) error {
 		matched := false
 		var causes []error
 		for i, sch := range s.AnyOf {
-			if err := sch.validate(v); err == nil {
+			if err := validateWith(sch); err == nil {
 				matched = true
 				break
 			} else {
@@ -507,7 +516,7 @@ func (s *Schema) validate(v interface{}) error {
 		matched := -1
 		var causes []error
 		for i, sch := range s.OneOf {
-			if err := sch.validate(v); err == nil {
+			if err := validateWith(sch); err == nil {
 				if matched == -1 {
 					matched = i
 				} else {
@@ -524,15 +533,15 @@ func (s *Schema) validate(v interface{}) error {
 	}
 
 	if s.If != nil {
-		if s.If.validate(v) == nil {
+		if validateWith(s.If) == nil {
 			if s.Then != nil {
-				if err := s.Then.validate(v); err != nil {
+				if err := validateWith(s.Then); err != nil {
 					errors = append(errors, validationError("then", "if-then failed").add(err))
 				}
 			}
 		} else {
 			if s.Else != nil {
-				if err := s.Else.validate(v); err != nil {
+				if err := validateWith(s.Else); err != nil {
 					errors = append(errors, validationError("else", "if-else failed").add(err))
 				}
 			}
@@ -545,7 +554,7 @@ func (s *Schema) validate(v interface{}) error {
 		if s.UnevaluatedProperties != nil {
 			for pname := range unevalProps {
 				if pvalue, ok := v[pname]; ok {
-					if err := s.UnevaluatedProperties.validate(pvalue); err != nil {
+					if _, err := s.UnevaluatedProperties.validate(pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "unevaluatedProperties", err))
 					}
 				}
@@ -563,11 +572,11 @@ func (s *Schema) validate(v interface{}) error {
 
 	switch len(errors) {
 	case 0:
-		return nil
+		return unevalProps, nil
 	case 1:
-		return errors[0]
+		return unevalProps, errors[0]
 	default:
-		return validationError("", "validation failed").add(errors...)
+		return unevalProps, validationError("", "validation failed").add(errors...)
 	}
 }
 

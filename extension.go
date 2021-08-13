@@ -50,7 +50,8 @@ type ValidationContext struct{}
 // *Schema.ValidateInterface method. This will be useful in implementing keywords like
 // allOf/oneOf
 func (ValidationContext) Validate(s *Schema, v interface{}) error {
-	return s.validate(v)
+	_, err := s.validate(v)
+	return err
 }
 
 // Error used to construct validation error by extensions. schemaPtr is relative json pointer.
