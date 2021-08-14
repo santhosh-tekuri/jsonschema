@@ -25,7 +25,7 @@ type Schema struct {
 	format    func(interface{}) bool
 	Format    string
 	Always    *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref       *Schema       // reference to actual schema. if not nil, all the remaining fields are ignored.
+	Ref       *Schema       // reference to actual schema.
 	Types     []string      // allowed types.
 	Constant  []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
 	Enum      []interface{} // allowed values.
