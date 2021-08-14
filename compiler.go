@@ -194,7 +194,7 @@ func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, 
 		return nil, err
 	}
 
-	s := newSchema(u, f)
+	s := newSchema(u, f, doc)
 	r.schemas[ref] = s
 	return c.compile(r, s, base, doc)
 }
@@ -211,7 +211,7 @@ func (c *Compiler) compileInlined(r *resource, base resource, m interface{}) (*S
 func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{}) (*Schema, error) {
 	if s == nil {
 		u, _ := split(base.url)
-		s = newSchema(u, "")
+		s = newSchema(u, "", m)
 	}
 	switch m := m.(type) {
 	case bool:

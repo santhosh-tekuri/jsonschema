@@ -22,22 +22,23 @@ type Schema struct {
 	Ptr string // json-pointer to schema. always starts with `#`.
 
 	// type agnostic validations
-	format       func(interface{}) bool
-	Format       string
-	Always       *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref          *Schema       // reference to actual schema.
-	RecursiveRef *Schema       // reference to actual schema.
-	Types        []string      // allowed types.
-	Constant     []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
-	Enum         []interface{} // allowed values.
-	enumError    string        // error message for enum fail. captured here to avoid constructing error message every time.
-	Not          *Schema
-	AllOf        []*Schema
-	AnyOf        []*Schema
-	OneOf        []*Schema
-	If           *Schema
-	Then         *Schema // nil, when If is nil.
-	Else         *Schema // nil, when If is nil.
+	format          func(interface{}) bool
+	Format          string
+	Always          *bool   // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref             *Schema // reference to actual schema.
+	RecursiveAnchor bool
+	RecursiveRef    *Schema       // reference to actual schema.
+	Types           []string      // allowed types.
+	Constant        []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
+	Enum            []interface{} // allowed values.
+	enumError       string        // error message for enum fail. captured here to avoid constructing error message every time.
+	Not             *Schema
+	AllOf           []*Schema
+	AnyOf           []*Schema
+	OneOf           []*Schema
+	If              *Schema
+	Then            *Schema // nil, when If is nil.
+	Else            *Schema // nil, when If is nil.
 
 	// object validations
 	MinProperties         int      // -1 if not specified.
@@ -93,19 +94,29 @@ type Schema struct {
 	extensions map[string]func(ctx ValidationContext, s interface{}, v interface{}) error
 }
 
-func newSchema(url, ptr string) *Schema {
+func newSchema(url, ptr string, doc interface{}) *Schema {
+	var recursiveAnchor bool
+	if doc, ok := doc.(map[string]interface{}); ok {
+		if ra, ok := doc["$recursiveAnchor"]; ok {
+			if ra, ok := ra.(bool); ok {
+				recursiveAnchor = ra
+			}
+		}
+	}
+
 	// fill with default values
 	return &Schema{
-		URL:           url,
-		Ptr:           ptr,
-		MinProperties: -1,
-		MaxProperties: -1,
-		MinItems:      -1,
-		MaxItems:      -1,
-		MinContains:   1,
-		MaxContains:   -1,
-		MinLength:     -1,
-		MaxLength:     -1,
+		URL:             url,
+		Ptr:             ptr,
+		RecursiveAnchor: recursiveAnchor,
+		MinProperties:   -1,
+		MaxProperties:   -1,
+		MinItems:        -1,
+		MaxItems:        -1,
+		MinContains:     1,
+		MaxContains:     -1,
+		MinLength:       -1,
+		MaxLength:       -1,
 	}
 }
 
