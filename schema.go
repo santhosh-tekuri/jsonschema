@@ -168,7 +168,7 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 			}
 		}
 	}()
-	if _, _, err := s.validate(doc); err != nil {
+	if _, _, err := s.validate(nil, doc); err != nil {
 		finishSchemaContext(err, s)
 		finishInstanceContext(err)
 		return err
@@ -177,8 +177,13 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 }
 
 // validate validates given value v with this schema.
-func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastEvalItem int, err error) {
+func (s *Schema) validate(scope []*Schema, v interface{}) (unevalProps map[string]struct{}, lastEvalItem int, err error) {
+	scope = append(scope, s)
 	lastEvalItem = -1
+
+	validate := func(schema *Schema, v interface{}) (unevalProps map[string]struct{}, lastEvalItem int, err error) {
+		return schema.validate(scope, v)
+	}
 
 	// populate unevalProps
 	if m, ok := v.(map[string]interface{}); ok {
@@ -188,7 +193,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 		}
 	}
 	validateWith := func(schema *Schema) error {
-		ueProps, leItem, err := schema.validate(v)
+		ueProps, leItem, err := schema.validate(scope, v)
 		if err == nil {
 			if leItem > lastEvalItem {
 				lastEvalItem = leItem
@@ -283,7 +288,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 			for pname, pschema := range s.Properties {
 				if pvalue, ok := v[pname]; ok {
 					delete(unevalProps, pname)
-					if _, _, err := pschema.validate(pvalue); err != nil {
+					if _, _, err := validate(pschema, pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "properties/"+escape(pname), err))
 					}
 				}
@@ -292,7 +297,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 
 		if s.PropertyNames != nil {
 			for pname := range v {
-				if _, _, err := s.PropertyNames.validate(pname); err != nil {
+				if _, _, err := validate(s.PropertyNames, pname); err != nil {
 					errors = append(errors, addContext(escape(pname), "propertyNames", err))
 				}
 			}
@@ -309,7 +314,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 			for pname, pvalue := range v {
 				if pattern.MatchString(pname) {
 					delete(unevalProps, pname)
-					if _, _, err := pschema.validate(pvalue); err != nil {
+					if _, _, err := validate(pschema, pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "patternProperties/"+escape(pattern.String()), err))
 					}
 				}
@@ -328,7 +333,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 				schema := s.AdditionalProperties.(*Schema)
 				for pname := range unevalProps {
 					if pvalue, ok := v[pname]; ok {
-						if _, _, err := schema.validate(pvalue); err != nil {
+						if _, _, err := validate(schema, pvalue); err != nil {
 							errors = append(errors, addContext(escape(pname), "additionalProperties", err))
 						}
 					}
@@ -388,7 +393,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 		switch items := s.Items.(type) {
 		case *Schema:
 			for i, item := range v {
-				if _, _, err := items.validate(item); err != nil {
+				if _, _, err := validate(items, item); err != nil {
 					errors = append(errors, addContext(strconv.Itoa(i), "items", err))
 				}
 			}
@@ -396,12 +401,12 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 		case []*Schema:
 			for i, item := range v {
 				if i < len(items) {
-					if _, _, err := items[i].validate(item); err != nil {
+					if _, _, err := validate(items[i], item); err != nil {
 						errors = append(errors, addContext(strconv.Itoa(i), "items/"+strconv.Itoa(i), err))
 					}
 					lastEvalItem = i
 				} else if sch, ok := s.AdditionalItems.(*Schema); ok {
-					if _, _, err := sch.validate(item); err != nil {
+					if _, _, err := validate(sch, item); err != nil {
 						errors = append(errors, addContext(strconv.Itoa(i), "additionalItems", err))
 					}
 					lastEvalItem = i
@@ -421,7 +426,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 			matched := 0
 			var causes []error
 			for i, item := range v {
-				if _, _, err := s.Contains.validate(item); err != nil {
+				if _, _, err := validate(s.Contains, item); err != nil {
 					causes = append(causes, addContext(strconv.Itoa(i), "", err))
 				} else {
 					matched++
@@ -515,8 +520,20 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 	if err := validateRef(s.Ref, "$ref"); err != nil {
 		return unevalProps, lastEvalItem, err
 	}
-	if err := validateRef(s.RecursiveRef, "$recursiveRef"); err != nil {
-		return unevalProps, lastEvalItem, err
+	if s.RecursiveRef != nil {
+		ref := s.RecursiveRef
+		if ref.RecursiveAnchor {
+			// dynamic ref based on scope
+			for _, e := range scope {
+				if e.RecursiveAnchor {
+					ref = e
+					break
+				}
+			}
+		}
+		if err := validateRef(ref, "$recursiveRef"); err != nil {
+			return unevalProps, lastEvalItem, err
+		}
 	}
 
 	if s.Not != nil && validateWith(s.Not) == nil {
@@ -586,7 +603,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 		if s.UnevaluatedProperties != nil {
 			for pname := range unevalProps {
 				if pvalue, ok := v[pname]; ok {
-					if _, _, err := s.UnevaluatedProperties.validate(pvalue); err != nil {
+					if _, _, err := validate(s.UnevaluatedProperties, pvalue); err != nil {
 						errors = append(errors, addContext(escape(pname), "unevaluatedProperties", err))
 					}
 				}
@@ -596,7 +613,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 	case []interface{}:
 		if s.UnevaluatedItems != nil {
 			for i, item := range v[lastEvalItem+1:] {
-				if _, _, err := s.UnevaluatedItems.validate(item); err != nil {
+				if _, _, err := validate(s.UnevaluatedItems, item); err != nil {
 					errors = append(errors, addContext(strconv.Itoa(lastEvalItem+1+i), "unevaluatedItems", err))
 				}
 			}
@@ -606,7 +623,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 
 	for name, cs := range s.Extensions {
 		validate := s.extensions[name]
-		if err := validate(ValidationContext{}, cs, v); err != nil {
+		if err := validate(ValidationContext{scope}, cs, v); err != nil {
 			errors = append(errors, err)
 		}
 	}

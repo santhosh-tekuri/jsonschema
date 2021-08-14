@@ -44,13 +44,15 @@ func (ctx CompilerContext) CompileRef(ref string) (*Schema, error) {
 }
 
 // ValidationContext provides additional context required in validating for extension.
-type ValidationContext struct{}
+type ValidationContext struct {
+	scope []*Schema
+}
 
 // Validate validates schema s with value v. Extension must use this method instead of
 // *Schema.ValidateInterface method. This will be useful in implementing keywords like
 // allOf/oneOf
-func (ValidationContext) Validate(s *Schema, v interface{}) error {
-	_, _, err := s.validate(v)
+func (ctx ValidationContext) Validate(s *Schema, v interface{}) error {
+	_, _, err := s.validate(ctx.scope, v)
 	return err
 }
 
