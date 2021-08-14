@@ -192,7 +192,7 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 
 	if s.Always != nil {
 		if !*s.Always {
-			return unevalProps, lastEvalItem, validationError("", "always fail")
+			return unevalProps, lastEvalItem, validationError("", "not allowed")
 		}
 		return unevalProps, lastEvalItem, nil
 	}
