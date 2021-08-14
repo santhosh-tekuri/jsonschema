@@ -382,11 +382,6 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 			}
 			lastEvalItem = len(v) - 1
 		case []*Schema:
-			if additionalItems, ok := s.AdditionalItems.(bool); ok {
-				if !additionalItems && len(v) > len(items) {
-					errors = append(errors, validationError("additionalItems", "only %d items are allowed, but found %d items", len(items), len(v)))
-				}
-			}
 			for i, item := range v {
 				if i < len(items) {
 					if _, _, err := items[i].validate(item); err != nil {
@@ -402,8 +397,12 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 					break
 				}
 			}
-			if additionalItems, ok := s.AdditionalItems.(bool); ok && additionalItems {
-				lastEvalItem = len(v) - 1
+			if additionalItems, ok := s.AdditionalItems.(bool); ok {
+				if additionalItems {
+					lastEvalItem = len(v) - 1
+				} else if len(v) > len(items) {
+					errors = append(errors, validationError("additionalItems", "only %d items are allowed, but found %d items", len(items), len(v)))
+				}
 			}
 		}
 		if s.Contains != nil && (s.MinContains != -1 || s.MaxContains != -1) {
