@@ -576,17 +576,11 @@ func (c *Compiler) validateSchema(r *resource, ptr string, v interface{}) error 
 			_ = addContext(ptr, "", err)
 			finishSchemaContext(err, meta)
 			finishInstanceContext(err)
-			var instancePtr string
-			if ptr == "" {
-				instancePtr = "#"
-			} else {
-				instancePtr = "#/" + ptr
-			}
 			return &SchemaError{
 				r.url,
 				&ValidationError{
 					Message:     fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
-					InstancePtr: instancePtr,
+					InstancePtr: absPtr(ptr),
 					SchemaURL:   meta.URL,
 					SchemaPtr:   "#",
 					Causes:      []*ValidationError{err.(*ValidationError)},

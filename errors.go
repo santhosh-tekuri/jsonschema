@@ -94,7 +94,7 @@ func validationError(schemaPtr string, format string, a ...interface{}) *Validat
 func addContext(instancePtr, schemaPtr string, err error) error {
 	ve := err.(*ValidationError)
 	ve.InstancePtr = joinPtr(instancePtr, ve.InstancePtr)
-	if len(ve.SchemaURL) == 0 {
+	if ve.SchemaURL == "" {
 		ve.SchemaPtr = joinPtr(schemaPtr, ve.SchemaPtr)
 	}
 	for _, cause := range ve.Causes {
@@ -116,11 +116,7 @@ func finishSchemaContext(err error, s *Schema) {
 
 func finishInstanceContext(err error) {
 	ve := err.(*ValidationError)
-	if len(ve.InstancePtr) == 0 {
-		ve.InstancePtr = "#"
-	} else {
-		ve.InstancePtr = "#/" + ve.InstancePtr
-	}
+	ve.InstancePtr = absPtr(ve.InstancePtr)
 	for _, cause := range ve.Causes {
 		finishInstanceContext(cause)
 	}
@@ -134,4 +130,14 @@ func joinPtr(ptr1, ptr2 string) string {
 		return ptr1
 	}
 	return ptr1 + "/" + ptr2
+}
+
+func absPtr(ptr string) string {
+	if ptr == "" {
+		return "#"
+	}
+	if ptr[0] != '#' {
+		return "#/" + ptr
+	}
+	return ptr
 }
