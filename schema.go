@@ -22,21 +22,22 @@ type Schema struct {
 	Ptr string // json-pointer to schema. always starts with `#`.
 
 	// type agnostic validations
-	format    func(interface{}) bool
-	Format    string
-	Always    *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref       *Schema       // reference to actual schema.
-	Types     []string      // allowed types.
-	Constant  []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
-	Enum      []interface{} // allowed values.
-	enumError string        // error message for enum fail. captured here to avoid constructing error message every time.
-	Not       *Schema
-	AllOf     []*Schema
-	AnyOf     []*Schema
-	OneOf     []*Schema
-	If        *Schema
-	Then      *Schema // nil, when If is nil.
-	Else      *Schema // nil, when If is nil.
+	format       func(interface{}) bool
+	Format       string
+	Always       *bool         // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref          *Schema       // reference to actual schema.
+	RecursiveRef *Schema       // reference to actual schema.
+	Types        []string      // allowed types.
+	Constant     []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
+	Enum         []interface{} // allowed values.
+	enumError    string        // error message for enum fail. captured here to avoid constructing error message every time.
+	Not          *Schema
+	AllOf        []*Schema
+	AnyOf        []*Schema
+	OneOf        []*Schema
+	If           *Schema
+	Then         *Schema // nil, when If is nil.
+	Else         *Schema // nil, when If is nil.
 
 	// object validations
 	MinProperties         int      // -1 if not specified.
@@ -485,17 +486,26 @@ func (s *Schema) validate(v interface{}) (unevalProps map[string]struct{}, lastE
 		}
 	}
 
-	if s.Ref != nil {
-		if err := validateWith(s.Ref); err != nil {
-			finishSchemaContext(err, s.Ref)
-			var refURL string
-			if s.URL == s.Ref.URL {
-				refURL = s.Ref.Ptr
-			} else {
-				refURL = s.Ref.URL + s.Ref.Ptr
+	validateRef := func(ref *Schema, kword string) error {
+		if ref != nil {
+			if err := validateWith(ref); err != nil {
+				finishSchemaContext(err, ref)
+				var refURL string
+				if s.URL == ref.URL {
+					refURL = ref.Ptr
+				} else {
+					refURL = ref.URL + ref.Ptr
+				}
+				return validationError(kword, "doesn't validate with %q", refURL).add(err)
 			}
-			return unevalProps, lastEvalItem, validationError("$ref", "doesn't validate with %q", refURL).add(err)
 		}
+		return nil
+	}
+	if err := validateRef(s.Ref, "$ref"); err != nil {
+		return unevalProps, lastEvalItem, err
+	}
+	if err := validateRef(s.RecursiveRef, "$recursiveRef"); err != nil {
+		return unevalProps, lastEvalItem, err
 	}
 
 	if s.Not != nil && validateWith(s.Not) == nil {

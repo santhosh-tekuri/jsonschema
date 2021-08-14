@@ -238,7 +238,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 
 	if r.draft.version >= 2019 {
 		if ref, ok := m["$recursiveRef"]; ok {
-			s.Ref, err = c.compileRef(r, base, ref.(string))
+			s.RecursiveRef, err = c.compileRef(r, base, ref.(string))
 			if err != nil {
 				return err
 			}
