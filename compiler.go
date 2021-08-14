@@ -33,7 +33,7 @@ type Compiler struct {
 	resources map[string]*resource
 
 	// Extensions is used to register extensions.
-	Extensions map[string]Extension
+	extensions map[string]extension
 
 	// ExtractAnnotations tells whether schema annotations has to be extracted
 	// in compiled Schema or not.
@@ -55,7 +55,7 @@ type Compiler struct {
 // if '$schema' attribute is missing, it is treated as draft7. to change this
 // behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
-	return &Compiler{Draft: latest, resources: make(map[string]*resource), Extensions: make(map[string]Extension)}
+	return &Compiler{Draft: latest, resources: make(map[string]*resource), extensions: make(map[string]extension)}
 }
 
 // AddResource adds in-memory resource to the compiler.
@@ -551,18 +551,16 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		}
 	}
 
-	for name, ext := range c.Extensions {
-		cs, err := ext.Compile(CompilerContext{c, r, base}, m)
+	for name, ext := range c.extensions {
+		es, err := ext.compiler.Compile(CompilerContext{c, r, base}, m)
 		if err != nil {
 			return err
 		}
-		if cs != nil {
+		if es != nil {
 			if s.Extensions == nil {
-				s.Extensions = make(map[string]interface{})
-				s.extensions = make(map[string]func(ctx ValidationContext, s interface{}, v interface{}) error)
+				s.Extensions = make(map[string]ExtSchema)
 			}
-			s.Extensions[name] = cs
-			s.extensions[name] = ext.Validate
+			s.Extensions[name] = es
 		}
 	}
 
@@ -601,8 +599,8 @@ func (c *Compiler) validateSchema(r *resource, ptr string, v interface{}) error 
 	if err := validate(r.draft.meta); err != nil {
 		return err
 	}
-	for _, ext := range c.Extensions {
-		if err := validate(ext.Meta); err != nil {
+	for _, ext := range c.extensions {
+		if err := validate(ext.meta); err != nil {
 			return err
 		}
 	}

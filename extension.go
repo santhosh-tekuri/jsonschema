@@ -4,25 +4,36 @@
 
 package jsonschema
 
-// Extension is used to define additional keywords to standard jsonschema.
-// An extension can implement more than one keyword.
-//
-// Extensions are registered in Compiler.Extensions map.
-type Extension struct {
-	// Meta captures the metaschema for the new keywords.
-	// This is used to validate the schema before calling Compile.
-	Meta *Schema
-
+// ExtCompiler compiles custom keyword(s) into ExtSchema.
+type ExtCompiler interface {
 	// Compile compiles the schema m and returns its compiled representation.
 	// if the schema m does not contain the keywords defined by this extension,
 	// compiled representation nil should be returned.
-	Compile func(ctx CompilerContext, m map[string]interface{}) (interface{}, error)
-
-	// Validate validates the json value v with compiled representation s.
-	// This is called only when compiled representation is not nil. Returned
-	// error must be *ValidationError
-	Validate func(ctx ValidationContext, s interface{}, v interface{}) error
+	Compile(ctx CompilerContext, m map[string]interface{}) (ExtSchema, error)
 }
+
+// ExtSchema is schema representation of custom keyword(s)
+type ExtSchema interface {
+	// Validate validates the json value v with this ExtSchema.
+	// Returned error must be *ValidationError.
+	Validate(ctx ValidationContext, v interface{}) error
+}
+
+type extension struct {
+	meta     *Schema
+	compiler ExtCompiler
+}
+
+// RegisterExtension registers custom keyword(s) into this compiler.
+//
+// name is extension name, used only to avoid name collisions.
+// meta captures the metaschema for the new keywords.
+// This is used to validate the schema before calling ext.Compile.
+func (c *Compiler) RegisterExtension(name string, meta *Schema, ext ExtCompiler) {
+	c.extensions[name] = extension{meta, ext}
+}
+
+// CompilerContext ---
 
 // CompilerContext provides additional context required in compiling for extension.
 type CompilerContext struct {
@@ -42,6 +53,8 @@ func (ctx CompilerContext) CompileRef(ref string) (*Schema, error) {
 	//b, _ := split(ctx.base.url)
 	return ctx.c.compileRef(ctx.r, ctx.base, ref)
 }
+
+// ValidationContext ---
 
 // ValidationContext provides additional context required in validating for extension.
 type ValidationContext struct {

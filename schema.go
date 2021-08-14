@@ -90,8 +90,7 @@ type Schema struct {
 	Examples    []interface{}
 
 	// user defined extensions
-	Extensions map[string]interface{}
-	extensions map[string]func(ctx ValidationContext, s interface{}, v interface{}) error
+	Extensions map[string]ExtSchema
 }
 
 func newSchema(url, ptr string, doc interface{}) *Schema {
@@ -141,6 +140,16 @@ func CompileString(url, schema string) (*Schema, error) {
 		return nil, err
 	}
 	return c.Compile(url)
+}
+
+// MustCompileString is like CompileString but panics on error.
+// It simplified safe initialization of global variables holding compiled Schema.
+func MustCompileString(url, schema string) *Schema {
+	c := NewCompiler()
+	if err := c.AddResource(url, strings.NewReader(schema)); err != nil {
+		panic(err)
+	}
+	return c.MustCompile(url)
 }
 
 // Validate validates the given json data, against the json-schema.
@@ -622,9 +631,8 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (unevalProps map[strin
 		}
 	}
 
-	for name, cs := range s.Extensions {
-		validate := s.extensions[name]
-		if err := validate(ValidationContext{scope}, cs, v); err != nil {
+	for _, ext := range s.Extensions {
+		if err := ext.Validate(ValidationContext{scope}, v); err != nil {
 			errors = append(errors, err)
 		}
 	}
