@@ -252,10 +252,10 @@ func TestInvalidDocs(t *testing.T) {
 			}
 			s, err := c.Compile("test.json")
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("%#v", err)
 			}
 			if err := s.Validate(strings.NewReader(test.doc)); err != nil {
-				t.Log(err)
+				t.Logf("%#v", err)
 			} else {
 				t.Error("error expected")
 			}
@@ -286,7 +286,7 @@ func TestInvalidSchema(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{")); err == nil {
 			t.Error("error expected")
 		} else {
-			t.Log(err)
+			t.Logf("%#v", err)
 		}
 	})
 
@@ -294,7 +294,7 @@ func TestInvalidSchema(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{}{}")); err == nil {
 			t.Error("error expected")
 		} else {
-			t.Log(err)
+			t.Logf("%#v", err)
 		}
 	})
 
@@ -324,7 +324,7 @@ func TestInvalidSchema(t *testing.T) {
 			if _, err = c.Compile(url); err == nil {
 				t.Error("error expected")
 			} else {
-				t.Log(err)
+				t.Logf("%#v", err)
 			}
 		})
 	}
