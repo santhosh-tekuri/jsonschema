@@ -213,15 +213,6 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, bas
 	return c.compile(r, stack, schemaRef{refPtr, s}, base, doc)
 }
 
-func (c *Compiler) compileInlined(r *resource, stack []schemaRef, ptr string, base resource, m interface{}) (*Schema, error) {
-	var err error
-	base, err = r.resolveID(base, m)
-	if err != nil {
-		return nil, err
-	}
-	return c.compile(r, stack, schemaRef{ptr, nil}, base, m)
-}
-
 func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, base resource, m interface{}) (*Schema, error) {
 	if sref.schema == nil {
 		u, _ := split(base.url)
@@ -298,9 +289,18 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		}
 	}
 
+	compile := func(stack []schemaRef, ptr string, m interface{}) (*Schema, error) {
+		var err error
+		base, err = r.resolveID(base, m)
+		if err != nil {
+			return nil, err
+		}
+		return c.compile(r, stack, schemaRef{ptr, nil}, base, m)
+	}
+
 	loadSchema := func(pname string, stack []schemaRef) (*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
-			return c.compileInlined(r, stack, escape(pname), base, pvalue)
+			return compile(stack, escape(pname), pvalue)
 		}
 		return nil, nil
 	}
@@ -314,7 +314,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
 			for i, v := range pvalue {
-				sch, err := c.compileInlined(r, stack, escape(pname)+"/"+strconv.Itoa(i), base, v)
+				sch, err := compile(stack, escape(pname)+"/"+strconv.Itoa(i), v)
 				if err != nil {
 					return nil, err
 				}
@@ -351,7 +351,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		props := props.(map[string]interface{})
 		s.Properties = make(map[string]*Schema, len(props))
 		for pname, pmap := range props {
-			s.Properties[pname], err = c.compileInlined(r, nil, "properties/"+escape(pname), base, pmap)
+			s.Properties[pname], err = compile(nil, "properties/"+escape(pname), pmap)
 			if err != nil {
 				return err
 			}
@@ -366,7 +366,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		patternProps := patternProps.(map[string]interface{})
 		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
 		for pattern, pmap := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compileInlined(r, nil, "patternProperties/"+escape(pattern), base, pmap)
+			s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern), pmap)
 			if err != nil {
 				return err
 			}
@@ -378,7 +378,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		case bool:
 			s.AdditionalProperties = additionalProps
 		case map[string]interface{}:
-			s.AdditionalProperties, err = c.compileInlined(r, nil, "additionalProperties", base, additionalProps)
+			s.AdditionalProperties, err = compile(nil, "additionalProperties", additionalProps)
 			if err != nil {
 				return err
 			}
@@ -393,7 +393,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 			case []interface{}:
 				s.Dependencies[pname] = toStrings(pvalue)
 			default:
-				s.Dependencies[pname], err = c.compileInlined(r, stack, "dependencies/"+escape(pname), base, pvalue)
+				s.Dependencies[pname], err = compile(stack, "dependencies/"+escape(pname), pvalue)
 				if err != nil {
 					return err
 				}
@@ -413,7 +413,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 			deps := deps.(map[string]interface{})
 			s.DependentSchemas = make(map[string]*Schema, len(deps))
 			for pname, pvalue := range deps {
-				s.DependentSchemas[pname], err = c.compileInlined(r, stack, "dependentSchemas/"+escape(pname), base, pvalue)
+				s.DependentSchemas[pname], err = compile(stack, "dependentSchemas/"+escape(pname), pvalue)
 				if err != nil {
 					return err
 				}
@@ -445,14 +445,14 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 				case bool:
 					s.AdditionalItems = additionalItems
 				case map[string]interface{}:
-					s.AdditionalItems, err = c.compileInlined(r, nil, "additionalItems", base, additionalItems)
+					s.AdditionalItems, err = compile(nil, "additionalItems", additionalItems)
 					if err != nil {
 						return err
 					}
 				}
 			}
 		default:
-			s.Items, err = c.compileInlined(r, nil, "items", base, items)
+			s.Items, err = compile(nil, "items", items)
 			if err != nil {
 				return err
 			}
