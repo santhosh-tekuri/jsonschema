@@ -25,19 +25,19 @@ Package jsonschema provides json-schema compilation and validation.
  - supports enabling format and content Assertions in draft2019-09
    - make Compiler.AssertFormat, Compiler.AssertContent true
  - compiled schema can be introspected. easier to develop tools like generating go structs given schema
- - supports user-defined keywords via [extensions](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__extension)
- - implements following formats (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedFormat))
+ - supports user-defined keywords via [extensions](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-Extension)
+ - implements following formats (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedFormat))
    - date-time, date, time, duration
    - uuid, hostname, email
    - ip-address, ipv4, ipv6
    - uri, uriref, uri-template(limited validation)
    - json-pointer, relative-json-pointer
    - regex, format
- - implements following contentEncoding (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedContent))
+ - implements following contentEncoding (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedContent))
    - base64
- - implements following contentMediaType (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedContent))
+ - implements following contentMediaType (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedContent))
    - application/json
- - can load from files/http/https/[string](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__fromString)/[]byte/io.Reader (suports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedLoader))
+ - can load from files/http/https/[string](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-FromString)/[]byte/io.Reader (suports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedLoader))
 
 
 see examples in [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4)
