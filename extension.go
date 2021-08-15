@@ -39,34 +39,37 @@ func (c *Compiler) RegisterExtension(name string, meta *Schema, ext ExtCompiler)
 type CompilerContext struct {
 	c     *Compiler
 	r     *resource
-	stack []*Schema
+	stack []schemaRef
 	base  resource
 }
 
 // Compile compiles given value v into *Schema. This is useful in implementing
 // keyword like allOf/oneOf.
 //
+// vPtr is the jsonpointer to v.
+//
 // applicableOnSameInstance tells whether current schema and the given schema v
 // are applied on same instance value. this is used to detect infinite loop in schema.
-func (ctx CompilerContext) Compile(v interface{}, applicableOnSameInstance bool) (*Schema, error) {
-	var stack []*Schema
+func (ctx CompilerContext) Compile(v interface{}, vPtr string, applicableOnSameInstance bool) (*Schema, error) {
+	var stack []schemaRef
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	return ctx.c.compile(ctx.r, stack, nil, ctx.base, v)
+	return ctx.c.compile(ctx.r, stack, schemaRef{vPtr, nil}, ctx.base, v)
 }
 
 // CompileRef compiles the schema referenced by ref uri
 //
+// refPtr is the jsonpointer to ref.
+//
 // applicableOnSameInstance tells whether current schema and the given schema v
 // are applied on same instance value. this is used to detect infinite loop in schema.
-func (ctx CompilerContext) CompileRef(ref string, applicableOnSameInstance bool) (*Schema, error) {
-	//b, _ := split(ctx.base.url)
-	var stack []*Schema
+func (ctx CompilerContext) CompileRef(ref string, refPtr string, applicableOnSameInstance bool) (*Schema, error) {
+	var stack []schemaRef
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	return ctx.c.compileRef(ctx.r, stack, ctx.base, ref)
+	return ctx.c.compileRef(ctx.r, stack, refPtr, ctx.base, ref)
 }
 
 // ValidationContext ---

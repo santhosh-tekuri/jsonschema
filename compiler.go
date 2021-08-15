@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/big"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -85,14 +86,14 @@ func (c *Compiler) MustCompile(url string) *Schema {
 //
 // error returned will be of type *SchemaError
 func (c *Compiler) Compile(url string) (*Schema, error) {
-	sch, err := c.compileURL(url, nil)
+	sch, err := c.compileURL(url, nil, "#")
 	if err != nil {
 		err = &SchemaError{url, err}
 	}
 	return sch, err
 }
 
-func (c *Compiler) compileURL(url string, stack []*Schema) (*Schema, error) {
+func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schema, error) {
 	switch url {
 	case "http://json-schema.org/draft/2019-09/schema#", "https://json-schema.org/draft/2019-09/schema#":
 		return Draft2019.meta, nil
@@ -145,7 +146,7 @@ func (c *Compiler) compileURL(url string, stack []*Schema) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.compileRef(r, stack, base, f)
+	return c.compileRef(r, stack, ptr, base, f)
 }
 
 func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
@@ -155,13 +156,13 @@ func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
 	return LoadURL(s)
 }
 
-func (c *Compiler) compileRef(r *resource, stack []*Schema, base resource, ref string) (*Schema, error) {
+func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, base resource, ref string) (*Schema, error) {
 	ref, err := resolveURL(base.url, ref)
 	if err != nil {
 		return nil, err
 	}
 	if s, ok := r.schemas[ref]; ok {
-		if err := checkLoop(stack, s); err != nil {
+		if err := checkLoop(stack, schemaRef{refPtr, s}); err != nil {
 			return nil, err
 		}
 		return s, nil
@@ -186,7 +187,7 @@ func (c *Compiler) compileRef(r *resource, stack []*Schema, base resource, ref s
 				// infinite loop detected
 				return nil, fmt.Errorf("invalid ref: %q", ref)
 			}
-			return c.compileURL(ref, stack)
+			return c.compileURL(ref, stack, refPtr)
 		}
 	}
 
@@ -209,42 +210,43 @@ func (c *Compiler) compileRef(r *resource, stack []*Schema, base resource, ref s
 
 	s := newSchema(u, f, doc)
 	r.schemas[ref] = s
-	return c.compile(r, stack, s, base, doc)
+	return c.compile(r, stack, schemaRef{refPtr, s}, base, doc)
 }
 
-func (c *Compiler) compileInlined(r *resource, stack []*Schema, base resource, m interface{}) (*Schema, error) {
+func (c *Compiler) compileInlined(r *resource, stack []schemaRef, ptr string, base resource, m interface{}) (*Schema, error) {
 	var err error
 	base, err = r.resolveID(base, m)
 	if err != nil {
 		return nil, err
 	}
-	return c.compile(r, stack, nil, base, m)
+	return c.compile(r, stack, schemaRef{ptr, nil}, base, m)
 }
 
-func (c *Compiler) compile(r *resource, stack []*Schema, s *Schema, base resource, m interface{}) (*Schema, error) {
-	if s == nil {
+func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, base resource, m interface{}) (*Schema, error) {
+	if sref.schema == nil {
 		u, _ := split(base.url)
-		s = newSchema(u, "", m)
+		sref.schema = newSchema(u, "", m)
 	}
 	switch m := m.(type) {
 	case bool:
-		s.Always = &m
-		return s, nil
+		sref.schema.Always = &m
+		return sref.schema, nil
 	default:
-		return s, c.compileMap(r, stack, s, base, m.(map[string]interface{}))
+		return sref.schema, c.compileMap(r, stack, sref, base, m.(map[string]interface{}))
 	}
 }
 
-func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base resource, m map[string]interface{}) error {
-	var err error
-
-	if err := checkLoop(stack, s); err != nil {
+func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, base resource, m map[string]interface{}) error {
+	if err := checkLoop(stack, sref); err != nil {
 		return err
 	}
-	stack = append(stack, s)
+	stack = append(stack, sref)
+
+	var s = sref.schema
+	var err error
 
 	if ref, ok := m["$ref"]; ok {
-		s.Ref, err = c.compileRef(r, stack, base, ref.(string))
+		s.Ref, err = c.compileRef(r, stack, "$ref", base, ref.(string))
 		if err != nil {
 			return err
 		}
@@ -256,7 +258,7 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 
 	if r.draft.version >= 2019 {
 		if ref, ok := m["$recursiveRef"]; ok {
-			s.RecursiveRef, err = c.compileRef(r, stack, base, ref.(string))
+			s.RecursiveRef, err = c.compileRef(r, stack, "$recursiveRef", base, ref.(string))
 			if err != nil {
 				return err
 			}
@@ -296,9 +298,9 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 		}
 	}
 
-	loadSchema := func(pname string, stack []*Schema) (*Schema, error) {
+	loadSchema := func(pname string, stack []schemaRef) (*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
-			return c.compileInlined(r, stack, base, pvalue)
+			return c.compileInlined(r, stack, escape(pname), base, pvalue)
 		}
 		return nil, nil
 	}
@@ -307,12 +309,12 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 		return err
 	}
 
-	loadSchemas := func(pname string, stack []*Schema) ([]*Schema, error) {
+	loadSchemas := func(pname string, stack []schemaRef) ([]*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
 			for i, v := range pvalue {
-				sch, err := c.compileInlined(r, stack, base, v)
+				sch, err := c.compileInlined(r, stack, escape(pname)+"/"+strconv.Itoa(i), base, v)
 				if err != nil {
 					return nil, err
 				}
@@ -349,7 +351,7 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 		props := props.(map[string]interface{})
 		s.Properties = make(map[string]*Schema, len(props))
 		for pname, pmap := range props {
-			s.Properties[pname], err = c.compileInlined(r, nil, base, pmap)
+			s.Properties[pname], err = c.compileInlined(r, nil, "properties/"+escape(pname), base, pmap)
 			if err != nil {
 				return err
 			}
@@ -364,7 +366,7 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 		patternProps := patternProps.(map[string]interface{})
 		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
 		for pattern, pmap := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compileInlined(r, nil, base, pmap)
+			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compileInlined(r, nil, "patternProperties/"+escape(pattern), base, pmap)
 			if err != nil {
 				return err
 			}
@@ -376,7 +378,7 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 		case bool:
 			s.AdditionalProperties = additionalProps
 		case map[string]interface{}:
-			s.AdditionalProperties, err = c.compileInlined(r, nil, base, additionalProps)
+			s.AdditionalProperties, err = c.compileInlined(r, nil, "additionalProperties", base, additionalProps)
 			if err != nil {
 				return err
 			}
@@ -391,7 +393,7 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 			case []interface{}:
 				s.Dependencies[pname] = toStrings(pvalue)
 			default:
-				s.Dependencies[pname], err = c.compileInlined(r, stack, base, pvalue)
+				s.Dependencies[pname], err = c.compileInlined(r, stack, "dependencies/"+escape(pname), base, pvalue)
 				if err != nil {
 					return err
 				}
@@ -411,7 +413,7 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 			deps := deps.(map[string]interface{})
 			s.DependentSchemas = make(map[string]*Schema, len(deps))
 			for pname, pvalue := range deps {
-				s.DependentSchemas[pname], err = c.compileInlined(r, stack, base, pvalue)
+				s.DependentSchemas[pname], err = c.compileInlined(r, stack, "dependentSchemas/"+escape(pname), base, pvalue)
 				if err != nil {
 					return err
 				}
@@ -443,14 +445,14 @@ func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base reso
 				case bool:
 					s.AdditionalItems = additionalItems
 				case map[string]interface{}:
-					s.AdditionalItems, err = c.compileInlined(r, nil, base, additionalItems)
+					s.AdditionalItems, err = c.compileInlined(r, nil, "additionalItems", base, additionalItems)
 					if err != nil {
 						return err
 					}
 				}
 			}
 		default:
-			s.Items, err = c.compileInlined(r, nil, base, items)
+			s.Items, err = c.compileInlined(r, nil, "items", base, items)
 			if err != nil {
 				return err
 			}
@@ -624,24 +626,31 @@ func toStrings(arr []interface{}) []string {
 	return s
 }
 
-func checkLoop(stack []*Schema, s *Schema) error {
-	for _, e := range stack {
-		if e == s {
-			var loop []string
-			for _, e := range stack {
-				if e.Ptr == "#" {
-					loop = append(loop, e.URL)
-				} else {
-					loop = append(loop, e.URL+e.Ptr)
-				}
-			}
-			if s.Ptr == "#" {
-				loop = append(loop, s.URL)
-			} else {
-				loop = append(loop, s.URL+s.Ptr)
-			}
-			return InfiniteLoopError(loop)
+// SchemaRef captures schema and the path refering to it.
+type schemaRef struct {
+	ptr    string  // json-pointer leading to schema s
+	schema *Schema // target schema
+}
+
+func checkLoop(stack []schemaRef, sref schemaRef) error {
+	var loop bool
+	for _, ref := range stack {
+		if ref.schema == sref.schema {
+			loop = true
+			break
 		}
 	}
-	return nil
+	if !loop {
+		return nil
+	}
+
+	var path string
+	for _, ref := range stack {
+		if path == "" {
+			path += ref.schema.URL + ref.schema.Ptr
+		} else {
+			path += "/" + ref.ptr
+		}
+	}
+	return InfiniteLoopError(path + "/" + sref.ptr)
 }
