@@ -57,7 +57,11 @@ func main() {
 		err = schema.Validate(r)
 		_ = r.Close()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%#v\n", err)
+			if _, ok := err.(*jsonschema.ValidationError); ok {
+				fmt.Fprintf(os.Stderr, "%#v\n", err)
+			} else {
+				fmt.Fprintf(os.Stderr, "validation failed: %v", err)
+			}
 			os.Exit(1)
 		}
 	}
