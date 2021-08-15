@@ -43,7 +43,7 @@ func main() {
 	}
 	schema, err := compiler.Compile(flag.Arg(0))
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "%#v\n", err)
 		os.Exit(1)
 	}
 
@@ -54,11 +54,10 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println("-----------------------------")
 		err = schema.Validate(r)
 		_ = r.Close()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%q does not conform to the schema specified. reason:\n%#v\n", f, err)
+			fmt.Fprintf(os.Stderr, "%#v\n", err)
 			os.Exit(1)
 		}
 	}
