@@ -35,8 +35,8 @@ func Example() {
 	// Output:
 }
 
-// Example_fromStrings shows how to load schema from string.
-func Example_fromStrings() {
+// Example_fromString shows how to load schema from string.
+func Example_fromString() {
 	schema := `{"type": "object"}`
 	instance := `{"foo": "bar"}`
 
@@ -46,6 +46,26 @@ func Example_fromStrings() {
 	}
 
 	if err = sch.Validate(strings.NewReader(instance)); err != nil {
+		log.Fatalf("%#v", err)
+	}
+	// Output:
+}
+
+// Example_fromStrings shows how to load schema from more than one string.
+func Example_fromStrings() {
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource("main.json", strings.NewReader(`{"$ref":"obj.json"}`)); err != nil {
+		log.Fatal(err)
+	}
+	if err := c.AddResource("obj.json", strings.NewReader(`{"type":"object"}`)); err != nil {
+		log.Fatal(err)
+	}
+	sch, err := c.Compile("main.json")
+	if err != nil {
+		log.Fatalf("%#v", err)
+	}
+
+	if err = sch.Validate(strings.NewReader(`{}`)); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
