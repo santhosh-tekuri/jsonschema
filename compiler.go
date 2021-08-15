@@ -85,14 +85,14 @@ func (c *Compiler) MustCompile(url string) *Schema {
 //
 // error returned will be of type *SchemaError
 func (c *Compiler) Compile(url string) (*Schema, error) {
-	sch, err := c.compileURL(url)
+	sch, err := c.compileURL(url, nil)
 	if err != nil {
 		err = &SchemaError{url, err}
 	}
 	return sch, err
 }
 
-func (c *Compiler) compileURL(url string) (*Schema, error) {
+func (c *Compiler) compileURL(url string, stack []*Schema) (*Schema, error) {
 	switch url {
 	case "http://json-schema.org/draft/2019-09/schema#", "https://json-schema.org/draft/2019-09/schema#":
 		return Draft2019.meta, nil
@@ -145,7 +145,7 @@ func (c *Compiler) compileURL(url string) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.compileRef(r, base, f)
+	return c.compileRef(r, stack, base, f)
 }
 
 func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
@@ -155,12 +155,15 @@ func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
 	return LoadURL(s)
 }
 
-func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, error) {
+func (c *Compiler) compileRef(r *resource, stack []*Schema, base resource, ref string) (*Schema, error) {
 	ref, err := resolveURL(base.url, ref)
 	if err != nil {
 		return nil, err
 	}
 	if s, ok := r.schemas[ref]; ok {
+		if err := checkLoop(stack, s); err != nil {
+			return nil, err
+		}
 		return s, nil
 	}
 
@@ -183,7 +186,7 @@ func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, 
 				// infinite loop detected
 				return nil, fmt.Errorf("invalid ref: %q", ref)
 			}
-			return c.compileURL(ref)
+			return c.compileURL(ref, stack)
 		}
 	}
 
@@ -206,19 +209,19 @@ func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, 
 
 	s := newSchema(u, f, doc)
 	r.schemas[ref] = s
-	return c.compile(r, s, base, doc)
+	return c.compile(r, stack, s, base, doc)
 }
 
-func (c *Compiler) compileInlined(r *resource, base resource, m interface{}) (*Schema, error) {
+func (c *Compiler) compileInlined(r *resource, stack []*Schema, base resource, m interface{}) (*Schema, error) {
 	var err error
 	base, err = r.resolveID(base, m)
 	if err != nil {
 		return nil, err
 	}
-	return c.compile(r, nil, base, m)
+	return c.compile(r, stack, nil, base, m)
 }
 
-func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{}) (*Schema, error) {
+func (c *Compiler) compile(r *resource, stack []*Schema, s *Schema, base resource, m interface{}) (*Schema, error) {
 	if s == nil {
 		u, _ := split(base.url)
 		s = newSchema(u, "", m)
@@ -228,15 +231,20 @@ func (c *Compiler) compile(r *resource, s *Schema, base resource, m interface{})
 		s.Always = &m
 		return s, nil
 	default:
-		return s, c.compileMap(r, s, base, m.(map[string]interface{}))
+		return s, c.compileMap(r, stack, s, base, m.(map[string]interface{}))
 	}
 }
 
-func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[string]interface{}) error {
+func (c *Compiler) compileMap(r *resource, stack []*Schema, s *Schema, base resource, m map[string]interface{}) error {
 	var err error
 
+	if err := checkLoop(stack, s); err != nil {
+		return err
+	}
+	stack = append(stack, s)
+
 	if ref, ok := m["$ref"]; ok {
-		s.Ref, err = c.compileRef(r, base, ref.(string))
+		s.Ref, err = c.compileRef(r, stack, base, ref.(string))
 		if err != nil {
 			return err
 		}
@@ -248,7 +256,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 
 	if r.draft.version >= 2019 {
 		if ref, ok := m["$recursiveRef"]; ok {
-			s.RecursiveRef, err = c.compileRef(r, base, ref.(string))
+			s.RecursiveRef, err = c.compileRef(r, stack, base, ref.(string))
 			if err != nil {
 				return err
 			}
@@ -288,23 +296,23 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		}
 	}
 
-	loadSchema := func(pname string) (*Schema, error) {
+	loadSchema := func(pname string, stack []*Schema) (*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
-			return c.compileInlined(r, base, pvalue)
+			return c.compileInlined(r, stack, base, pvalue)
 		}
 		return nil, nil
 	}
 
-	if s.Not, err = loadSchema("not"); err != nil {
+	if s.Not, err = loadSchema("not", stack); err != nil {
 		return err
 	}
 
-	loadSchemas := func(pname string) ([]*Schema, error) {
+	loadSchemas := func(pname string, stack []*Schema) ([]*Schema, error) {
 		if pvalue, ok := m[pname]; ok {
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
 			for i, v := range pvalue {
-				sch, err := c.compileInlined(r, base, v)
+				sch, err := c.compileInlined(r, stack, base, v)
 				if err != nil {
 					return nil, err
 				}
@@ -314,13 +322,13 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		}
 		return nil, nil
 	}
-	if s.AllOf, err = loadSchemas("allOf"); err != nil {
+	if s.AllOf, err = loadSchemas("allOf", stack); err != nil {
 		return err
 	}
-	if s.AnyOf, err = loadSchemas("anyOf"); err != nil {
+	if s.AnyOf, err = loadSchemas("anyOf", stack); err != nil {
 		return err
 	}
-	if s.OneOf, err = loadSchemas("oneOf"); err != nil {
+	if s.OneOf, err = loadSchemas("oneOf", stack); err != nil {
 		return err
 	}
 
@@ -341,7 +349,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		props := props.(map[string]interface{})
 		s.Properties = make(map[string]*Schema, len(props))
 		for pname, pmap := range props {
-			s.Properties[pname], err = c.compileInlined(r, base, pmap)
+			s.Properties[pname], err = c.compileInlined(r, nil, base, pmap)
 			if err != nil {
 				return err
 			}
@@ -356,7 +364,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		patternProps := patternProps.(map[string]interface{})
 		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
 		for pattern, pmap := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compileInlined(r, base, pmap)
+			s.PatternProperties[regexp.MustCompile(pattern)], err = c.compileInlined(r, nil, base, pmap)
 			if err != nil {
 				return err
 			}
@@ -368,7 +376,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		case bool:
 			s.AdditionalProperties = additionalProps
 		case map[string]interface{}:
-			s.AdditionalProperties, err = c.compileInlined(r, base, additionalProps)
+			s.AdditionalProperties, err = c.compileInlined(r, nil, base, additionalProps)
 			if err != nil {
 				return err
 			}
@@ -383,7 +391,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 			case []interface{}:
 				s.Dependencies[pname] = toStrings(pvalue)
 			default:
-				s.Dependencies[pname], err = c.compileInlined(r, base, pvalue)
+				s.Dependencies[pname], err = c.compileInlined(r, stack, base, pvalue)
 				if err != nil {
 					return err
 				}
@@ -403,16 +411,16 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 			deps := deps.(map[string]interface{})
 			s.DependentSchemas = make(map[string]*Schema, len(deps))
 			for pname, pvalue := range deps {
-				s.DependentSchemas[pname], err = c.compileInlined(r, base, pvalue)
+				s.DependentSchemas[pname], err = c.compileInlined(r, stack, base, pvalue)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		if s.UnevaluatedProperties, err = loadSchema("unevaluatedProperties"); err != nil {
+		if s.UnevaluatedProperties, err = loadSchema("unevaluatedProperties", nil); err != nil {
 			return err
 		}
-		if s.UnevaluatedItems, err = loadSchema("unevaluatedItems"); err != nil {
+		if s.UnevaluatedItems, err = loadSchema("unevaluatedItems", nil); err != nil {
 			return err
 		}
 	}
@@ -426,7 +434,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 	if items, ok := m["items"]; ok {
 		switch items := items.(type) {
 		case []interface{}:
-			s.Items, err = loadSchemas("items")
+			s.Items, err = loadSchemas("items", nil)
 			if err != nil {
 				return err
 			}
@@ -435,14 +443,14 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 				case bool:
 					s.AdditionalItems = additionalItems
 				case map[string]interface{}:
-					s.AdditionalItems, err = c.compileInlined(r, base, additionalItems)
+					s.AdditionalItems, err = c.compileInlined(r, nil, base, additionalItems)
 					if err != nil {
 						return err
 					}
 				}
 			}
 		default:
-			s.Items, err = c.compileInlined(r, base, items)
+			s.Items, err = c.compileInlined(r, nil, base, items)
 			if err != nil {
 				return err
 			}
@@ -506,10 +514,10 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 		if c, ok := m["const"]; ok {
 			s.Constant = []interface{}{c}
 		}
-		if s.PropertyNames, err = loadSchema("propertyNames"); err != nil {
+		if s.PropertyNames, err = loadSchema("propertyNames", nil); err != nil {
 			return err
 		}
-		if s.Contains, err = loadSchema("contains"); err != nil {
+		if s.Contains, err = loadSchema("contains", nil); err != nil {
 			return err
 		}
 		s.MinContains, s.MaxContains = 1, -1
@@ -517,13 +525,13 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 
 	if r.draft.version >= 7 {
 		if m["if"] != nil && (m["then"] != nil || m["else"] != nil) {
-			if s.If, err = loadSchema("if"); err != nil {
+			if s.If, err = loadSchema("if", stack); err != nil {
 				return err
 			}
-			if s.Then, err = loadSchema("then"); err != nil {
+			if s.Then, err = loadSchema("then", stack); err != nil {
 				return err
 			}
-			if s.Else, err = loadSchema("else"); err != nil {
+			if s.Else, err = loadSchema("else", stack); err != nil {
 				return err
 			}
 		}
@@ -562,7 +570,7 @@ func (c *Compiler) compileMap(r *resource, s *Schema, base resource, m map[strin
 	}
 
 	for name, ext := range c.extensions {
-		es, err := ext.compiler.Compile(CompilerContext{c, r, base}, m)
+		es, err := ext.compiler.Compile(CompilerContext{c, r, stack, base}, m)
 		if err != nil {
 			return err
 		}
@@ -614,4 +622,26 @@ func toStrings(arr []interface{}) []string {
 		s[i] = v.(string)
 	}
 	return s
+}
+
+func checkLoop(stack []*Schema, s *Schema) error {
+	for _, e := range stack {
+		if e == s {
+			var loop []string
+			for _, e := range stack {
+				if e.Ptr == "#" {
+					loop = append(loop, e.URL)
+				} else {
+					loop = append(loop, e.URL+e.Ptr)
+				}
+			}
+			if s.Ptr == "#" {
+				loop = append(loop, s.URL)
+			} else {
+				loop = append(loop, s.URL+s.Ptr)
+			}
+			return InfiniteLoopError(loop)
+		}
+	}
+	return nil
 }

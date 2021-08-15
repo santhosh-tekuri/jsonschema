@@ -37,21 +37,36 @@ func (c *Compiler) RegisterExtension(name string, meta *Schema, ext ExtCompiler)
 
 // CompilerContext provides additional context required in compiling for extension.
 type CompilerContext struct {
-	c    *Compiler
-	r    *resource
-	base resource
+	c     *Compiler
+	r     *resource
+	stack []*Schema
+	base  resource
 }
 
 // Compile compiles given value v into *Schema. This is useful in implementing
-// keyword like allOf/oneOf
-func (ctx CompilerContext) Compile(v interface{}) (*Schema, error) {
-	return ctx.c.compile(ctx.r, nil, ctx.base, v)
+// keyword like allOf/oneOf.
+//
+// applicableOnSameInstance tells whether current schema and the given schema v
+// are applied on same instance value. this is used to detect infinite loop in schema.
+func (ctx CompilerContext) Compile(v interface{}, applicableOnSameInstance bool) (*Schema, error) {
+	var stack []*Schema
+	if applicableOnSameInstance {
+		stack = ctx.stack
+	}
+	return ctx.c.compile(ctx.r, stack, nil, ctx.base, v)
 }
 
 // CompileRef compiles the schema referenced by ref uri
-func (ctx CompilerContext) CompileRef(ref string) (*Schema, error) {
+//
+// applicableOnSameInstance tells whether current schema and the given schema v
+// are applied on same instance value. this is used to detect infinite loop in schema.
+func (ctx CompilerContext) CompileRef(ref string, applicableOnSameInstance bool) (*Schema, error) {
 	//b, _ := split(ctx.base.url)
-	return ctx.c.compileRef(ctx.r, ctx.base, ref)
+	var stack []*Schema
+	if applicableOnSameInstance {
+		stack = ctx.stack
+	}
+	return ctx.c.compileRef(ctx.r, stack, ctx.base, ref)
 }
 
 // ValidationContext ---

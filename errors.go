@@ -17,6 +17,21 @@ func (e InvalidJSONTypeError) Error() string {
 	return fmt.Sprintf("invalid jsonType: %s", string(e))
 }
 
+// InfiniteLoopError is returned by Compile.
+// this gives the chain of json-pointers that lead to infinite loop.
+type InfiniteLoopError []string
+
+func (e InfiniteLoopError) Error() string {
+	var loop string
+	for _, u := range e {
+		if loop != "" {
+			loop += " -> "
+		}
+		loop += u
+	}
+	return "jsonschema: infinite loop detected " + loop
+}
+
 // SchemaError is the error type returned by Compile.
 type SchemaError struct {
 	// SchemaURL is the url to json-schema that filed to compile.
