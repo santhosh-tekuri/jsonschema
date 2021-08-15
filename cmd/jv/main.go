@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/santhosh-tekuri/jsonschema/v3"
-	_ "github.com/santhosh-tekuri/jsonschema/v3/httploader"
+	"github.com/santhosh-tekuri/jsonschema/v4"
+	_ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
 )
 
 func usage() {
@@ -54,6 +54,7 @@ func main() {
 			os.Exit(1)
 		}
 
+		fmt.Println("-----------------------------")
 		err = schema.Validate(r)
 		_ = r.Close()
 		if err != nil {

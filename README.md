@@ -1,7 +1,7 @@
-# jsonschema v3.1.0
+# jsonschema v4.0.0
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v3)
+[![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4)
 [![Go Report Card](https://goreportcard.com/badge/github.com/santhosh-tekuri/jsonschema)](https://goreportcard.com/report/github.com/santhosh-tekuri/jsonschema)
 [![Build Status](https://travis-ci.org/santhosh-tekuri/jsonschema.svg?branch=master)](https://travis-ci.org/santhosh-tekuri/jsonschema)
 [![codecov.io](https://codecov.io/github/santhosh-tekuri/jsonschema/coverage.svg?branch=master)](https://codecov.io/github/santhosh-tekuri/jsonschema?branch=master)
@@ -23,7 +23,7 @@ For breaking changes from v2 to v3 check github releases page.
 An example of using this package:
 
 ```go
-import "github.com/santhosh-tekuri/jsonschema/v3"
+import "github.com/santhosh-tekuri/jsonschema/v4"
 
 schema, err := jsonschema.Compile("schemas/purchaseOrder.json")
 if err != nil {
@@ -57,7 +57,7 @@ This package supports loading json-schema from filePath and fileURL.
 To load json-schema from HTTPURL, add following import:
 
 ```go
-import _ "github.com/santhosh-tekuri/jsonschema/v2/httploader"
+import _ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
 ```
 
 Loading from urls for other schemes (such as ftp), can be plugged in. see package jsonschema/httploader

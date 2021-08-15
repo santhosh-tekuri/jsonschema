@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/santhosh-tekuri/jsonschema/v3"
+	"github.com/santhosh-tekuri/jsonschema/v4"
 )
 
 func Example() {

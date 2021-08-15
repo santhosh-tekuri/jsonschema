@@ -1,3 +1,3 @@
-module github.com/santhosh-tekuri/jsonschema/v3
+module github.com/santhosh-tekuri/jsonschema/v4
 
 go 1.15

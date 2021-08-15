@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v3"
+	"github.com/santhosh-tekuri/jsonschema/v4"
 )
 
 var powerOfMeta = jsonschema.MustCompileString("powerOf.json", `{

@@ -17,7 +17,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/santhosh-tekuri/jsonschema/v3"
+	"github.com/santhosh-tekuri/jsonschema/v4"
 )
 
 // Client is the default HTTP Client used to Get the resource.
