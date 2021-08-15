@@ -5,27 +5,38 @@
 /*
 Package jsonschema provides json-schema compilation and validation.
 
-This implementation of JSON Schema, supports draft4, draft6 and draft7.
-Passes all tests(including optional) in https://github.com/json-schema/JSON-Schema-Test-Suite
+Features:
+ - implements draft 2019-09, draft-7, draft-6, draft-4
+ - fully compliant with JSON-Schema-Test-Suite, (excluding some optional)
+   - list of optioanl tests that are excluded can be found in schema_test.go(variable skipTests)
+ - validates schemas against meta-schema
+ - full support of remote references
+ - support of recursive references between schemas
+ - detects infinite loop in schemas
+ - thread safe validation
+ - rich, intutive hierarchial error messages with json-pointers to exact location
+ - supports enabling format and content Assertions in draft2019-09
+   - make Compiler.AssertFormat, Compiler.AssertContent true
+ - compiled schema can be introspectd. easier to develop tools like generating go structs given schema
+ - supports user-defined keywords via extensions
+ - implements following formats (supports user-defined)
+   - date-time, date, time, duration
+   - uuid, hostname, email
+   - ip-address, ipv4, ipv6
+   - uri, uriref, uri-template(limited validation)
+   - json-pointer, relative-json-pointer
+   - regex, format
+ - implements following contentEncoding (supports user-defined)
+   - base64
+ - implements following contentMediaType (supports user-defined)
+   - application/json
+ - can load from files/http/https/string/[]byte/io.Reader (suports user-defined)
 
-An example of using this package:
+The schema is compiled against the version specified in "$schema" property.
+If "$schema" property is missing, it uses latest draft which currently implemented
+by this library.
 
-	schema, err := jsonschema.Compile("schemas/purchaseOrder.json")
-	if err != nil {
-		return err
-	}
-	f, err := os.Open("purchaseOrder.json")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err = schema.Validate(f); err != nil {
-		return err
-	}
-
-The schema is compiled against the version specified in `$schema` property.
-If `$schema` property is missing, it uses latest draft which currently is draft7.
-You can force to use draft4 when `$schema` is missing, as follows:
+You can force to use specific draft,  when "$schema" is missing, as follows:
 
 	compiler := jsonschema.NewCompiler()
 	compler.Draft = jsonschema.Draft4
@@ -37,60 +48,8 @@ This package supports loading json-schema from filePath and fileURL.
 
 To load json-schema from HTTPURL, add following import:
 
-	import _ "github.com/santhosh-tekuri/jsonschema/v3/httploader"
+	import _ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
 
-Loading from urls for other schemes (such as ftp), can be plugged in. see package jsonschema/httploader
-for an example
-
-To load json-schema from in-memory:
-
-	data := `{"type": "string"}`
-	url := "sch.json"
-	schema, err := jsonschema.CompileString(url, data)
-	if err != nil {
-		return err
-	}
-	f, err := os.Open("doc.json")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err = schema.Validate(f); err != nil {
-		return err
-	}
-
-alternatively:
-
-	data := `{"type": "string"}`
-	url := "sch.json"
-	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource(url, strings.NewReader(data)); err != nil {
-		return err
-	}
-	schema, err := compiler.Compile(url)
-	if err != nil {
-		return err
-	}
-	f, err := os.Open("doc.json")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err = schema.Validate(f); err != nil {
-		return err
-	}
-
-This package supports json string formats: date-time, date, time, duration, uuid, hostname, email, ip-address, ipv4, ipv6, uri, uriref, regex,
-format, json-pointer, relative-json-pointer, uri-template (limited validation). Developers can register their own formats by
-adding them to jsonschema.Formats map.
-
-"base64" contentEncoding is supported. Custom decoders can be registered by adding them to jsonschema.Decoders map.
-
-"application/json" contentMediaType is supported. Custom mediatypes can be registered by adding them to jsonschema.MediaTypes map.
-
-The ValidationError returned by Validate method contains detailed context to understand why and where the error is.
-
-Custom Extensions can be registered as shown in extension_test.go
-
+you can validate yaml documents. see https://play.golang.org/p/sJy1qY7dXgA
 */
 package jsonschema
