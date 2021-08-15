@@ -180,6 +180,13 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 	if _, _, err := s.validate(nil, doc); err != nil {
 		finishSchemaContext(err, s)
 		finishInstanceContext(err)
+		return &ValidationError{
+			Message:     fmt.Sprintf("doesn't validate with %q", s.URL+s.Ptr),
+			InstancePtr: "#",
+			SchemaURL:   s.URL,
+			SchemaPtr:   "#",
+			Causes:      []*ValidationError{err.(*ValidationError)},
+		}
 		return err
 	}
 	return nil
