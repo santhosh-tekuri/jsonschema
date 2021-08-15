@@ -82,7 +82,17 @@ func (c *Compiler) MustCompile(url string) *Schema {
 
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
+//
+// error returned will be of type *SchemaError
 func (c *Compiler) Compile(url string) (*Schema, error) {
+	sch, err := c.compileURL(url)
+	if err != nil {
+		err = &SchemaError{url, err}
+	}
+	return sch, err
+}
+
+func (c *Compiler) compileURL(url string) (*Schema, error) {
 	switch url {
 	case "http://json-schema.org/draft/2019-09/schema#", "https://json-schema.org/draft/2019-09/schema#":
 		return Draft2019.meta, nil
@@ -173,7 +183,7 @@ func (c *Compiler) compileRef(r *resource, base resource, ref string) (*Schema, 
 				// infinite loop detected
 				return nil, fmt.Errorf("invalid ref: %q", ref)
 			}
-			return c.Compile(ref)
+			return c.compileURL(ref)
 		}
 	}
 
@@ -576,15 +586,12 @@ func (c *Compiler) validateSchema(r *resource, ptr string, v interface{}) error 
 			_ = addContext(ptr, "", err)
 			finishSchemaContext(err, meta)
 			finishInstanceContext(err)
-			return &SchemaError{
-				r.url,
-				&ValidationError{
-					Message:     fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
-					InstancePtr: absPtr(ptr),
-					SchemaURL:   meta.URL,
-					SchemaPtr:   "#",
-					Causes:      []*ValidationError{err.(*ValidationError)},
-				},
+			return &ValidationError{
+				Message:     fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
+				InstancePtr: absPtr(ptr),
+				SchemaURL:   meta.URL,
+				SchemaPtr:   "#",
+				Causes:      []*ValidationError{err.(*ValidationError)},
 			}
 		}
 		return nil
