@@ -5,54 +5,11 @@
 package jsonschema_test
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v4"
 )
-
-var powerOfMeta = jsonschema.MustCompileString("powerOf.json", `{
-	"properties" : {
-		"powerOf": {
-			"type": "integer",
-			"exclusiveMinimum": 0
-		}
-	}
-}`)
-
-type powerOfCompiler struct{}
-
-func (powerOfCompiler) Compile(ctx jsonschema.CompilerContext, m map[string]interface{}) (jsonschema.ExtSchema, error) {
-	if pow, ok := m["powerOf"]; ok {
-		n, err := pow.(json.Number).Int64()
-		return powerOfSchema(n), err
-	}
-
-	// nothing to compile, return nil
-	return nil, nil
-}
-
-type powerOfSchema int64
-
-func (s powerOfSchema) Validate(ctx jsonschema.ValidationContext, v interface{}) error {
-	switch v.(type) {
-	case json.Number, float64, int, int32, int64:
-		pow := int64(s)
-		n, _ := strconv.ParseInt(fmt.Sprint(v), 10, 64)
-		for n%pow == 0 {
-			n = n / pow
-		}
-		if n != 1 {
-			return ctx.Error("powerOf", "%v not powerOf %v", v, pow)
-		}
-		return nil
-	default:
-		return nil
-	}
-}
 
 func TestPowerOfExt(t *testing.T) {
 	t.Run("invalidSchema", func(t *testing.T) {
