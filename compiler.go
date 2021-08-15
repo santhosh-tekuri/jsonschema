@@ -28,7 +28,7 @@ var latest = Draft2019
 type Compiler struct {
 	// Draft represents the draft used when '$schema' attribute is missing.
 	//
-	// This defaults to latest draft (currently draft7).
+	// This defaults to latest draft (currently draft2019-09).
 	Draft     *Draft
 	resources map[string]*resource
 
