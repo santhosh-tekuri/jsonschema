@@ -6,7 +6,7 @@ package jsonschema
 
 import "strings"
 
-// Draft2019 respresents http://json-schema.org/specification-links.html#draft-7
+// Draft2019 respresents https://json-schema.org/specification-links.html#draft-2019-09-formerly-known-as-draft-8
 var Draft2019 = &Draft{id: "$id", version: 2019}
 
 func init() {
