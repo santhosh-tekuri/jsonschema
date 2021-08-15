@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -101,7 +102,7 @@ func Example_userDefinedFormat() {
 	// Output:
 }
 
-// Example_userDefinedContent shows how to define:
+// Example_userDefinedContent shows how to define
 // "hex" contentEncoding and "application/xml" contentMediaType
 func Example_userDefinedContent() {
 	jsonschema.Decoders["hex"] = hex.DecodeString
@@ -128,6 +129,34 @@ func Example_userDefinedContent() {
 	}
 
 	if err = sch.Validate(strings.NewReader(instance)); err != nil {
+		log.Fatalf("%#v", err)
+	}
+	// Output:
+}
+
+// Example_userDefinedLoader shows how to define custom schema loader.
+//
+// we are implementing a "map" protocol which servers schemas from
+// go map variable.
+func Example_userDefinedLoader() {
+	var schemas = map[string]string{
+		"main.json": `{"$ref":"obj.json"}`,
+		"obj.json":  `{"type":"object"}`,
+	}
+	jsonschema.Loaders["map"] = func(url string) (io.ReadCloser, error) {
+		schema, ok := schemas[strings.TrimPrefix(url, "map:///")]
+		if !ok {
+			return nil, fmt.Errorf("%q not found", url)
+		}
+		return io.NopCloser(strings.NewReader(schema)), nil
+	}
+
+	sch, err := jsonschema.Compile("map:///main.json")
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	if err = sch.Validate(strings.NewReader(`{}`)); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
