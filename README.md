@@ -8,40 +8,43 @@
 
 Package jsonschema provides json-schema compilation and validation.
 
-This implementation of JSON Schema, supports draft4, draft6 and draft7.
+### Features:
+ - implements 
+   [draft 2019-09](https://json-schema.org/specification-links.html#draft-2019-09-formerly-known-as-draft-8), 
+   [draft-7](https://json-schema.org/specification-links.html#draft-7), 
+   [draft-6](https://json-schema.org/specification-links.html#draft-6),
+   [draft-4](https://json-schema.org/specification-links.html#draft-4)
+ - fully compliant with [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite), (excluding some optional)
+   - list of optioanl tests that are excluded can be found in schema_test.go(variable [skipTests](https://github.com/santhosh-tekuri/jsonschema/blob/master/schema_test.go#L30))
+ - validates schemas against meta-schema
+ - full support of remote references
+ - support of recursive references between schemas
+ - detects infinite loop in schemas
+ - thread safe validation
+ - rich, intutive hierarchial error messages with json-pointers to exact location
+ - supports enabling format and content Assertions in draft2019-09
+   - make Compiler.AssertFormat, Compiler.AssertContent true
+ - compiled schema can be introspected. easier to develop tools like generating go structs given schema
+ - supports user-defined keywords via [extensions](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__extension)
+ - implements following formats (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedFormat))
+   - date-time, date, time, duration
+   - uuid, hostname, email
+   - ip-address, ipv4, ipv6
+   - uri, uriref, uri-template(limited validation)
+   - json-pointer, relative-json-pointer
+   - regex, format
+ - implements following contentEncoding (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedContent))
+   - base64
+ - implements following contentMediaType (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedContent))
+   - application/json
+ - can load from files/http/https/[string](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__fromString)/[]byte/io.Reader (suports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example__userDefinedLoader))
 
-Passes all tests in https://github.com/json-schema/JSON-Schema-Test-Suite with following exceptions:
-- format `idn-hostname` and `idn-email` is not implemented
-- since this library uses `regexp` package, some optional ECMA-262 related and unicode tests will fail
-- in draft4 `1.0` is a not a valid integer but in draft6 and draft7 it is valid integer.
-  This library treats `1.0` as integer even in draft4.
 
-Exact list of skipped tests can be found [here](https://github.com/santhosh-tekuri/jsonschema/blob/master/schema_test.go#L30) and the reasons.
-
-For breaking changes from v2 to v3 check github releases page.
-
-An example of using this package:
-
-```go
-import "github.com/santhosh-tekuri/jsonschema/v4"
-
-schema, err := jsonschema.Compile("schemas/purchaseOrder.json")
-if err != nil {
-    return err
-}
-f, err := os.Open("purchaseOrder.json")
-if err != nil {
-    return err
-}
-defer f.Close()
-if err = schema.Validate(f); err != nil {
-    return err
-}
-```
+see examples in [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4)
 
 The schema is compiled against the version specified in `$schema` property.
 If `$schema` property is missing, it uses latest draft which currently is draft7.
-You can force to use draft4 when `$schema` is missing, as follows:
+You can force to use specific version, when `$schema` is missing, as follows:
 
 ```go
 compiler := jsonschema.NewCompiler()
@@ -51,7 +54,6 @@ compler.Draft = jsonschema.Draft4
 you can also validate go value using `schema.ValidateInterface(interface{})` method.  
 but the argument should not be user-defined struct.
 
-
 This package supports loading json-schema from filePath and fileURL.
 
 To load json-schema from HTTPURL, add following import:
@@ -59,76 +61,6 @@ To load json-schema from HTTPURL, add following import:
 ```go
 import _ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
 ```
-
-Loading from urls for other schemes (such as ftp), can be plugged in. see package jsonschema/httploader
-for an example
-
-To load json-schema from in-memory:
-
-```go
-data := `{"type": "string"}`
-url := "sch.json"
-schema, err := jsonschema.CompileString(url, data)
-if err != nil {
-    return err
-}
-f, err := os.Open("doc.json")
-if err != nil {
-    return err
-}
-defer f.Close()
-if err = schema.Validate(f); err != nil {
-    return err
-}
-```
-
-alternatively:
-
-```go
-data := `{"type": "string"}`
-url := "sch.json"
-compiler := jsonschema.NewCompiler()
-if err := compiler.AddResource(url, strings.NewReader(data)); err != nil {
-    return err
-}
-schema, err := compiler.Compile(url)
-if err != nil {
-    return err
-}
-f, err := os.Open("doc.json")
-if err != nil {
-    return err
-}
-defer f.Close()
-if err = schema.Validate(f); err != nil {
-    return err
-}
-```
-
-This package supports json string formats: 
-- date-time (understands leap-second)
-- date
-- time (understands leap-second)
-- duration
-- uuid
-- hostname
-- email
-- ip-address
-- ipv4
-- ipv6
-- uri
-- uriref/uri-reference
-- regex
-- format
-- json-pointer
-- relative-json-pointer
-- uri-template (limited validation)
-
-Developers can register their own formats by adding them to `jsonschema.Formats` map.
-
-"base64" contentEncoding is supported. Custom decoders can be registered by adding them to `jsonschema.Decoders` map.
-
-"application/json" contentMediaType is supported. Custom mediatypes can be registered by adding them to `jsonschema.MediaTypes` map.
 
 ## ValidationError
 
@@ -168,10 +100,6 @@ Here `I` stands for instance document and `S` stands for schema document.
 The json-fragments that caused error in instance and schema documents are represented using json-pointer notation.  
 Nested causes are printed with indent.
 
-## Custom Extensions
-
-Custom Extensions can be registered as shown in `extension_test.go`
-
 ## CLI
 
 ```bash
@@ -189,7 +117,8 @@ since yaml supports non-string keys, such yaml documents are rendered as invalid
 yaml parser returns `map[interface{}]interface{}` for object, whereas json parser returns `map[string]interafce{}`.  
 this package accepts only `map[string]interface{}`, so we need to manually convert them to `map[string]interface{}`
 
-https://play.golang.org/p/Oeo-noJtKk_N
+https://play.golang.org/p/sJy1qY7dXgA
 
 the above example shows how to validate yaml document with jsonschema.  
 the convertion explained above is implemented by `toStringKeys` function
+

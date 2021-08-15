@@ -17,7 +17,7 @@ Features:
  - rich, intutive hierarchial error messages with json-pointers to exact location
  - supports enabling format and content Assertions in draft2019-09
    - make Compiler.AssertFormat, Compiler.AssertContent true
- - compiled schema can be introspectd. easier to develop tools like generating go structs given schema
+ - compiled schema can be introspected. easier to develop tools like generating go structs given schema
  - supports user-defined keywords via extensions
  - implements following formats (supports user-defined)
    - date-time, date, time, duration
