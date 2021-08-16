@@ -12,7 +12,7 @@ var Draft2020 = &Draft{id: "$id", version: 2020}
 func init() {
 	c := NewCompiler()
 	c.AssertFormat = true
-	base := "https://json-schema.org/draft/2020-12/schema"
+	base := "https://json-schema.org/draft/2020-12"
 	err := c.AddResource(base+"/schema", strings.NewReader(`{
 		"$schema": "https://json-schema.org/draft/2020-12/schema",
 		"$id": "https://json-schema.org/draft/2020-12/schema",
