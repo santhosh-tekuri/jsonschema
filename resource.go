@@ -167,20 +167,41 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		return nil
 	}
 
+	addID := func(u string) error {
+		if u != "" {
+			b, err := resolveURL(base, u)
+			if err != nil {
+				return err
+			}
+			base = b
+			if _, ok := ids[base]; ok {
+				return fmt.Errorf("jsonschema: ambigious canonical uri %q", base)
+			}
+			ids[base] = m
+		}
+		return nil
+	}
 	u := ""
 	if id, ok := m[draft.id]; ok {
 		u = id.(string)
 	}
+	var anchored bool
 	if anchor, ok := m["$anchor"]; draft.version >= 2019 && ok {
-		u += "#" + anchor.(string)
-	}
-	if u != "" {
-		b, err := resolveURL(base, u)
-		if err != nil {
+		if err := addID(u + "#" + anchor.(string)); err != nil {
 			return err
 		}
-		base = b
-		ids[base] = m
+		anchored = true
+	}
+	if dynamicAnchor, ok := m["$dynamicAnchor"]; draft.version >= 2020 && ok {
+		if err := addID(u + "#" + dynamicAnchor.(string)); err != nil {
+			return err
+		}
+		anchored = true
+	}
+	if !anchored {
+		if err := addID(u); err != nil {
+			return err
+		}
 	}
 
 	schemaKeys := []string{"not", "additionalProperties"}
