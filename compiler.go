@@ -437,28 +437,37 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		s.UniqueItems = unique.(bool)
 	}
 
-	if items, ok := m["items"]; ok {
-		switch items := items.(type) {
-		case []interface{}:
-			s.Items, err = loadSchemas("items", nil)
-			if err != nil {
-				return err
-			}
-			if additionalItems, ok := m["additionalItems"]; ok {
-				switch additionalItems := additionalItems.(type) {
-				case bool:
-					s.AdditionalItems = additionalItems
-				case map[string]interface{}:
-					s.AdditionalItems, err = compile(nil, "additionalItems", additionalItems)
-					if err != nil {
-						return err
+	if r.draft.version >= 2020 {
+		if s.PrefixItems, err = loadSchemas("prefixItems", nil); err != nil {
+			return err
+		}
+		if s.Items2020, err = loadSchema("items", nil); err != nil {
+			return err
+		}
+	} else {
+		if items, ok := m["items"]; ok {
+			switch items := items.(type) {
+			case []interface{}:
+				s.Items, err = loadSchemas("items", nil)
+				if err != nil {
+					return err
+				}
+				if additionalItems, ok := m["additionalItems"]; ok {
+					switch additionalItems := additionalItems.(type) {
+					case bool:
+						s.AdditionalItems = additionalItems
+					case map[string]interface{}:
+						s.AdditionalItems, err = compile(nil, "additionalItems", additionalItems)
+						if err != nil {
+							return err
+						}
 					}
 				}
-			}
-		default:
-			s.Items, err = compile(nil, "items", items)
-			if err != nil {
-				return err
+			default:
+				s.Items, err = compile(nil, "items", items)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

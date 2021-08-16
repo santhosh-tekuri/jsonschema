@@ -60,6 +60,8 @@ type Schema struct {
 	UniqueItems      bool
 	Items            interface{} // nil or *Schema or []*Schema
 	AdditionalItems  interface{} // nil or bool or *Schema.
+	PrefixItems      []*Schema
+	Items2020        *Schema // items keyword reintroduced in draft 2020-12
 	Contains         *Schema
 	MinContains      int // 1 if not specified
 	MaxContains      int // -1 if not specified
@@ -407,6 +409,8 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (unevalProps map[strin
 				}
 			}
 		}
+
+		// items + additionalItems
 		switch items := s.Items.(type) {
 		case *Schema:
 			for i, item := range v {
@@ -439,6 +443,24 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (unevalProps map[strin
 				}
 			}
 		}
+
+		// prefixItems + items
+		for i, item := range v {
+			if i < len(s.PrefixItems) {
+				if err := validate(s.PrefixItems[i], item); err != nil {
+					errors = append(errors, addContext(strconv.Itoa(i), "prefixItems/"+strconv.Itoa(i), err))
+				}
+				lastEvalItem = i
+			} else if s.Items2020 != nil {
+				if err := validate(s.Items2020, item); err != nil {
+					errors = append(errors, addContext(strconv.Itoa(i), "items", err))
+				}
+				lastEvalItem = i
+			} else {
+				break
+			}
+		}
+
 		if s.Contains != nil && (s.MinContains != -1 || s.MaxContains != -1) {
 			matched := 0
 			var causes []error
