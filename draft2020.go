@@ -280,46 +280,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = c.AddResource(base+"/meta/meta-data", strings.NewReader(`{
-		"$schema": "https://json-schema.org/draft/2019-09/schema",
-		"$id": "https://json-schema.org/draft/2019-09/meta/meta-data",
-		"$vocabulary": {
-			"https://json-schema.org/draft/2019-09/vocab/meta-data": true
-		},
-		"$recursiveAnchor": true,
-
-		"title": "Meta-data vocabulary meta-schema",
-
-		"type": ["object", "boolean"],
-		"properties": {
-			"title": {
-				"type": "string"
-			},
-			"description": {
-				"type": "string"
-			},
-			"default": true,
-			"deprecated": {
-				"type": "boolean",
-				"default": false
-			},
-			"readOnly": {
-				"type": "boolean",
-				"default": false
-			},
-			"writeOnly": {
-				"type": "boolean",
-				"default": false
-			},
-			"examples": {
-				"type": "array",
-				"items": true
-			}
-		}
-	}`))
-	if err != nil {
-		panic(err)
-	}
 	err = c.AddResource(base+"/meta/unevaluated", strings.NewReader(`{
 		"$schema": "https://json-schema.org/draft/2020-12/schema",
 		"$id": "https://json-schema.org/draft/2020-12/meta/unevaluated",
@@ -355,23 +315,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = c.AddResource(base+"/meta/format-assertion", strings.NewReader(`{
-		"$schema": "https://json-schema.org/draft/2020-12/schema",
-		"$id": "https://json-schema.org/draft/2020-12/meta/format-assertion",
-		"$vocabulary": {
-			"https://json-schema.org/draft/2020-12/vocab/format-assertion": true
-		},
-		"$dynamicAnchor": "meta",
-
-		"title": "Format vocabulary meta-schema for assertion results",
-		"type": ["object", "boolean"],
-		"properties": {
-			"format": { "type": "string" }
-		}
-	}`))
-	if err != nil {
-		panic(err)
-	}
 	err = c.AddResource(base+"/meta/content", strings.NewReader(`{
 		"$schema": "https://json-schema.org/draft/2020-12/schema",
 		"$id": "https://json-schema.org/draft/2020-12/meta/content",
@@ -392,7 +335,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = c.AddResource(base+"/meta/metadata", strings.NewReader(`{
+	err = c.AddResource(base+"/meta/meta-data", strings.NewReader(`{
 		"$schema": "https://json-schema.org/draft/2020-12/schema",
 		"$id": "https://json-schema.org/draft/2020-12/meta/meta-data",
 		"$vocabulary": {
