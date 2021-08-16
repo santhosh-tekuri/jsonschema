@@ -83,7 +83,7 @@ type ValidationContext struct {
 // *Schema.ValidateInterface method. This will be useful in implementing keywords like
 // allOf/oneOf
 func (ctx ValidationContext) Validate(s *Schema, v interface{}) error {
-	_, _, err := s.validate(ctx.scope, v)
+	_, err := s.validate(ctx.scope, v)
 	return err
 }
 

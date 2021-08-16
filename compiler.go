@@ -605,7 +605,7 @@ func (c *Compiler) validateSchema(r *resource, ptr string, v interface{}) error 
 		if meta == nil {
 			return nil
 		}
-		if _, _, err := meta.validate(nil, v); err != nil {
+		if _, err := meta.validate(nil, v); err != nil {
 			_ = addContext(ptr, "", err)
 			finishSchemaContext(err, meta)
 			finishInstanceContext(err)
