@@ -7,7 +7,7 @@ package jsonschema
 import "strings"
 
 // Draft2020 respresents https://json-schema.org/specification-links.html#2020-12
-var Draft2019 = &Draft{id: "$id", version: 2020}
+var Draft2020 = &Draft{id: "$id", version: 2020}
 
 func init() {
 	c := NewCompiler()
