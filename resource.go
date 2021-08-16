@@ -185,21 +185,16 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 	if id, ok := m[draft.id]; ok {
 		u = id.(string)
 	}
-	var anchored bool
+	if err := addID(u); err != nil {
+		return err
+	}
 	if anchor, ok := m["$anchor"]; draft.version >= 2019 && ok {
 		if err := addID(u + "#" + anchor.(string)); err != nil {
 			return err
 		}
-		anchored = true
 	}
 	if dynamicAnchor, ok := m["$dynamicAnchor"]; draft.version >= 2020 && ok {
 		if err := addID(u + "#" + dynamicAnchor.(string)); err != nil {
-			return err
-		}
-		anchored = true
-	}
-	if !anchored {
-		if err := addID(u); err != nil {
 			return err
 		}
 	}
