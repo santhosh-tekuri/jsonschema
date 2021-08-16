@@ -54,7 +54,7 @@ func init() {
 				}
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -114,7 +114,7 @@ func init() {
 				"default": {}
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -173,7 +173,7 @@ func init() {
 				"items": { "$recursiveRef": "#" }
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -274,7 +274,7 @@ func init() {
 				"default": []
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -314,7 +314,7 @@ func init() {
 				"items": true
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -331,7 +331,7 @@ func init() {
 		"properties": {
 			"format": { "type": "string" }
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -351,7 +351,7 @@ func init() {
 			"contentEncoding": { "type": "string" },
 			"contentSchema": { "$recursiveRef": "#" }
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}

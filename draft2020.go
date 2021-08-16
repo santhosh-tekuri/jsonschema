@@ -70,7 +70,7 @@ func init() {
 				"deprecated": true
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +124,7 @@ func init() {
 				"format": "uri-reference"
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -175,7 +175,7 @@ func init() {
 				"items": { "$dynamicRef": "#meta" }
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -276,7 +276,7 @@ func init() {
 				"default": []
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -316,7 +316,7 @@ func init() {
 				"items": true
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -334,7 +334,7 @@ func init() {
 			"unevaluatedItems": { "$dynamicRef": "#meta" },
 			"unevaluatedProperties": { "$dynamicRef": "#meta" }
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -351,7 +351,7 @@ func init() {
 		"properties": {
 			"format": { "type": "string" }
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -368,7 +368,7 @@ func init() {
 		"properties": {
 			"format": { "type": "string" }
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -388,7 +388,7 @@ func init() {
 			"contentMediaType": { "type": "string" },
 			"contentSchema": { "$dynamicRef": "#meta" }
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
@@ -428,7 +428,7 @@ func init() {
 				"items": true
 			}
 		}
-}`))
+	}`))
 	if err != nil {
 		panic(err)
 	}
