@@ -199,6 +199,14 @@ type uneval struct {
 	items map[int]struct{}
 }
 
+func (ue uneval) pnames() string {
+	pnames := make([]string, 0, len(ue.props))
+	for pname := range ue.props {
+		pnames = append(pnames, strconv.Quote(pname))
+	}
+	return strings.Join(pnames, ", ")
+}
+
 // validate validates given value v with this schema.
 func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err error) {
 	scope = append(scope, s)
@@ -355,11 +363,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		if s.AdditionalProperties != nil {
 			if allowed, ok := s.AdditionalProperties.(bool); ok {
 				if !allowed && len(uneval.props) > 0 {
-					pnames := make([]string, 0, len(uneval.props))
-					for pname := range uneval.props {
-						pnames = append(pnames, strconv.Quote(pname))
-					}
-					errors = append(errors, validationError("additionalProperties", "additionalProperties %s not allowed", strings.Join(pnames, ", ")))
+					errors = append(errors, validationError("additionalProperties", "additionalProperties %s not allowed", uneval.pnames()))
 				}
 			} else {
 				schema := s.AdditionalProperties.(*Schema)
