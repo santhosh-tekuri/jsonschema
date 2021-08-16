@@ -19,7 +19,7 @@ func usage() {
 }
 
 func main() {
-	draft := flag.Int("draft", 2019, "draft used when '$schema' attribute is missing")
+	draft := flag.Int("draft", 2020, "draft used when '$schema' attribute is missing")
 	flag.Usage = usage
 	flag.Parse()
 	if len(flag.Args()) == 0 {
@@ -37,8 +37,10 @@ func main() {
 		compiler.Draft = jsonschema.Draft7
 	case 2019:
 		compiler.Draft = jsonschema.Draft2019
+	case 2020:
+		compiler.Draft = jsonschema.Draft2020
 	default:
-		fmt.Fprintln(os.Stderr, "draft must be 4, 5, 7 or 2019")
+		fmt.Fprintln(os.Stderr, "draft must be 4, 5, 7, 2019 or 2020")
 		os.Exit(1)
 	}
 	schema, err := compiler.Compile(flag.Arg(0))
