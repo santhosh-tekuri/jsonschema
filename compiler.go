@@ -76,7 +76,7 @@ func (c *Compiler) AddResource(url string, r io.Reader) error {
 func (c *Compiler) MustCompile(url string) *Schema {
 	s, err := c.Compile(url)
 	if err != nil {
-		panic(fmt.Sprintf("jsonschema: Compile(%q): %s", url, err))
+		panic(fmt.Sprintf("jsonschema: %#v", err))
 	}
 	return s
 }

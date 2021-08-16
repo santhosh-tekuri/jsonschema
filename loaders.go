@@ -39,10 +39,10 @@ var Loaders = map[string]func(url string) (io.ReadCloser, error){
 
 // SchemeNotRegisteredError is the error type returned by Load function.
 // It tells that no Loader is registered for that URL Scheme.
-type SchemeNotRegisteredError string
+type LoaderNotFoundError string
 
-func (s SchemeNotRegisteredError) Error() string {
-	return fmt.Sprintf("no Loader registered for scheme %s", string(s))
+func (e LoaderNotFoundError) Error() string {
+	return fmt.Sprintf("jsonschema: no Loader found for %q", string(e))
 }
 
 // LoadURL loads document at given URL. The default implementation
@@ -58,7 +58,7 @@ var LoadURL = func(s string) (io.ReadCloser, error) {
 	}
 	loader, ok := Loaders[u.Scheme]
 	if !ok {
-		return nil, SchemeNotRegisteredError(u.Scheme)
+		return nil, LoaderNotFoundError(s)
 
 	}
 	return loader(s)
