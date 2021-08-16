@@ -24,10 +24,12 @@ type Schema struct {
 	// type agnostic validations
 	format          func(interface{}) bool
 	Format          string
-	Always          *bool   // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref             *Schema // reference to actual schema.
+	Always          *bool // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref             *Schema
 	RecursiveAnchor bool
-	RecursiveRef    *Schema       // reference to actual schema.
+	RecursiveRef    *Schema
+	DynamicAnchor   string
+	DynamicRef      *Schema
 	Types           []string      // allowed types.
 	Constant        []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
 	Enum            []interface{} // allowed values.
@@ -97,29 +99,33 @@ type Schema struct {
 }
 
 func newSchema(url, ptr string, doc interface{}) *Schema {
-	var recursiveAnchor bool
+	// fill with default values
+	s := &Schema{
+		URL:           url,
+		Ptr:           ptr,
+		MinProperties: -1,
+		MaxProperties: -1,
+		MinItems:      -1,
+		MaxItems:      -1,
+		MinContains:   1,
+		MaxContains:   -1,
+		MinLength:     -1,
+		MaxLength:     -1,
+	}
+
 	if doc, ok := doc.(map[string]interface{}); ok {
 		if ra, ok := doc["$recursiveAnchor"]; ok {
 			if ra, ok := ra.(bool); ok {
-				recursiveAnchor = ra
+				s.RecursiveAnchor = ra
+			}
+		}
+		if da, ok := doc["$dynamicAnchor"]; ok {
+			if da, ok := da.(string); ok {
+				s.DynamicAnchor = da
 			}
 		}
 	}
-
-	// fill with default values
-	return &Schema{
-		URL:             url,
-		Ptr:             ptr,
-		RecursiveAnchor: recursiveAnchor,
-		MinProperties:   -1,
-		MaxProperties:   -1,
-		MinItems:        -1,
-		MaxItems:        -1,
-		MinContains:     1,
-		MaxContains:     -1,
-		MinLength:       -1,
-		MaxLength:       -1,
-	}
+	return s
 }
 
 // Compile parses json-schema at given url returns, if successful,
@@ -583,7 +589,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 	if s.RecursiveRef != nil {
 		ref := s.RecursiveRef
 		if ref.RecursiveAnchor {
-			// dynamic ref based on scope
+			// recursiveRef based on scope
 			for _, e := range scope {
 				if e.RecursiveAnchor {
 					ref = e
@@ -592,6 +598,21 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 			}
 		}
 		if err := validateRef(ref, "$recursiveRef"); err != nil {
+			return uneval, err
+		}
+	}
+	if s.DynamicRef != nil {
+		ref := s.DynamicRef
+		if ref.DynamicAnchor != "" {
+			// dynamicRef based on scope
+			for _, e := range scope {
+				if e.DynamicAnchor == ref.DynamicAnchor {
+					ref = e
+					break
+				}
+			}
+		}
+		if err := validateRef(ref, "$dynamicRef"); err != nil {
 			return uneval, err
 		}
 	}

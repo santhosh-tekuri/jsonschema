@@ -260,6 +260,14 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 			}
 		}
 	}
+	if r.draft.version >= 2020 {
+		if ref, ok := m["$dynamicRef"]; ok {
+			s.DynamicRef, err = c.compileRef(r, stack, "$dynamicRef", base, ref.(string))
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	if t, ok := m["type"]; ok {
 		switch t := t.(type) {
