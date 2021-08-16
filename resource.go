@@ -195,7 +195,11 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		}
 	}
 
-	for _, pname := range []string{"allOf", "anyOf", "oneOf"} {
+	schemasKeys := []string{"allOf", "anyOf", "oneOf"}
+	if draft.version >= 2020 {
+		schemasKeys = append(schemasKeys, "prefixItems")
+	}
+	for _, pname := range schemasKeys {
 		if arr, ok := m[pname]; ok {
 			for _, m := range arr.([]interface{}) {
 				if err := resolveIDs(draft, base, m, ids); err != nil {
