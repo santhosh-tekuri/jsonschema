@@ -543,7 +543,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 	}
 
 	if r.draft.version >= 7 {
-		if m["if"] != nil && (m["then"] != nil || m["else"] != nil) {
+		if m["if"] != nil {
 			if s.If, err = loadSchema("if", stack); err != nil {
 				return err
 			}
