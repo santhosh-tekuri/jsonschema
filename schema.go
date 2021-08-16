@@ -63,8 +63,9 @@ type Schema struct {
 	PrefixItems      []*Schema
 	Items2020        *Schema // items keyword reintroduced in draft 2020-12
 	Contains         *Schema
-	MinContains      int // 1 if not specified
-	MaxContains      int // -1 if not specified
+	ContainsEval     bool // whether any item in an array that passes validation of the contains schema is considered "evaluated"
+	MinContains      int  // 1 if not specified
+	MaxContains      int  // -1 if not specified
 	UnevaluatedItems *Schema
 
 	// string validations
@@ -486,6 +487,9 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 					causes = append(causes, addContext(strconv.Itoa(i), "", err))
 				} else {
 					matched++
+					if s.ContainsEval {
+						delete(uneval.items, i)
+					}
 				}
 			}
 			if s.MinContains != -1 && matched < s.MinContains {

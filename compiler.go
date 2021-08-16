@@ -535,6 +535,10 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		if s.Contains, err = loadSchema("contains", nil); err != nil {
 			return err
 		}
+		if r.draft.version >= 2020 {
+			// any item in an array that passes validation of the contains schema is considered "evaluated"
+			s.ContainsEval = true
+		}
 		s.MinContains, s.MaxContains = 1, -1
 	}
 
