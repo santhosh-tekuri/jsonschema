@@ -173,7 +173,8 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, bas
 	}
 
 	u, f := split(ref)
-	if u != base.url || !isPtrFragment(f) {
+	bu, _ := split(base.url)
+	if u != bu || !isPtrFragment(f) {
 		ids := make(map[string]map[string]interface{})
 		if err := resolveIDs(r.draft, r.url, r.doc, ids); err != nil {
 			return nil, err
