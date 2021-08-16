@@ -132,6 +132,10 @@ func TestDraft2019(t *testing.T) {
 	testFolder(t, testSuite+"/tests/draft2019-09", jsonschema.Draft2019)
 }
 
+func TestDraft2020(t *testing.T) {
+	testFolder(t, testSuite+"/tests/draft2020-12", jsonschema.Draft2020)
+}
+
 func TestExtra(t *testing.T) {
 	testFolder(t, "testdata/tests/draft7", jsonschema.Draft7)
 }
