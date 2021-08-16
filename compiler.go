@@ -190,7 +190,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, bas
 			b, _ := split(ref)
 			if b == r.url {
 				// infinite loop detected
-				return nil, fmt.Errorf("invalid ref: %q", ref)
+				return nil, fmt.Errorf("jsonschema: invalid %s %q", refPtr, ref)
 			}
 			return c.compileURL(ref, stack, refPtr)
 		}
