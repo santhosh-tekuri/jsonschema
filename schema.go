@@ -21,6 +21,8 @@ type Schema struct {
 	URL string // absolute url of the resource.
 	Ptr string // json-pointer to schema. always starts with `#`.
 
+	dynamicAnchors map[string]*Schema
+
 	// type agnostic validations
 	format          func(interface{}) bool
 	Format          string
@@ -101,16 +103,17 @@ type Schema struct {
 func newSchema(url, ptr string, doc interface{}) *Schema {
 	// fill with default values
 	s := &Schema{
-		URL:           url,
-		Ptr:           ptr,
-		MinProperties: -1,
-		MaxProperties: -1,
-		MinItems:      -1,
-		MaxItems:      -1,
-		MinContains:   1,
-		MaxContains:   -1,
-		MinLength:     -1,
-		MaxLength:     -1,
+		URL:            url,
+		Ptr:            ptr,
+		dynamicAnchors: make(map[string]*Schema),
+		MinProperties:  -1,
+		MaxProperties:  -1,
+		MinItems:       -1,
+		MaxItems:       -1,
+		MinContains:    1,
+		MaxContains:    -1,
+		MinLength:      -1,
+		MaxLength:      -1,
 	}
 
 	if doc, ok := doc.(map[string]interface{}); ok {
@@ -605,10 +608,15 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		ref := s.DynamicRef
 		if ref.DynamicAnchor != "" {
 			// dynamicRef based on scope
+		Loop:
 			for _, e := range scope {
-				if e.DynamicAnchor == ref.DynamicAnchor {
-					ref = e
-					break
+				//fmt.Println("scope", e.URL, e.Ptr)
+				for u, sch := range e.dynamicAnchors {
+					//fmt.Println("     ", u, sch!=ref)
+					if sch != ref && strings.HasSuffix(u, ref.DynamicAnchor) {
+						ref = sch
+						break Loop
+					}
 				}
 			}
 		}
@@ -663,7 +671,11 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 	}
 
 	if s.If != nil {
-		if validateWith(s.If) == nil {
+		err := validateWith(s.If)
+		// "if" leaves dynamic scope
+		tmp := scope
+		scope = nil
+		if err == nil {
 			if s.Then != nil {
 				if err := validateWith(s.Then); err != nil {
 					errors = append(errors, validationError("then", "if-then failed").add(err))
@@ -676,6 +688,8 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 				}
 			}
 		}
+		// restore dynamic scope
+		scope = tmp
 	}
 
 	// unevaluated ---

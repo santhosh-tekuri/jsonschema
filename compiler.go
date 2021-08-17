@@ -218,11 +218,41 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, bas
 	return c.compile(r, stack, schemaRef{refPtr, s}, base, doc)
 }
 
+func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, m interface{}) error {
+	ids := make(map[string]map[string]interface{})
+	if err := resolveIDs(r.draft, base.url, m, ids); err != nil {
+		return err
+	}
+	for u, doc := range ids {
+		da, ok := doc["$dynamicAnchor"]
+		if !ok {
+			continue
+		}
+		if strings.HasSuffix(u, da.(string)) {
+			if _, ok := r.schemas[u]; !ok {
+				b, f := split(u)
+				das := newSchema(b, f, doc)
+				r.schemas[u] = das
+				if err := c.compileMap(r, nil, schemaRef{"IGNORED", das}, resource{url: u, doc: doc}, doc); err != nil {
+					return err
+				}
+			}
+			s.dynamicAnchors[u] = r.schemas[u]
+		}
+	}
+	return nil
+}
+
 func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, base resource, m interface{}) (*Schema, error) {
 	if sref.schema == nil {
 		u, _ := split(base.url)
 		sref.schema = newSchema(u, "", m)
 	}
+
+	if err := c.compileDynamicAnchors(r, sref.schema, base, m); err != nil {
+		return nil, err
+	}
+
 	switch m := m.(type) {
 	case bool:
 		sref.schema.Always = &m
