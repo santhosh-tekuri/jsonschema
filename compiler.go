@@ -251,9 +251,9 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, bas
 	return c.compile(r, stack, schemaRef{refPtr, s}, base, doc)
 }
 
-func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, m interface{}) error {
+func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, v interface{}) error {
 	ids := make(map[string]map[string]interface{})
-	if err := resolveIDs(r.draft, base.url, m, ids); err != nil {
+	if err := resolveIDs(r.draft, base.url, v, ids); err != nil {
 		return err
 	}
 	for u, doc := range ids {
@@ -361,13 +361,13 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		}
 	}
 
-	compile := func(stack []schemaRef, ptr string, m interface{}) (*Schema, error) {
+	compile := func(stack []schemaRef, ptr string, v interface{}) (*Schema, error) {
 		var err error
-		base, err = r.resolveID(base, m)
+		base, err = r.resolveID(base, v)
 		if err != nil {
 			return nil, err
 		}
-		return c.compile(r, stack, schemaRef{ptr, nil}, base, m)
+		return c.compile(r, stack, schemaRef{ptr, nil}, base, v)
 	}
 
 	loadSchema := func(pname string, stack []schemaRef) (*Schema, error) {
