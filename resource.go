@@ -203,7 +203,13 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		return resolveIDs(draft, base, v, ids)
 	}
 
-	schemaKeys := []string{"not", "additionalProperties"}
+	schemaKeys := []string{"not", "additionalProperties", "items", "additionalItems"}
+	if draft.version >= 6 {
+		schemaKeys = append(schemaKeys, "propertyNames", "contains")
+	}
+	if draft.version >= 7 {
+		schemaKeys = append(schemaKeys, "if", "then", "else")
+	}
 	if draft.version >= 2019 {
 		schemaKeys = append(schemaKeys, "unevaluatedProperties", "unevaluatedItems")
 	}
@@ -215,15 +221,17 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		}
 	}
 
-	schemasKeys := []string{"allOf", "anyOf", "oneOf"}
+	schemasKeys := []string{"items", "allOf", "anyOf", "oneOf"}
 	if draft.version >= 2020 {
 		schemasKeys = append(schemasKeys, "prefixItems")
 	}
 	for _, pname := range schemasKeys {
-		if arr, ok := m[pname]; ok {
-			for _, m := range arr.([]interface{}) {
-				if err := resolveIDs(m); err != nil {
-					return err
+		if pvalue, ok := m[pname]; ok {
+			if arr, ok := pvalue.([]interface{}); ok {
+				for _, m := range arr {
+					if err := resolveIDs(m); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -238,53 +246,6 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 			for _, m := range props.(map[string]interface{}) {
 				if err := resolveIDs(m); err != nil {
 					return err
-				}
-			}
-		}
-	}
-
-	if items, ok := m["items"]; ok {
-		switch items := items.(type) {
-		case map[string]interface{}:
-			if err := resolveIDs(items); err != nil {
-				return err
-			}
-		case []interface{}:
-			for _, item := range items {
-				if err := resolveIDs(item); err != nil {
-					return err
-				}
-			}
-		}
-		if additionalItems, ok := m["additionalItems"]; ok {
-			if additionalItems, ok := additionalItems.(map[string]interface{}); ok {
-				if err := resolveIDs(additionalItems); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	if draft.version >= 6 {
-		for _, pname := range []string{"propertyNames", "contains"} {
-			if m, ok := m[pname]; ok {
-				if err := resolveIDs(m); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	if draft.version >= 7 {
-		if iff, ok := m["if"]; ok {
-			if err := resolveIDs(iff); err != nil {
-				return err
-			}
-			for _, pname := range []string{"then", "else"} {
-				if m, ok := m[pname]; ok {
-					if err := resolveIDs(m); err != nil {
-						return err
-					}
 				}
 			}
 		}
