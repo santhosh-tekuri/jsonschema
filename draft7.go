@@ -78,6 +78,10 @@ func init() {
 				"type": "boolean",
 				"default": false
 			},
+			"writeOnly": {
+				"type": "boolean",
+				"default": false
+			},
 			"examples": {
 				"type": "array",
 				"items": true
@@ -167,19 +171,12 @@ func init() {
 					}
 				]
 			},
-			"format": { 
-				"type": "string",
-				"format": "format"
-			},
-			"contentMediaType": {
-				"type": "string"
-			},
-			"contentEncoding": {
-				"type": "string"
-			},
-			"if": {"$ref": "#"},
-			"then": {"$ref": "#"},
-			"else": {"$ref": "#"},
+			"format": { "type": "string" },
+			"contentMediaType": { "type": "string" },
+			"contentEncoding": { "type": "string" },
+			"if": { "$ref": "#" },
+			"then": { "$ref": "#" },
+			"else": { "$ref": "#" },
 			"allOf": { "$ref": "#/definitions/schemaArray" },
 			"anyOf": { "$ref": "#/definitions/schemaArray" },
 			"oneOf": { "$ref": "#/definitions/schemaArray" },
