@@ -132,39 +132,6 @@ func newSchema(url, ptr string, doc interface{}) *Schema {
 	return s
 }
 
-// Compile parses json-schema at given url returns, if successful,
-// a Schema object that can be used to match against json.
-//
-// Returned error can be *SchemaError
-func Compile(url string) (*Schema, error) {
-	return NewCompiler().Compile(url)
-}
-
-// MustCompile is like Compile but panics if the url cannot be compiled to *Schema.
-// It simplifies safe initialization of global variables holding compiled Schemas.
-func MustCompile(url string) *Schema {
-	return NewCompiler().MustCompile(url)
-}
-
-// CompileString parses and compiles the given schema with given base url.
-func CompileString(url, schema string) (*Schema, error) {
-	c := NewCompiler()
-	if err := c.AddResource(url, strings.NewReader(schema)); err != nil {
-		return nil, err
-	}
-	return c.Compile(url)
-}
-
-// MustCompileString is like CompileString but panics on error.
-// It simplified safe initialization of global variables holding compiled Schema.
-func MustCompileString(url, schema string) *Schema {
-	c := NewCompiler()
-	if err := c.AddResource(url, strings.NewReader(schema)); err != nil {
-		panic(err)
-	}
-	return c.MustCompile(url)
-}
-
 // Validate validates the given json data, against the json-schema.
 //
 // Returned error can be *ValidationError.
