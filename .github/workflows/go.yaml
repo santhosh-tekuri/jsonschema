@@ -1,0 +1,24 @@
+name: gotest
+on: [push, pull_request]
+jobs:
+  gotest:
+    name: gotest
+    runs-on: ubuntu-latest
+    steps:
+    - name: setup go
+      uses: actions/setup-go@v2.1.3
+      with:
+        go-version: 1.15
+    - name: checkout
+      uses: actions/checkout@v2.3.4
+    - name: test
+      run: |
+        set -e
+        echo "" > coverage.txt
+        for d in $(go list ./... | grep -v vendor); do
+          go test -race -coverprofile=profile.out -covermode=atomic $d
+          if [ -f profile.out ]; then
+            cat profile.out >> coverage.txt
+            rm profile.out
+          fi
+        done
