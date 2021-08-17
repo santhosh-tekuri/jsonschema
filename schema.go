@@ -53,7 +53,7 @@ type Schema struct {
 	RegexProperties       bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
 	PatternProperties     map[*regexp.Regexp]*Schema
 	AdditionalProperties  interface{}            // nil or bool or *Schema.
-	Dependencies          map[string]interface{} // value is *Schema or []string.
+	Dependencies          map[string]interface{} // map value is *Schema or []string.
 	DependentRequired     map[string][]string
 	DependentSchemas      map[string]*Schema
 	UnevaluatedProperties *Schema
