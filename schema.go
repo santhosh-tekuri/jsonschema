@@ -91,6 +91,7 @@ type Schema struct {
 	// annotations. captured only when Compiler.ExtractAnnotations is true.
 	Title       string
 	Description string
+	Comment     string
 	Default     interface{}
 	ReadOnly    bool
 	WriteOnly   bool

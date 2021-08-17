@@ -602,6 +602,9 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 			s.mediaType, _ = MediaTypes[s.ContentMediaType]
 		}
 		if c.ExtractAnnotations {
+			if comment, ok := m["$comment"]; ok {
+				s.Comment = comment.(string)
+			}
 			if readOnly, ok := m["readOnly"]; ok {
 				s.ReadOnly = readOnly.(bool)
 			}
