@@ -189,11 +189,6 @@ func (ue uneval) pnames() string {
 func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err error) {
 	scope = append(scope, s)
 
-	validate := func(schema *Schema, v interface{}) error {
-		_, err := schema.validate(scope, v)
-		return err
-	}
-
 	// populate uneval
 	switch v := v.(type) {
 	case map[string]interface{}:
@@ -208,9 +203,15 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		}
 	}
 
-	validateWith := func(schema *Schema) error {
+	validate := func(schema *Schema, v interface{}) error {
+		_, err := schema.validate(scope, v)
+		return err
+	}
+
+	validateInplace := func(schema *Schema) error {
 		ue, err := schema.validate(scope, v)
 		if err == nil {
+			// update uneval
 			for pname := range uneval.props {
 				if _, ok := ue.props[pname]; !ok {
 					delete(uneval.props, pname)
@@ -357,7 +358,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 			if _, ok := v[dname]; ok {
 				switch dvalue := dvalue.(type) {
 				case *Schema:
-					if err := validateWith(dvalue); err != nil {
+					if err := validateInplace(dvalue); err != nil {
 						errors = append(errors, addContext("", "dependencies/"+escape(dname), err))
 					}
 				case []string:
@@ -380,7 +381,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		}
 		for dname, dvalue := range s.DependentSchemas {
 			if _, ok := v[dname]; ok {
-				if err := validateWith(dvalue); err != nil {
+				if err := validateInplace(dvalue); err != nil {
 					errors = append(errors, addContext("", "dependentSchemas/"+escape(dname), err))
 				}
 			}
@@ -545,7 +546,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 
 	validateRef := func(ref *Schema, kword string) error {
 		if ref != nil {
-			if err := validateWith(ref); err != nil {
+			if err := validateInplace(ref); err != nil {
 				finishSchemaContext(err, ref)
 				var refURL string
 				if s.URL == ref.URL {
@@ -595,12 +596,12 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		}
 	}
 
-	if s.Not != nil && validateWith(s.Not) == nil {
+	if s.Not != nil && validateInplace(s.Not) == nil {
 		errors = append(errors, validationError("not", "not failed"))
 	}
 
 	for i, sch := range s.AllOf {
-		if err := validateWith(sch); err != nil {
+		if err := validateInplace(sch); err != nil {
 			errors = append(errors, validationError("allOf/"+strconv.Itoa(i), "allOf failed").add(err))
 		}
 	}
@@ -609,7 +610,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		matched := false
 		var causes []error
 		for i, sch := range s.AnyOf {
-			if err := validateWith(sch); err == nil {
+			if err := validateInplace(sch); err == nil {
 				matched = true
 			} else {
 				causes = append(causes, addContext("", strconv.Itoa(i), err))
@@ -624,7 +625,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		matched := -1
 		var causes []error
 		for i, sch := range s.OneOf {
-			if err := validateWith(sch); err == nil {
+			if err := validateInplace(sch); err == nil {
 				if matched == -1 {
 					matched = i
 				} else {
@@ -642,19 +643,19 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 
 	// if + then + else
 	if s.If != nil {
-		err := validateWith(s.If)
+		err := validateInplace(s.If)
 		// "if" leaves dynamic scope
 		tmp := scope
 		scope = nil
 		if err == nil {
 			if s.Then != nil {
-				if err := validateWith(s.Then); err != nil {
+				if err := validateInplace(s.Then); err != nil {
 					errors = append(errors, validationError("then", "if-then failed").add(err))
 				}
 			}
 		} else {
 			if s.Else != nil {
-				if err := validateWith(s.Else); err != nil {
+				if err := validateInplace(s.Else); err != nil {
 					errors = append(errors, validationError("else", "if-else failed").add(err))
 				}
 			}
