@@ -257,11 +257,7 @@ func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, 
 		return err
 	}
 	for u, doc := range ids {
-		da, ok := doc["$dynamicAnchor"]
-		if !ok {
-			continue
-		}
-		if strings.HasSuffix(u, "#"+da.(string)) {
+		if da, ok := doc["$dynamicAnchor"]; ok && strings.HasSuffix(u, "#"+da.(string)) {
 			if _, ok := r.schemas[u]; !ok {
 				b, f := split(u)
 				das := newSchema(b, f, doc)
