@@ -6,7 +6,6 @@ package jsonschema
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -44,7 +43,7 @@ func newResource(base string, r io.Reader) (*resource, error) {
 	}
 	doc, err := DecodeJSON(r)
 	if err != nil {
-		return nil, fmt.Errorf("parsing %q failed. Reason: %v", base, err)
+		return nil, fmt.Errorf("jsonschema: invalid json %q reason: %v", base, err)
 	}
 	return &resource{
 		url:     base,
@@ -109,6 +108,7 @@ func (r *resource) resolvePtr(ptr string, base resource) (resource, interface{},
 	if !strings.HasPrefix(ptr, "#/") {
 		panic(fmt.Sprintf("BUG: resolvePtr(%q)", ptr))
 	}
+	u := base.url + ptr
 	doc := base.doc
 	p := strings.TrimPrefix(ptr, "#/")
 	for _, item := range strings.Split(p, "/") {
@@ -116,7 +116,7 @@ func (r *resource) resolvePtr(ptr string, base resource) (resource, interface{},
 		item = strings.Replace(item, "~0", "~", -1)
 		item, err := url.PathUnescape(item)
 		if err != nil {
-			return resource{}, nil, errors.New("unable to url unescape: " + item)
+			return resource{}, nil, fmt.Errorf("jsonschema: invalid jsonpointer %q", ptr)
 		}
 		switch d := doc.(type) {
 		case map[string]interface{}:
@@ -124,14 +124,14 @@ func (r *resource) resolvePtr(ptr string, base resource) (resource, interface{},
 		case []interface{}:
 			index, err := strconv.Atoi(item)
 			if err != nil {
-				return resource{}, nil, fmt.Errorf("invalid $ref %q, reason: %s", ptr, err)
+				return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
 			}
 			if index < 0 || index >= len(d) {
-				return resource{}, nil, fmt.Errorf("invalid $ref %q, reason: array index outofrange", ptr)
+				return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
 			}
 			doc = d[index]
 		default:
-			return resource{}, nil, errors.New("invalid $ref " + ptr)
+			return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
 		}
 		base, err = r.resolveID(base, doc)
 		if err != nil {

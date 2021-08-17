@@ -138,7 +138,7 @@ func newSchema(url, ptr string, doc interface{}) *Schema {
 func (s *Schema) Validate(r io.Reader) error {
 	doc, err := DecodeJSON(r)
 	if err != nil {
-		return err
+		return fmt.Errorf("jsonschema: instance is not valid json reason: %v", err)
 	}
 	return s.ValidateInterface(doc)
 }
