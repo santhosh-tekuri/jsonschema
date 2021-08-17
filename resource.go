@@ -199,13 +199,17 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 		}
 	}
 
+	resolveIDs := func(v interface{}) error {
+		return resolveIDs(draft, base, v, ids)
+	}
+
 	schemaKeys := []string{"not", "additionalProperties"}
 	if draft.version >= 2019 {
 		schemaKeys = append(schemaKeys, "unevaluatedProperties", "unevaluatedItems")
 	}
 	for _, pname := range schemaKeys {
 		if m, ok := m[pname]; ok {
-			if err := resolveIDs(draft, base, m, ids); err != nil {
+			if err := resolveIDs(m); err != nil {
 				return err
 			}
 		}
@@ -218,7 +222,7 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 	for _, pname := range schemasKeys {
 		if arr, ok := m[pname]; ok {
 			for _, m := range arr.([]interface{}) {
-				if err := resolveIDs(draft, base, m, ids); err != nil {
+				if err := resolveIDs(m); err != nil {
 					return err
 				}
 			}
@@ -232,7 +236,7 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 	for _, pname := range mapKeys {
 		if props, ok := m[pname]; ok {
 			for _, m := range props.(map[string]interface{}) {
-				if err := resolveIDs(draft, base, m, ids); err != nil {
+				if err := resolveIDs(m); err != nil {
 					return err
 				}
 			}
@@ -242,19 +246,19 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 	if items, ok := m["items"]; ok {
 		switch items := items.(type) {
 		case map[string]interface{}:
-			if err := resolveIDs(draft, base, items, ids); err != nil {
+			if err := resolveIDs(items); err != nil {
 				return err
 			}
 		case []interface{}:
 			for _, item := range items {
-				if err := resolveIDs(draft, base, item, ids); err != nil {
+				if err := resolveIDs(item); err != nil {
 					return err
 				}
 			}
 		}
 		if additionalItems, ok := m["additionalItems"]; ok {
 			if additionalItems, ok := additionalItems.(map[string]interface{}); ok {
-				if err := resolveIDs(draft, base, additionalItems, ids); err != nil {
+				if err := resolveIDs(additionalItems); err != nil {
 					return err
 				}
 			}
@@ -264,7 +268,7 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 	if draft.version >= 6 {
 		for _, pname := range []string{"propertyNames", "contains"} {
 			if m, ok := m[pname]; ok {
-				if err := resolveIDs(draft, base, m, ids); err != nil {
+				if err := resolveIDs(m); err != nil {
 					return err
 				}
 			}
@@ -273,12 +277,12 @@ func resolveIDs(draft *Draft, base string, v interface{}, ids map[string]map[str
 
 	if draft.version >= 7 {
 		if iff, ok := m["if"]; ok {
-			if err := resolveIDs(draft, base, iff, ids); err != nil {
+			if err := resolveIDs(iff); err != nil {
 				return err
 			}
 			for _, pname := range []string{"then", "else"} {
 				if m, ok := m[pname]; ok {
-					if err := resolveIDs(draft, base, m, ids); err != nil {
+					if err := resolveIDs(m); err != nil {
 						return err
 					}
 				}
