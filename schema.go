@@ -302,13 +302,11 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 			}
 		}
 
-		if len(s.Properties) > 0 {
-			for pname, pschema := range s.Properties {
-				if pvalue, ok := v[pname]; ok {
-					delete(uneval.props, pname)
-					if err := validate(pschema, pvalue); err != nil {
-						errors = append(errors, addContext(escape(pname), "properties/"+escape(pname), err))
-					}
+		for pname, pschema := range s.Properties {
+			if pvalue, ok := v[pname]; ok {
+				delete(uneval.props, pname)
+				if err := validate(pschema, pvalue); err != nil {
+					errors = append(errors, addContext(escape(pname), "properties/"+escape(pname), err))
 				}
 			}
 		}
@@ -456,6 +454,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 			}
 		}
 
+		// contains + minContains + maxContains
 		if s.Contains != nil && (s.MinContains != -1 || s.MaxContains != -1) {
 			matched := 0
 			var causes []error
@@ -478,6 +477,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		}
 
 	case string:
+		// minLength + maxLength
 		if s.MinLength != -1 || s.MaxLength != -1 {
 			length := utf8.RuneCount([]byte(v))
 			if s.MinLength != -1 && length < s.MinLength {
@@ -487,26 +487,30 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 				errors = append(errors, validationError("maxLength", "length must be <= %d, but got %d", s.MaxLength, length))
 			}
 		}
+
 		if s.Pattern != nil && !s.Pattern.MatchString(v) {
 			errors = append(errors, validationError("pattern", "does not match pattern %q", s.Pattern))
 		}
 
-		decoded := s.ContentEncoding == ""
-		var content []byte
-		if s.decoder != nil {
-			b, err := s.decoder(v)
-			if err != nil {
-				errors = append(errors, validationError("contentEncoding", "%q is not %s encoded", v, s.ContentEncoding))
-			} else {
-				content, decoded = b, true
+		// contentEncoding + contentMediaType
+		if s.decoder != nil || s.mediaType != nil {
+			decoded := s.ContentEncoding == ""
+			var content []byte
+			if s.decoder != nil {
+				b, err := s.decoder(v)
+				if err != nil {
+					errors = append(errors, validationError("contentEncoding", "%q is not %s encoded", v, s.ContentEncoding))
+				} else {
+					content, decoded = b, true
+				}
 			}
-		}
-		if decoded && s.mediaType != nil {
-			if s.decoder == nil {
-				content = []byte(v)
-			}
-			if err := s.mediaType(content); err != nil {
-				errors = append(errors, validationError("contentMediaType", "value is not of mediatype %q", s.ContentMediaType))
+			if decoded && s.mediaType != nil {
+				if s.decoder == nil {
+					content = []byte(v)
+				}
+				if err := s.mediaType(content); err != nil {
+					errors = append(errors, validationError("contentMediaType", "value is not of mediatype %q", s.ContentMediaType))
+				}
 			}
 		}
 
@@ -578,9 +582,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 			// dynamicRef based on scope
 		Loop:
 			for _, e := range scope {
-				//fmt.Println("scope", e.URL, e.Ptr)
 				for u, sch := range e.dynamicAnchors {
-					//fmt.Println("     ", u, sch!=ref)
 					if sch != ref && strings.HasSuffix(u, ref.DynamicAnchor) {
 						ref = sch
 						break Loop
@@ -638,6 +640,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		}
 	}
 
+	// if + then + else
 	if s.If != nil {
 		err := validateWith(s.If)
 		// "if" leaves dynamic scope
@@ -660,7 +663,7 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 		scope = tmp
 	}
 
-	// unevaluated ---
+	// unevaluatedProperties + unevaluatedItems
 	switch v := v.(type) {
 	case map[string]interface{}:
 		if s.UnevaluatedProperties != nil {
