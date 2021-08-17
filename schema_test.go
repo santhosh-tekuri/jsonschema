@@ -495,7 +495,11 @@ func TestExtractAnnotations(t *testing.T) {
 		compiler := jsonschema.NewCompiler()
 
 		err := compiler.AddResource("test.json", strings.NewReader(`{
-			"title": "this is title"
+			"title": "this is title",
+			"description": "this is description",
+			"$comment": "this is comment",
+			"format": "date-time",
+			"examples": ["2019-04-09T21:54:56.052Z"]
 		}`))
 		if err != nil {
 			t.Fatalf("addResource failed. reason: %v\n", err)
@@ -509,6 +513,15 @@ func TestExtractAnnotations(t *testing.T) {
 		if schema.Title != "" {
 			t.Error("title should not be extracted")
 		}
+		if schema.Description != "" {
+			t.Error("description should not be extracted")
+		}
+		if schema.Comment != "" {
+			t.Error("comment should not be extracted")
+		}
+		if len(schema.Examples) != 0 {
+			t.Error("examples should not be extracted")
+		}
 	})
 
 	t.Run("true", func(t *testing.T) {
@@ -516,28 +529,9 @@ func TestExtractAnnotations(t *testing.T) {
 		compiler.ExtractAnnotations = true
 
 		err := compiler.AddResource("test.json", strings.NewReader(`{
-			"title": "this is title"
-		}`))
-		if err != nil {
-			t.Fatalf("addResource failed. reason: %v\n", err)
-		}
-
-		schema, err := compiler.Compile("test.json")
-		if err != nil {
-			t.Fatalf("schema compilation failed. reason: %v\n", err)
-		}
-
-		if schema.Title != "this is title" {
-			t.Errorf("title: got %q, want %q", schema.Title, "this is title")
-		}
-	})
-
-	t.Run("examples", func(t *testing.T) {
-		compiler := jsonschema.NewCompiler()
-		compiler.ExtractAnnotations = true
-
-		err := compiler.AddResource("test.json", strings.NewReader(`{
 			"title": "this is title",
+			"description": "this is description",
+			"$comment": "this is comment",
 			"format": "date-time",
 			"examples": ["2019-04-09T21:54:56.052Z"]
 		}`))
@@ -552,6 +546,12 @@ func TestExtractAnnotations(t *testing.T) {
 
 		if schema.Title != "this is title" {
 			t.Errorf("title: got %q, want %q", schema.Title, "this is title")
+		}
+		if schema.Description != "this is description" {
+			t.Errorf("description: got %q, want %q", schema.Description, "this is description")
+		}
+		if schema.Comment != "this is comment" {
+			t.Errorf("$comment: got %q, want %q", schema.Comment, "this is comment")
 		}
 		if schema.Examples[0] != "2019-04-09T21:54:56.052Z" {
 			t.Errorf("example: got %q, want %q", schema.Examples[0], "2019-04-09T21:54:56.052Z")
