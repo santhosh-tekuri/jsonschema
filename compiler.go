@@ -272,22 +272,22 @@ func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, 
 	return nil
 }
 
-func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, base resource, m interface{}) (*Schema, error) {
+func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, base resource, v interface{}) (*Schema, error) {
 	if sref.schema == nil {
 		u, _ := split(base.url)
-		sref.schema = newSchema(u, "", m)
+		sref.schema = newSchema(u, "", v)
 	}
 
-	if err := c.compileDynamicAnchors(r, sref.schema, base, m); err != nil {
+	if err := c.compileDynamicAnchors(r, sref.schema, base, v); err != nil {
 		return nil, err
 	}
 
-	switch m := m.(type) {
+	switch v := v.(type) {
 	case bool:
-		sref.schema.Always = &m
+		sref.schema.Always = &v
 		return sref.schema, nil
 	default:
-		return sref.schema, c.compileMap(r, stack, sref, base, m.(map[string]interface{}))
+		return sref.schema, c.compileMap(r, stack, sref, base, v.(map[string]interface{}))
 	}
 }
 
