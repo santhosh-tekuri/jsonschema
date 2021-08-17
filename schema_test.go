@@ -499,7 +499,9 @@ func TestExtractAnnotations(t *testing.T) {
 			"description": "this is description",
 			"$comment": "this is comment",
 			"format": "date-time",
-			"examples": ["2019-04-09T21:54:56.052Z"]
+			"examples": ["2019-04-09T21:54:56.052Z"],
+			"readOnly": true,
+			"writeOnly": true
 		}`))
 		if err != nil {
 			t.Fatalf("addResource failed. reason: %v\n", err)
@@ -522,6 +524,12 @@ func TestExtractAnnotations(t *testing.T) {
 		if len(schema.Examples) != 0 {
 			t.Error("examples should not be extracted")
 		}
+		if schema.ReadOnly {
+			t.Error("readOnly should not be extracted")
+		}
+		if schema.WriteOnly {
+			t.Error("writeOnly should not be extracted")
+		}
 	})
 
 	t.Run("true", func(t *testing.T) {
@@ -533,7 +541,9 @@ func TestExtractAnnotations(t *testing.T) {
 			"description": "this is description",
 			"$comment": "this is comment",
 			"format": "date-time",
-			"examples": ["2019-04-09T21:54:56.052Z"]
+			"examples": ["2019-04-09T21:54:56.052Z"],
+			"readOnly": true,
+			"writeOnly": true
 		}`))
 		if err != nil {
 			t.Fatalf("addResource failed. reason: %v\n", err)
@@ -555,6 +565,12 @@ func TestExtractAnnotations(t *testing.T) {
 		}
 		if schema.Examples[0] != "2019-04-09T21:54:56.052Z" {
 			t.Errorf("example: got %q, want %q", schema.Examples[0], "2019-04-09T21:54:56.052Z")
+		}
+		if !schema.ReadOnly {
+			t.Error("readOnly should be extracted")
+		}
+		if !schema.WriteOnly {
+			t.Error("writeOnly should be extracted")
 		}
 	})
 }
