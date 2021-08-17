@@ -62,7 +62,7 @@ To load json-schema from HTTPURL, add following import:
 import _ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
 ```
 
-## ValidationError
+## Rich Errors
 
 The ValidationError returned by Validate method contains detailed context to understand why and where the error is.
 
