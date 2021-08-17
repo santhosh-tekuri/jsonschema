@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -148,7 +149,7 @@ func Example_userDefinedLoader() {
 		if !ok {
 			return nil, fmt.Errorf("%q not found", url)
 		}
-		return io.NopCloser(strings.NewReader(schema)), nil
+		return ioutil.NopCloser(strings.NewReader(schema)), nil
 	}
 
 	sch, err := jsonschema.Compile("map:///main.json")
