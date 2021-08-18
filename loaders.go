@@ -37,7 +37,7 @@ var Loaders = map[string]func(url string) (io.ReadCloser, error){
 	"file": loadFileURL,
 }
 
-// SchemeNotRegisteredError is the error type returned by Load function.
+// LoaderNotFoundError is the error type returned by Load function.
 // It tells that no Loader is registered for that URL Scheme.
 type LoaderNotFoundError string
 
