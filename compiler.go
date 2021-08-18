@@ -14,18 +14,7 @@ import (
 	"strings"
 )
 
-// A Draft represents json-schema draft
-type Draft struct {
-	meta    *Schema
-	id      string // property name used to represent schema id.
-	version int
-}
-
-var latest = Draft2020
-
 // A Compiler represents a json-schema compiler.
-//
-// Currently draft4, draft6 and draft7 are supported
 type Compiler struct {
 	// Draft represents the draft used when '$schema' attribute is missing.
 	//
