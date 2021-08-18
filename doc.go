@@ -6,7 +6,7 @@
 Package jsonschema provides json-schema compilation and validation.
 
 Features:
- - implements draft 2019-09, draft-7, draft-6, draft-4
+ - implements draft 2020-12, 2019-09, draft-7, draft-6, draft-4
  - fully compliant with JSON-Schema-Test-Suite, (excluding some optional)
    - list of optioanl tests that are excluded can be found in schema_test.go(variable skipTests)
  - validates schemas against meta-schema

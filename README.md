@@ -9,9 +9,10 @@
 Package jsonschema provides json-schema compilation and validation.
 
 ### Features:
- - implements 
-   [draft 2019-09](https://json-schema.org/specification-links.html#draft-2019-09-formerly-known-as-draft-8), 
-   [draft-7](https://json-schema.org/specification-links.html#draft-7), 
+ - implements
+   [draft 2020-12](https://json-schema.org/specification-links.html#2020-12),
+   [draft 2019-09](https://json-schema.org/specification-links.html#draft-2019-09-formerly-known-as-draft-8),
+   [draft-7](https://json-schema.org/specification-links.html#draft-7),
    [draft-6](https://json-schema.org/specification-links.html#draft-6),
    [draft-4](https://json-schema.org/specification-links.html#draft-4)
  - fully compliant with [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite), (excluding some optional)
