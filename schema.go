@@ -24,8 +24,8 @@ type Schema struct {
 	dynamicAnchors map[string]*Schema
 
 	// type agnostic validations
-	format          func(interface{}) bool
 	Format          string
+	format          func(interface{}) bool
 	Always          *bool // always pass/fail. used when booleans are used as schemas in draft-07.
 	Ref             *Schema
 	RecursiveAnchor bool
