@@ -244,32 +244,39 @@ func TestIsRegex(t *testing.T) {
 
 func TestIsJSONPointer(t *testing.T) {
 	tests := []test{
-		{"", true}, // empty
-		{"/ ", true},
-		{"/foo/baz", true},
 		{"/foo/bar~0/baz~1/%a", true},
+		{"/foo/baz~", false}, // ~ not escaped
+		{"/foo//bar", true},  // empty segment
+		{"/foo/bar/", true},  // last empty segment
+		{"", true},           // empty
+		{"/foo", true},
+		{"/foo/0", true},
+		{"/ ", true},
+		{"/a~1b", true},
+		{"/c%d", true},
+		{"/e^f", true},
 		{"/g|h", true},
 		{"/i\\j", true},
 		{"/k\"l", true},
-		{"/foo//bar", true},   // empty segment
-		{"/foo/bar/", true},   // last empty segment
-		{"/foo/-", true},      // last array position
-		{"/foo/-/bar", true},  // - used as object member
-		{"/~1~0~0~1~1", true}, // multiple escape characters
-		{"/foo/baz~", false},  // ~ not escaped
-		{"/~-1", false},       // wrong escape character
-		{"/~~", false},        // multiple characters not escaped
-		// escaped with fractional part
+		{"/ ", true},
+		{"/m~0n", true},
+		{"/foo/-", true},      // used adding to the last array position
+		{"/foo/-/bar", true},  // - used as object member name
+		{"/~1~0~0~1~1", true}, // multiple escaped characters
+		// escaped with fraction part
 		{"/~1.1", true},
 		{"/~0.1", true},
-		// uri fragment identifier
+		// URI Fragment Identifier
 		{"#", false},
 		{"#/", false},
 		{"#a", false},
 		// some escaped, but not all
 		{"/~0~", false},
 		{"/~0/~", false},
-		{"/~0/~", false},
+		// wrong escape character
+		{"/~2", false},
+		{"/~-1", false},
+		{"/~~", false}, // multiple characters not escaped
 		// isn't empty nor starts with /
 		{"a", false},
 		{"0", false},
@@ -289,6 +296,10 @@ func TestRelativeJSONPointer(t *testing.T) {
 		{"2/0/baz/1/zip", true}, // up and then down RJP, with array index
 		{"0#", true},            // taking the member or index name
 		{"/foo/bar", false},     // valid json-pointer, but invalid RJP
+		{"-1/foo/bar", false},   // negative prefix
+		{"0##", false},          // ## is not a valid json-pointer
+		{"01/a", false},         // zero cannot be followed by other digits, plus json-pointer
+		{"01#", false},          // zero cannot be followed by other digits, plus octothorpe
 	}
 	for i, test := range tests {
 		if test.valid != isRelativeJSONPointer(test.str) {
