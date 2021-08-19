@@ -103,11 +103,63 @@ func (c *Compiler) MustCompile(url string) *Schema {
 	return s
 }
 
+func (c *Compiler) findResource(url string) (*resource, error) {
+	if _, ok := c.resources[url]; !ok {
+		// load resource
+		loadURL := LoadURL
+		if c.LoadURL != nil {
+			loadURL = c.LoadURL
+		}
+		rdr, err := loadURL(url)
+		if err != nil {
+			return nil, err
+		}
+		defer rdr.Close()
+		if err := c.AddResource(url, rdr); err != nil {
+			return nil, err
+		}
+	}
+
+	r := c.resources[url]
+	if r.draft != nil {
+		return r, nil
+	}
+
+	// set draft
+	r.draft = c.Draft
+	if m, ok := r.doc.(map[string]interface{}); ok {
+		if sch, ok := m["$schema"]; ok {
+			if _, ok = sch.(string); !ok {
+				return nil, fmt.Errorf("jsonschema: invalid $schema in %q", url)
+			}
+			r.draft = findDraft(sch.(string))
+			if r.draft == nil {
+				return nil, fmt.Errorf("jsonschema: invalid $schema in %q", url)
+			}
+		}
+	}
+
+	id, err := r.draft.resolveID(r.url, r.doc)
+	if err != nil {
+		return nil, err
+	}
+	if id != "" {
+		r.url = id
+	}
+
+	if err := r.fillSubschemas(r); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
 // Compile parses json-schema at given url returns, if successful,
 // a Schema object that can be used to match against json.
 //
 // error returned will be of type *SchemaError
 func (c *Compiler) Compile(url string) (*Schema, error) {
+	fmt.Println("--------------------------------")
 	sch, err := c.compileURL(url, nil, "#")
 	if err != nil {
 		err = &SchemaError{url, err}
@@ -116,130 +168,55 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 }
 
 func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schema, error) {
-	switch url {
-	case "http://json-schema.org/draft/2020-12/schema#", "https://json-schema.org/draft/2020-12/schema#":
-		return Draft2020.meta, nil
-	case "http://json-schema.org/draft/2019-09/schema#", "https://json-schema.org/draft/2019-09/schema#":
-		return Draft2019.meta, nil
-	case "http://json-schema.org/draft-07/schema#", "https://json-schema.org/draft-07/schema#":
-		return Draft7.meta, nil
-	case "http://json-schema.org/draft-06/schema#", "https://json-schema.org/draft-06/schema#":
-		return Draft6.meta, nil
-	case "http://json-schema.org/draft-04/schema#", "https://json-schema.org/draft-04/schema#":
-		return Draft4.meta, nil
+	fmt.Println("compileURL", url)
+	// if url points to a draft, return Draft.meta
+	if d := findDraft(url); d != nil {
+		return d.meta, nil
 	}
+
 	b, f := split(url)
-	if _, ok := c.resources[b]; !ok {
-		r, err := c.loadURL(b)
-		if err != nil {
-			return nil, err
-		}
-		defer r.Close()
-		if err := c.AddResource(b, r); err != nil {
-			return nil, err
-		}
-	}
-	r := c.resources[b]
-	if r.draft == nil {
-		if m, ok := r.doc.(map[string]interface{}); ok {
-			if url, ok := m["$schema"]; ok {
-				if _, ok = url.(string); !ok {
-					return nil, fmt.Errorf("invalid $schema %v", url)
-				}
-				switch normalize(url.(string)) {
-				case "http://json-schema.org/schema#", "https://json-schema.org/schema#":
-					r.draft = latest
-				case "http://json-schema.org/draft/2020-12/schema#", "https://json-schema.org/draft/2020-12/schema#":
-					r.draft = Draft2020
-				case "http://json-schema.org/draft/2019-09/schema#", "https://json-schema.org/draft/2019-09/schema#":
-					r.draft = Draft2019
-				case "http://json-schema.org/draft-07/schema#", "https://json-schema.org/draft-07/schema#":
-					r.draft = Draft7
-				case "http://json-schema.org/draft-06/schema#", "https://json-schema.org/draft-06/schema#":
-					r.draft = Draft6
-				case "http://json-schema.org/draft-04/schema#", "https://json-schema.org/draft-04/schema#":
-					r.draft = Draft4
-				default:
-					return nil, fmt.Errorf("unknown $schema %q", url)
-				}
-			}
-		}
-		if r.draft == nil {
-			r.draft = c.Draft
-		}
-	}
-	base, err := r.resolveID(*r, r.doc)
+	r, err := c.findResource(b)
 	if err != nil {
 		return nil, err
 	}
-	return c.compileRef(r, stack, ptr, base, f)
+	return c.compileRef(r, stack, ptr, r, f)
 }
 
-func (c Compiler) loadURL(s string) (io.ReadCloser, error) {
-	if c.LoadURL != nil {
-		return c.LoadURL(s)
-	}
-	return LoadURL(s)
-}
-
-func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, base resource, ref string) (*Schema, error) {
-	ref, err := resolveURL(base.url, ref)
+func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res *resource, ref string) (*Schema, error) {
+	fmt.Println("compleRef:", ref, refPtr)
+	base := r.baseURL(res.loc)
+	fmt.Println("base", base)
+	ref, err := resolveURL(base, ref)
 	if err != nil {
 		return nil, err
 	}
-	if s, ok := r.schemas[ref]; ok {
-		if err := checkLoop(stack, schemaRef{refPtr, s}); err != nil {
-			return nil, err
-		}
-		return s, nil
-	}
+	fmt.Println("ref", ref)
 
 	u, f := split(ref)
-	bu, _ := split(base.url)
-	if u != bu || !isPtrFragment(f) {
-		ids := make(map[string]map[string]interface{})
-		if err := resolveIDs(r.draft, r.url, r.doc, ids); err != nil {
-			return nil, err
-		}
-		id := normalize(u)
-		if !isPtrFragment(f) {
-			id = ref
-		}
-		if v, ok := ids[id]; ok {
-			base = resource{url: u, doc: v}
-		} else {
-			// external resource
-			b, _ := split(ref)
-			if b == r.url {
-				// infinite loop detected
-				return nil, fmt.Errorf("jsonschema: invalid %s %q", refPtr, ref)
-			}
-			return c.compileURL(ref, stack, refPtr)
-		}
+	fmt.Println("xxx", u, f, len(r.subresources))
+	sr := r.findResource(u)
+	if sr == nil {
+		// external resource
+		return c.compileURL(ref, stack, refPtr)
+	}
+	fmt.Println("got resource", sr.loc, f)
+	sr = r.resolveFragment(sr, f)
+	if sr == nil {
+		return nil, fmt.Errorf("jsonschema: %q not found", ref)
 	}
 
-	doc := base.doc
-	if !rootFragment(f) && isPtrFragment(f) {
-		base, doc, err = r.resolvePtr(f, base)
-		if err != nil {
+	if sr.schema != nil {
+		if err := checkLoop(stack, schemaRef{refPtr, sr.schema}); err != nil {
 			return nil, err
 		}
-	}
-	ptr := f
-	if rootFragment(ptr) {
-		ptr = f
-	} else {
-		ptr = strings.TrimPrefix(ptr, "#/")
-	}
-	if err := c.validateSchema(r, ptr, doc); err != nil {
-		return nil, err
+		return sr.schema, nil
 	}
 
-	s := newSchema(u, f, doc)
-	r.schemas[ref] = s
-	return c.compile(r, stack, schemaRef{refPtr, s}, base, doc)
+	sr.schema = newSchema(r.url, sr.loc, sr.doc)
+	return c.compile(r, stack, schemaRef{refPtr, sr.schema}, sr)
 }
 
+/*
 func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, v interface{}) error {
 	ids := make(map[string]map[string]interface{})
 	if err := resolveIDs(r.draft, base.url, v, ids); err != nil {
@@ -260,37 +237,40 @@ func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, 
 	}
 	return nil
 }
+*/
 
-func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, base resource, v interface{}) (*Schema, error) {
-	if sref.schema == nil {
-		u, _ := split(base.url)
-		sref.schema = newSchema(u, "", v)
-	}
+func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, res *resource) (*Schema, error) {
+	//if sref.schema == nil {
+	//	u, _ := split(base.url)
+	//	sref.schema = newSchema(u, "", v)
+	//}
 
-	if err := c.compileDynamicAnchors(r, sref.schema, base, v); err != nil {
-		return nil, err
-	}
+	//if err := c.compileDynamicAnchors(r, sref.schema, base, v); err != nil {
+	//	return nil, err
+	//}
 
-	switch v := v.(type) {
+	switch v := res.doc.(type) {
 	case bool:
-		sref.schema.Always = &v
-		return sref.schema, nil
+		res.schema.Always = &v
+		return res.schema, nil
 	default:
-		return sref.schema, c.compileMap(r, stack, sref, base, v.(map[string]interface{}))
+		return res.schema, c.compileMap(r, stack, sref, res)
 	}
 }
 
-func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, base resource, m map[string]interface{}) error {
+func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, res *resource) error {
+	m := res.doc.(map[string]interface{})
+
 	if err := checkLoop(stack, sref); err != nil {
 		return err
 	}
 	stack = append(stack, sref)
 
-	var s = sref.schema
+	var s = res.schema
 	var err error
 
 	if ref, ok := m["$ref"]; ok {
-		s.Ref, err = c.compileRef(r, stack, "$ref", base, ref.(string))
+		s.Ref, err = c.compileRef(r, stack, "$ref", res, ref.(string))
 		if err != nil {
 			return err
 		}
@@ -302,15 +282,15 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 
 	if r.draft.version >= 2019 {
 		if ref, ok := m["$recursiveRef"]; ok {
-			s.RecursiveRef, err = c.compileRef(r, stack, "$recursiveRef", base, ref.(string))
+			s.RecursiveRef, err = c.compileRef(r, stack, "$recursiveRef", res, ref.(string))
 			if err != nil {
 				return err
 			}
 		}
 	}
 	if r.draft.version >= 2020 {
-		if ref, ok := m["$dynamicRef"]; ok {
-			s.DynamicRef, err = c.compileRef(r, stack, "$dynamicRef", base, ref.(string))
+		if dref, ok := m["$dynamicRef"]; ok {
+			s.DynamicRef, err = c.compileRef(r, stack, "$dynamicRef", res, dref.(string))
 			if err != nil {
 				return err
 			}
@@ -351,12 +331,8 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 	}
 
 	compile := func(stack []schemaRef, ptr string, v interface{}) (*Schema, error) {
-		var err error
-		base, err = r.resolveID(base, v)
-		if err != nil {
-			return nil, err
-		}
-		return c.compile(r, stack, schemaRef{ptr, nil}, base, v)
+		_ = v
+		return c.compileRef(r, stack, ptr, res, r.url+res.loc+"/"+ptr)
 	}
 
 	loadSchema := func(pname string, stack []schemaRef) (*Schema, error) {
@@ -648,6 +624,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 		}
 	}
 
+	/*
 	for name, ext := range c.extensions {
 		es, err := ext.compiler.Compile(CompilerContext{c, r, stack, base}, m)
 		if err != nil {
@@ -660,6 +637,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, ba
 			s.Extensions[name] = es
 		}
 	}
+	*/
 
 	return nil
 }

@@ -55,7 +55,9 @@ func (ctx CompilerContext) Compile(v interface{}, vPtr string, applicableOnSameI
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	return ctx.c.compile(ctx.r, stack, schemaRef{vPtr, nil}, ctx.base, v)
+	_ = stack
+	return nil, nil
+	//return ctx.c.compile(ctx.r, stack, schemaRef{vPtr, nil}, ctx.base, v)
 }
 
 // CompileRef compiles the schema referenced by ref uri
@@ -69,7 +71,9 @@ func (ctx CompilerContext) CompileRef(ref string, refPtr string, applicableOnSam
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	return ctx.c.compileRef(ctx.r, stack, refPtr, ctx.base, ref)
+	_ = stack
+	return nil, nil
+	//return ctx.c.compileRef(ctx.r, stack, refPtr, ctx.base, ref)
 }
 
 // ValidationContext ---

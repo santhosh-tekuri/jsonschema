@@ -15,10 +15,12 @@ import (
 )
 
 type resource struct {
-	url     string
-	doc     interface{}
-	draft   *Draft
-	schemas map[string]*Schema
+	url          string
+	loc          string
+	doc          interface{}
+	draft        *Draft
+	subresources map[string]*resource
+	schema       *Schema
 }
 
 // DecodeJSON decodes json document from r.
@@ -37,18 +39,19 @@ func DecodeJSON(r io.Reader) (interface{}, error) {
 	return doc, nil
 }
 
-func newResource(base string, r io.Reader) (*resource, error) {
-	if strings.IndexByte(base, '#') != -1 {
-		panic(fmt.Sprintf("BUG: newResource(%q)", base))
+func newResource(url string, r io.Reader) (*resource, error) {
+	if strings.IndexByte(url, '#') != -1 {
+		panic(fmt.Sprintf("BUG: newResource(%q)", url))
 	}
 	doc, err := DecodeJSON(r)
 	if err != nil {
-		return nil, fmt.Errorf("jsonschema: invalid json %q reason: %v", base, err)
+		return nil, fmt.Errorf("jsonschema: invalid json %q reason: %v", url, err)
 	}
 	return &resource{
-		url:     base,
-		doc:     doc,
-		schemas: make(map[string]*Schema)}, nil
+		url: url,
+		loc: "#",
+		doc: doc,
+	}, nil
 }
 
 func resolveURL(base, ref string) (string, error) {

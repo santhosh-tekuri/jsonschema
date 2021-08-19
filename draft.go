@@ -4,13 +4,21 @@
 
 package jsonschema
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+	"fmt"
+)
+
+var _ = fmt.Printf
 
 // A Draft represents json-schema draft
 type Draft struct {
-	meta    *Schema
-	id      string // property name used to represent schema id.
-	version int
+	version    int
+	meta       *Schema
+	id         string // property name used to represent schema id.
+	boolSchema bool   // is boolean valid schema
+	subschemas map[string]position
 }
 
 func (d *Draft) load(base string, schemas map[string]string) {
@@ -24,18 +32,301 @@ func (d *Draft) load(base string, schemas map[string]string) {
 	d.meta = c.MustCompile(base + "/schema")
 }
 
+func (d *Draft) getID(sch interface{}) string {
+	m, ok := sch.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	v, ok := m[d.id]
+	if !ok {
+		return ""
+	}
+	id, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return id
+}
+
+func (d *Draft) resolveID(base string, sch interface{}) (string, error) {
+	id, _ := split(d.getID(sch)) // strip fragment
+	if id == "" {
+		return "", nil
+	}
+	url, err := resolveURL(base, id)
+	url, _ = split(url) // todo(dirty): resolveURL normalizes url, so has to remove suffix "#"
+	return url, err
+}
+
+func (d *Draft) anchors(sch interface{}) []string {
+	m, ok := sch.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	var anchors []string
+
+	// before draft2019, anchor is specified in id
+	_, f := split(d.getID(m))
+	if f != "#" {
+		anchors = append(anchors, f[1:])
+	}
+
+	if v, ok := m["$anchor"]; ok && d.version >= 2019 {
+		anchors = append(anchors, v.(string))
+	}
+	if v, ok := m["$dynamicAnchor"]; ok && d.version >= 2020 {
+		anchors = append(anchors, v.(string))
+	}
+	return anchors
+}
+
+func (d *Draft) listSubschemas(r *resource, rr map[string]*resource) error {
+	add := func(loc string, sch interface{}) error {
+		loc = r.loc + "/" + loc
+		url, err := d.resolveID(r.url, sch)
+		if err != nil {
+			return err
+		}
+		sr := &resource{url: url, loc: loc, doc: sch}
+		rr[loc] = sr
+		return d.listSubschemas(sr, rr)
+	}
+
+	sch, ok := r.doc.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	for kw, pos := range d.subschemas {
+		v, ok := sch[kw]
+		if !ok {
+			continue
+		}
+		if pos&self != 0 {
+			switch v := v.(type) {
+			case map[string]interface{}:
+				if err := add(kw, v); err != nil {
+					return err
+				}
+			case bool:
+				if d.boolSchema {
+					if err := add(kw, v); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		if pos&item != 0 {
+			if v, ok := v.([]interface{}); ok {
+				for i, item := range v {
+					if err := add(kw+"/"+strconv.Itoa(i), item); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		if pos&prop != 0 {
+			if v, ok := v.(map[string]interface{}); ok {
+				for pname, pval := range v {
+					if err := add(kw+"/"+escape(pname), pval); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (r *resource) fillSubschemas(res *resource) error {
+	if err := NewCompiler().validateSchema(r, res.loc, res.doc); err != nil {
+		return err
+	}
+
+	if r.subresources == nil {
+		r.subresources = make(map[string]*resource)
+	}
+	if err := r.draft.listSubschemas(res, r.subresources); err != nil {
+		return err
+	}
+	for _, sr := range r.subresources {
+		fmt.Println("subresource:", sr.loc, sr.url)
+	}
+	// todo: ensure subresource.url uniquness
+	return nil
+}
+
+func (r *resource) findResource(url string) *resource {
+	if r.url == url {
+		return r
+	}
+	for _, res := range r.subresources {
+		if res.url == url {
+			return res
+		}
+	}
+	return nil
+}
+
+func (r *resource) resolveFragment(sr *resource, f string) *resource {
+	if f == "#" || f == "#/" {
+		return sr
+	}
+
+	if !strings.HasPrefix(f, "#/") {
+		// resolve by anchor
+		for _, res := range r.subresources {
+			if res.loc == sr.loc || strings.HasPrefix(res.loc, sr.loc+"/") {
+				for _, anchor := range r.draft.anchors(res.doc) {
+					if anchor == f[1:] {
+						return res
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	// resolve by ptr
+	loc := sr.loc + f[1:]
+	if res, ok := r.subresources[loc]; ok {
+		return res
+	}
+
+	// todo: non-standrad location
+	fmt.Println("non-standard location", loc)
+	/*
+	doc := r.doc
+	for _, item := range strings.Split(loc[2:], "/") {
+		item = strings.Replace(item, "~1", "/", -1)
+		item = strings.Replace(item, "~0", "~", -1)
+		item, err := url.PathUnescape(item)
+		if err != nil {
+			return resource{}, nil, fmt.Errorf("jsonschema: invalid jsonpointer %q", ptr)
+		}
+		switch d := doc.(type) {
+		case map[string]interface{}:
+			doc = d[item]
+		case []interface{}:
+			index, err := strconv.Atoi(item)
+			if err != nil {
+				return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
+			}
+			if index < 0 || index >= len(d) {
+				return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
+			}
+			doc = d[index]
+		default:
+			return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
+		}
+		base, err = r.resolveID(base, doc)
+		if err != nil {
+			return resource{}, nil, err
+		}
+	}
+	*/
+	return nil
+}
+
+func (r *resource) baseURL(loc string) string {
+	for {
+		if sr, ok := r.subresources[loc]; ok {
+			if sr.url != "" {
+				return sr.url
+			}
+		}
+		slash := strings.LastIndexByte(loc, '/')
+		if slash == -1 {
+			break
+		}
+		loc = loc[:slash]
+	}
+	return r.url
+}
+
+func (r *resource) dynamicAnchors(sr *resource) {
+}
+
+type position uint
+
+const (
+	self position = 1 << iota
+	prop
+	item
+)
+
 // supported drafts
 var (
-	Draft4    = &Draft{id: "id", version: 4}
-	Draft6    = &Draft{id: "$id", version: 6}
-	Draft7    = &Draft{id: "$id", version: 7}
-	Draft2019 = &Draft{id: "$id", version: 2019}
-	Draft2020 = &Draft{id: "$id", version: 2020}
+	Draft4    = &Draft{version: 4, id: "id", boolSchema: false}
+	Draft6    = &Draft{version: 6, id: "$id", boolSchema: true}
+	Draft7    = &Draft{version: 7, id: "$id", boolSchema: true}
+	Draft2019 = &Draft{version: 2019, id: "$id", boolSchema: true}
+	Draft2020 = &Draft{version: 2020, id: "$id", boolSchema: true}
 
 	latest = Draft2020
 )
 
+func findDraft(url string) *Draft {
+	if strings.HasPrefix(url, "http://") {
+		url = "https://" + strings.TrimPrefix(url, "http://")
+	}
+	if strings.HasSuffix(url, "#") || strings.HasSuffix(url, "#/") {
+		url = url[:strings.IndexByte(url, '#')]
+	}
+	switch url {
+	case "https://json-schema.org/schema":
+		return latest
+	case "https://json-schema.org/draft/2020-12/schema":
+		return Draft2020
+	case "https://json-schema.org/draft/2019-09/schema":
+		return Draft2019
+	case "https://json-schema.org/draft-07/schema":
+		return Draft7
+	case "https://json-schema.org/draft-06/schema":
+		return Draft6
+	case "https://json-schema.org/draft-04/schema":
+		return Draft4
+	}
+	return nil
+}
+
 func init() {
+	subschemas := map[string]position{
+		// type agnostic
+		"definitions": prop,
+		"not":         self,
+		"allOf":       item,
+		"anyOf":       item,
+		"oneOf":       item,
+		// object
+		"properties":           prop,
+		"additionalProperties": self,
+		"patternProperties":    prop,
+		// array
+		"items":           self | item,
+		"additionalItems": self,
+		"dependencies":    prop,
+	}
+	Draft4.subschemas = clone(subschemas)
+
+	subschemas["propertyNames"] = self
+	subschemas["contains"] = self
+	Draft6.subschemas = clone(subschemas)
+
+	subschemas["if"] = self
+	subschemas["then"] = self
+	subschemas["else"] = self
+	Draft7.subschemas = clone(subschemas)
+
+	subschemas["$defs"] = prop
+	subschemas["dependentSchemas"] = prop
+	subschemas["unevaluatedProperties"] = self
+	subschemas["unevaluatedItems"] = self
+	Draft2019.subschemas = clone(subschemas)
+
+	subschemas["prefixItems"] = item
+	Draft2020.subschemas = clone(subschemas)
+
 	Draft4.load("http://json-schema.org/draft-04", map[string]string{
 		"schema": `{
 			"$schema": "http://json-schema.org/draft-04/schema#",
@@ -1181,4 +1472,12 @@ func init() {
 			}
 		}`,
 	})
+}
+
+func clone(m map[string]position) map[string]position {
+	mm := make(map[string]position)
+	for k, v := range m {
+		mm[k] = v
+	}
+	return mm
 }
