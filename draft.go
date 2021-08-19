@@ -5,6 +5,7 @@
 package jsonschema
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 	"fmt"
@@ -168,9 +169,9 @@ func (r *resource) findResource(url string) *resource {
 	return nil
 }
 
-func (r *resource) resolveFragment(sr *resource, f string) *resource {
+func (r *resource) resolveFragment(sr *resource, f string) (*resource, error) {
 	if f == "#" || f == "#/" {
-		return sr
+		return sr, nil
 	}
 
 	if !strings.HasPrefix(f, "#/") {
@@ -179,53 +180,60 @@ func (r *resource) resolveFragment(sr *resource, f string) *resource {
 			if res.loc == sr.loc || strings.HasPrefix(res.loc, sr.loc+"/") {
 				for _, anchor := range r.draft.anchors(res.doc) {
 					if anchor == f[1:] {
-						return res
+						return res, nil
 					}
 				}
 			}
 		}
-		return nil
+		return nil, nil
 	}
 
 	// resolve by ptr
 	loc := sr.loc + f[1:]
 	if res, ok := r.subresources[loc]; ok {
-		return res
+		return res, nil
 	}
 
 	// todo: non-standrad location
 	fmt.Println("non-standard location", loc)
-	/*
 	doc := r.doc
 	for _, item := range strings.Split(loc[2:], "/") {
 		item = strings.Replace(item, "~1", "/", -1)
 		item = strings.Replace(item, "~0", "~", -1)
 		item, err := url.PathUnescape(item)
 		if err != nil {
-			return resource{}, nil, fmt.Errorf("jsonschema: invalid jsonpointer %q", ptr)
+			return nil, err
 		}
 		switch d := doc.(type) {
 		case map[string]interface{}:
+			if _, ok := d[item]; !ok {
+				return nil, nil
+			}
 			doc = d[item]
 		case []interface{}:
 			index, err := strconv.Atoi(item)
 			if err != nil {
-				return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
+				return nil, err
 			}
 			if index < 0 || index >= len(d) {
-				return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
+				return nil, nil
 			}
 			doc = d[index]
 		default:
-			return resource{}, nil, fmt.Errorf("jsonschema: %q not found", u)
-		}
-		base, err = r.resolveID(base, doc)
-		if err != nil {
-			return resource{}, nil, err
+			return nil, nil
 		}
 	}
-	*/
-	return nil
+
+	id, err := r.draft.resolveID(r.baseURL(loc), doc)
+	if err != nil {
+		return nil, err
+	}
+	res := &resource{url:id, loc:loc, doc:doc}
+	r.subresources[loc] = res
+	if err := r.fillSubschemas(res); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (r *resource) baseURL(loc string) string {

@@ -200,7 +200,10 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		return c.compileURL(ref, stack, refPtr)
 	}
 	fmt.Println("got resource", sr.loc, f)
-	sr = r.resolveFragment(sr, f)
+	sr, err = r.resolveFragment(sr, f)
+	if err != nil {
+		return nil, err
+	}
 	if sr == nil {
 		return nil, fmt.Errorf("jsonschema: %q not found", ref)
 	}
