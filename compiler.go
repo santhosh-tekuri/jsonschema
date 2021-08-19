@@ -164,6 +164,8 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	if err != nil {
 		err = &SchemaError{url, err}
 	}
+	fmt.Printf("\n---compiledSchema%#v\n", sch)
+	fmt.Println("aaa", sch.Ref)
 	return sch, err
 }
 
@@ -171,8 +173,10 @@ func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schem
 	fmt.Println("compileURL", url)
 	// if url points to a draft, return Draft.meta
 	if d := findDraft(url); d != nil {
+		fmt.Println("draft yes")
 		return d.meta, nil
 	}
+	fmt.Println("draft no")
 
 	b, f := split(url)
 	r, err := c.findResource(b)
