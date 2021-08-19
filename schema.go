@@ -21,7 +21,7 @@ type Schema struct {
 	URL string // absolute url of the resource.
 	Ptr string // json-pointer to schema. always starts with `#`.
 
-	dynamicAnchors map[string]*Schema
+	dynamicAnchors []*Schema
 
 	// type agnostic validations
 	Format          string
@@ -106,7 +106,6 @@ func newSchema(url, ptr string, doc interface{}) *Schema {
 	s := &Schema{
 		URL:            url,
 		Ptr:            ptr,
-		dynamicAnchors: make(map[string]*Schema),
 		MinProperties:  -1,
 		MaxProperties:  -1,
 		MinItems:       -1,
@@ -583,8 +582,8 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 			// dynamicRef based on scope
 		Loop:
 			for _, e := range scope {
-				for u, sch := range e.dynamicAnchors {
-					if sch != ref && strings.HasSuffix(u, ref.DynamicAnchor) {
+				for _, sch := range e.dynamicAnchors {
+					if sch != ref && sch.DynamicAnchor==ref.DynamicAnchor {
 						ref = sch
 						break Loop
 					}

@@ -164,19 +164,15 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	if err != nil {
 		err = &SchemaError{url, err}
 	}
-	fmt.Printf("\n---compiledSchema%#v\n", sch)
-	fmt.Println("aaa", sch.Ref)
 	return sch, err
 }
 
 func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schema, error) {
 	fmt.Println("compileURL", url)
 	// if url points to a draft, return Draft.meta
-	if d := findDraft(url); d != nil {
-		fmt.Println("draft yes")
+	if d := findDraft(url); d != nil && d.meta!=nil {
 		return d.meta, nil
 	}
-	fmt.Println("draft no")
 
 	b, f := split(url)
 	r, err := c.findResource(b)
@@ -223,28 +219,26 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 	return c.compile(r, stack, schemaRef{refPtr, sr.schema}, sr)
 }
 
-/*
-func (c *Compiler) compileDynamicAnchors(r *resource, s *Schema, base resource, v interface{}) error {
-	ids := make(map[string]map[string]interface{})
-	if err := resolveIDs(r.draft, base.url, v, ids); err != nil {
-		return err
+func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {
+	if r.draft.version < 2020 {
+		return nil
 	}
-	for u, doc := range ids {
-		if da, ok := doc["$dynamicAnchor"]; ok && strings.HasSuffix(u, "#"+da.(string)) {
-			if _, ok := r.schemas[u]; !ok {
-				b, f := split(u)
-				das := newSchema(b, f, doc)
-				r.schemas[u] = das
-				if err := c.compileMap(r, nil, schemaRef{"IGNORED", das}, resource{url: u, doc: doc}, doc); err != nil {
+
+	rr := r.findResources(res)
+	rr = append(rr, res)
+	for _, sr := range rr {
+		if m, ok := sr.doc.(map[string]interface{}); ok {
+			if _, ok := m["$dynamicAnchor"]; ok {
+				sch, err := c.compileRef(r, nil, "IGNORED", r, sr.loc)
+				if err != nil {
 					return err
 				}
+				res.schema.dynamicAnchors = append(res.schema.dynamicAnchors, sch)
 			}
-			s.dynamicAnchors[u] = r.schemas[u]
 		}
 	}
 	return nil
 }
-*/
 
 func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, res *resource) (*Schema, error) {
 	//if sref.schema == nil {
@@ -252,9 +246,9 @@ func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, res *
 	//	sref.schema = newSchema(u, "", v)
 	//}
 
-	//if err := c.compileDynamicAnchors(r, sref.schema, base, v); err != nil {
-	//	return nil, err
-	//}
+	if err := c.compileDynamicAnchors(r, res); err != nil {
+		return nil, err
+	}
 
 	switch v := res.doc.(type) {
 	case bool:

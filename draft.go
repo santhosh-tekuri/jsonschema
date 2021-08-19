@@ -157,6 +157,17 @@ func (r *resource) fillSubschemas(res *resource) error {
 	return nil
 }
 
+func (r *resource) findResources(res *resource) []*resource {
+	var result []*resource
+	loc := res.loc+"/"
+	for _, sr := range r.subresources {
+		if strings.HasSuffix(sr.loc, loc) {
+			result = append(result, sr)
+		}
+	}
+	return result
+}
+
 func (r *resource) findResource(url string) *resource {
 	if r.url == url {
 		return r
@@ -174,8 +185,16 @@ func (r *resource) resolveFragment(sr *resource, f string) (*resource, error) {
 		return sr, nil
 	}
 
+	// resolve by anchor
 	if !strings.HasPrefix(f, "#/") {
-		// resolve by anchor
+		// check in root resource
+		for _, anchor := range r.draft.anchors(r.doc) {
+			if anchor == f[1:] {
+				return r, nil
+			}
+		}
+
+		// check in subresources
 		for _, res := range r.subresources {
 			if res.loc == sr.loc || strings.HasPrefix(res.loc, sr.loc+"/") {
 				for _, anchor := range r.draft.anchors(res.doc) {
