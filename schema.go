@@ -104,16 +104,16 @@ type Schema struct {
 func newSchema(url, ptr string, doc interface{}) *Schema {
 	// fill with default values
 	s := &Schema{
-		URL:            url,
-		Ptr:            ptr,
-		MinProperties:  -1,
-		MaxProperties:  -1,
-		MinItems:       -1,
-		MaxItems:       -1,
-		MinContains:    1,
-		MaxContains:    -1,
-		MinLength:      -1,
-		MaxLength:      -1,
+		URL:           url,
+		Ptr:           ptr,
+		MinProperties: -1,
+		MaxProperties: -1,
+		MinItems:      -1,
+		MaxItems:      -1,
+		MinContains:   1,
+		MaxContains:   -1,
+		MinLength:     -1,
+		MaxLength:     -1,
 	}
 
 	if doc, ok := doc.(map[string]interface{}); ok {
@@ -579,11 +579,14 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 	if s.DynamicRef != nil {
 		ref := s.DynamicRef
 		if ref.DynamicAnchor != "" {
-			// dynamicRef based on scope
-		Loop:
+			fmt.Println("resolving dynamicAnchor:", ref.DynamicAnchor, "scope", len(scope), ref.Ptr)
+		Loop: // dynamicRef based on scope
 			for _, e := range scope {
+				fmt.Println("scope:", e.URL, e.Ptr, len(e.dynamicAnchors))
 				for _, sch := range e.dynamicAnchors {
-					if sch != ref && sch.DynamicAnchor==ref.DynamicAnchor {
+					fmt.Println("sch:", sch.URL, sch.Ptr, sch.DynamicAnchor)
+					if sch != ref && sch.DynamicAnchor == ref.DynamicAnchor {
+						fmt.Println("matched")
 						ref = sch
 						break Loop
 					}

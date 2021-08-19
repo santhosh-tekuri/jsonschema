@@ -5,10 +5,10 @@
 package jsonschema
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 var _ = fmt.Printf
@@ -159,9 +159,9 @@ func (r *resource) fillSubschemas(res *resource) error {
 
 func (r *resource) findResources(res *resource) []*resource {
 	var result []*resource
-	loc := res.loc+"/"
+	loc := res.loc + "/"
 	for _, sr := range r.subresources {
-		if strings.HasSuffix(sr.loc, loc) {
+		if strings.HasPrefix(sr.loc, loc) {
 			result = append(result, sr)
 		}
 	}
@@ -187,10 +187,10 @@ func (r *resource) resolveFragment(sr *resource, f string) (*resource, error) {
 
 	// resolve by anchor
 	if !strings.HasPrefix(f, "#/") {
-		// check in root resource
-		for _, anchor := range r.draft.anchors(r.doc) {
+		// check in given resource
+		for _, anchor := range r.draft.anchors(sr.doc) {
 			if anchor == f[1:] {
-				return r, nil
+				return sr, nil
 			}
 		}
 
@@ -247,7 +247,7 @@ func (r *resource) resolveFragment(sr *resource, f string) (*resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := &resource{url:id, loc:loc, doc:doc}
+	res := &resource{url: id, loc: loc, doc: doc}
 	r.subresources[loc] = res
 	if err := r.fillSubschemas(res); err != nil {
 		return nil, err

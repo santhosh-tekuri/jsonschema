@@ -170,7 +170,7 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schema, error) {
 	fmt.Println("compileURL", url)
 	// if url points to a draft, return Draft.meta
-	if d := findDraft(url); d != nil && d.meta!=nil {
+	if d := findDraft(url); d != nil && d.meta != nil {
 		return d.meta, nil
 	}
 
@@ -204,6 +204,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("after resolveFragment", sr.loc)
 	if sr == nil {
 		return nil, fmt.Errorf("jsonschema: %q not found", ref)
 	}
@@ -224,7 +225,10 @@ func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {
 		return nil
 	}
 
+	fmt.Println("++++++++++++++++++++++++++++++")
+	fmt.Println("compileDynamicAnchors", res.loc)
 	rr := r.findResources(res)
+	fmt.Println("resources", len(rr))
 	rr = append(rr, res)
 	for _, sr := range rr {
 		if m, ok := sr.doc.(map[string]interface{}); ok {
@@ -626,18 +630,18 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	}
 
 	/*
-	for name, ext := range c.extensions {
-		es, err := ext.compiler.Compile(CompilerContext{c, r, stack, base}, m)
-		if err != nil {
-			return err
-		}
-		if es != nil {
-			if s.Extensions == nil {
-				s.Extensions = make(map[string]ExtSchema)
+		for name, ext := range c.extensions {
+			es, err := ext.compiler.Compile(CompilerContext{c, r, stack, base}, m)
+			if err != nil {
+				return err
 			}
-			s.Extensions[name] = es
+			if es != nil {
+				if s.Extensions == nil {
+					s.Extensions = make(map[string]ExtSchema)
+				}
+				s.Extensions[name] = es
+			}
 		}
-	}
 	*/
 
 	return nil
