@@ -579,14 +579,10 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 	if s.DynamicRef != nil {
 		ref := s.DynamicRef
 		if ref.DynamicAnchor != "" {
-			fmt.Println("resolving dynamicAnchor:", ref.DynamicAnchor, "scope", len(scope), ref.Ptr)
 		Loop: // dynamicRef based on scope
 			for _, e := range scope {
-				fmt.Println("scope:", e.URL, e.Ptr, len(e.dynamicAnchors))
 				for _, sch := range e.dynamicAnchors {
-					fmt.Println("sch:", sch.URL, sch.Ptr, sch.DynamicAnchor)
 					if sch != ref && sch.DynamicAnchor == ref.DynamicAnchor {
-						fmt.Println("matched")
 						ref = sch
 						break Loop
 					}

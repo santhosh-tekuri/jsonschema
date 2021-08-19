@@ -159,7 +159,6 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 //
 // error returned will be of type *SchemaError
 func (c *Compiler) Compile(url string) (*Schema, error) {
-	fmt.Println("--------------------------------")
 	sch, err := c.compileURL(url, nil, "#")
 	if err != nil {
 		err = &SchemaError{url, err}
@@ -168,7 +167,6 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 }
 
 func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schema, error) {
-	fmt.Println("compileURL", url)
 	// if url points to a draft, return Draft.meta
 	if d := findDraft(url); d != nil && d.meta != nil {
 		return d.meta, nil
@@ -183,28 +181,22 @@ func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schem
 }
 
 func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res *resource, ref string) (*Schema, error) {
-	fmt.Println("compleRef:", ref, refPtr)
 	base := r.baseURL(res.loc)
-	fmt.Println("base", base)
 	ref, err := resolveURL(base, ref)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("ref", ref)
 
 	u, f := split(ref)
-	fmt.Println("xxx", u, f, len(r.subresources))
 	sr := r.findResource(u)
 	if sr == nil {
 		// external resource
 		return c.compileURL(ref, stack, refPtr)
 	}
-	fmt.Println("got resource", sr.loc, f)
 	sr, err = r.resolveFragment(sr, f)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("after resolveFragment", sr.loc)
 	if sr == nil {
 		return nil, fmt.Errorf("jsonschema: %q not found", ref)
 	}
@@ -225,10 +217,7 @@ func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {
 		return nil
 	}
 
-	fmt.Println("++++++++++++++++++++++++++++++")
-	fmt.Println("compileDynamicAnchors", res.loc)
 	rr := r.findResources(res)
-	fmt.Println("resources", len(rr))
 	rr = append(rr, res)
 	for _, sr := range rr {
 		if m, ok := sr.doc.(map[string]interface{}); ok {

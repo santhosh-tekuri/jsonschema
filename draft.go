@@ -5,13 +5,10 @@
 package jsonschema
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 )
-
-var _ = fmt.Printf
 
 // A Draft represents json-schema draft
 type Draft struct {
@@ -150,9 +147,6 @@ func (r *resource) fillSubschemas(res *resource) error {
 	if err := r.draft.listSubschemas(res, r.subresources); err != nil {
 		return err
 	}
-	for _, sr := range r.subresources {
-		fmt.Println("subresource:", sr.loc, sr.url)
-	}
 	// todo: ensure subresource.url uniquness
 	return nil
 }
@@ -214,7 +208,6 @@ func (r *resource) resolveFragment(sr *resource, f string) (*resource, error) {
 	}
 
 	// todo: non-standrad location
-	fmt.Println("non-standard location", loc)
 	doc := r.doc
 	for _, item := range strings.Split(loc[2:], "/") {
 		item = strings.Replace(item, "~1", "/", -1)
