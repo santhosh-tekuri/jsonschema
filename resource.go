@@ -78,7 +78,7 @@ func resolveURL(base, ref string) (string, error) {
 		return "", err
 	}
 	if refURL.IsAbs() {
-		return normalize(ref), nil
+		return ref, nil
 	}
 
 	baseURL, err := url.Parse(base)
@@ -86,7 +86,7 @@ func resolveURL(base, ref string) (string, error) {
 		return "", err
 	}
 	if baseURL.IsAbs() {
-		return normalize(baseURL.ResolveReference(refURL).String()), nil
+		return baseURL.ResolveReference(refURL).String(), nil
 	}
 
 	// filepath resolving
@@ -108,16 +108,4 @@ func split(uri string) (string, string) {
 		return uri, "#"
 	}
 	return uri[0:hash], uri[hash:]
-}
-
-func normalize(url string) string {
-	base, fragment := split(url)
-	if rootFragment(fragment) {
-		fragment = "#"
-	}
-	return base + fragment
-}
-
-func rootFragment(fragment string) bool {
-	return fragment == "" || fragment == "#" || fragment == "#/"
 }
