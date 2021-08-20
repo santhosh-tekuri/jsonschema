@@ -264,9 +264,6 @@ func (r *resource) baseURL(loc string) string {
 	return r.url
 }
 
-func (r *resource) dynamicAnchors(sr *resource) {
-}
-
 type position uint
 
 const (
