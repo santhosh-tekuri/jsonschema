@@ -326,14 +326,13 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	compile := func(stack []schemaRef, ptr string, v interface{}) (*Schema, error) {
-		_ = v
+	compile := func(stack []schemaRef, ptr string) (*Schema, error) {
 		return c.compileRef(r, stack, ptr, res, r.url+res.loc+"/"+ptr)
 	}
 
 	loadSchema := func(pname string, stack []schemaRef) (*Schema, error) {
-		if pvalue, ok := m[pname]; ok {
-			return compile(stack, escape(pname), pvalue)
+		if _, ok := m[pname]; ok {
+			return compile(stack, escape(pname))
 		}
 		return nil, nil
 	}
@@ -346,8 +345,8 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if pvalue, ok := m[pname]; ok {
 			pvalue := pvalue.([]interface{})
 			schemas := make([]*Schema, len(pvalue))
-			for i, v := range pvalue {
-				sch, err := compile(stack, escape(pname)+"/"+strconv.Itoa(i), v)
+			for i := range pvalue {
+				sch, err := compile(stack, escape(pname)+"/"+strconv.Itoa(i))
 				if err != nil {
 					return nil, err
 				}
@@ -383,8 +382,8 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	if props, ok := m["properties"]; ok {
 		props := props.(map[string]interface{})
 		s.Properties = make(map[string]*Schema, len(props))
-		for pname, pmap := range props {
-			s.Properties[pname], err = compile(nil, "properties/"+escape(pname), pmap)
+		for pname := range props {
+			s.Properties[pname], err = compile(nil, "properties/"+escape(pname))
 			if err != nil {
 				return err
 			}
@@ -398,8 +397,8 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	if patternProps, ok := m["patternProperties"]; ok {
 		patternProps := patternProps.(map[string]interface{})
 		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
-		for pattern, pmap := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern), pmap)
+		for pattern := range patternProps {
+			s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
 			if err != nil {
 				return err
 			}
@@ -411,7 +410,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		case bool:
 			s.AdditionalProperties = additionalProps
 		case map[string]interface{}:
-			s.AdditionalProperties, err = compile(nil, "additionalProperties", additionalProps)
+			s.AdditionalProperties, err = compile(nil, "additionalProperties")
 			if err != nil {
 				return err
 			}
@@ -426,7 +425,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			case []interface{}:
 				s.Dependencies[pname] = toStrings(pvalue)
 			default:
-				s.Dependencies[pname], err = compile(stack, "dependencies/"+escape(pname), pvalue)
+				s.Dependencies[pname], err = compile(stack, "dependencies/"+escape(pname))
 				if err != nil {
 					return err
 				}
@@ -445,8 +444,8 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if deps, ok := m["dependentSchemas"]; ok {
 			deps := deps.(map[string]interface{})
 			s.DependentSchemas = make(map[string]*Schema, len(deps))
-			for pname, pvalue := range deps {
-				s.DependentSchemas[pname], err = compile(stack, "dependentSchemas/"+escape(pname), pvalue)
+			for pname := range deps {
+				s.DependentSchemas[pname], err = compile(stack, "dependentSchemas/"+escape(pname))
 				if err != nil {
 					return err
 				}
@@ -475,7 +474,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	} else {
 		if items, ok := m["items"]; ok {
-			switch items := items.(type) {
+			switch items.(type) {
 			case []interface{}:
 				s.Items, err = loadSchemas("items", nil)
 				if err != nil {
@@ -486,14 +485,14 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 					case bool:
 						s.AdditionalItems = additionalItems
 					case map[string]interface{}:
-						s.AdditionalItems, err = compile(nil, "additionalItems", additionalItems)
+						s.AdditionalItems, err = compile(nil, "additionalItems")
 						if err != nil {
 							return err
 						}
 					}
 				}
 			default:
-				s.Items, err = compile(nil, "items", items)
+				s.Items, err = compile(nil, "items")
 				if err != nil {
 					return err
 				}
