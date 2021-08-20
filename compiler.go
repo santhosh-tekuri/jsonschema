@@ -147,7 +147,7 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 		r.url = id
 	}
 
-	if err := r.fillSubschemas(r); err != nil {
+	if err := r.fillSubschemas(c, r); err != nil {
 		return nil, err
 	}
 
@@ -159,6 +159,13 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 //
 // error returned will be of type *SchemaError
 func (c *Compiler) Compile(url string) (*Schema, error) {
+	// make url absolute
+	u, err := toAbs(url)
+	if err != nil {
+		return nil, &SchemaError{url, err}
+	}
+	url = u
+
 	sch, err := c.compileURL(url, nil, "#")
 	if err != nil {
 		err = &SchemaError{url, err}
@@ -193,7 +200,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		// external resource
 		return c.compileURL(ref, stack, refPtr)
 	}
-	sr, err = r.resolveFragment(sr, f)
+	sr, err = r.resolveFragment(c, sr, f)
 	if err != nil {
 		return nil, err
 	}
@@ -618,20 +625,18 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	/*
-		for name, ext := range c.extensions {
-			es, err := ext.compiler.Compile(CompilerContext{c, r, stack, base}, m)
-			if err != nil {
-				return err
-			}
-			if es != nil {
-				if s.Extensions == nil {
-					s.Extensions = make(map[string]ExtSchema)
-				}
-				s.Extensions[name] = es
-			}
+	for name, ext := range c.extensions {
+		es, err := ext.compiler.Compile(CompilerContext{c, r, stack, res}, m)
+		if err != nil {
+			return err
 		}
-	*/
+		if es != nil {
+			if s.Extensions == nil {
+				s.Extensions = make(map[string]ExtSchema)
+			}
+			s.Extensions[name] = es
+		}
+	}
 
 	return nil
 }

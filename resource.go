@@ -47,11 +47,26 @@ func newResource(url string, r io.Reader) (*resource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("jsonschema: invalid json %q reason: %v", url, err)
 	}
+	url, err = toAbs(url)
+	if err != nil {
+		return nil, err
+	}
 	return &resource{
 		url: url,
 		loc: "#",
 		doc: doc,
 	}, nil
+}
+
+func toAbs(s string) (string, error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return "", err
+	}
+	if u.IsAbs() {
+		return s, nil
+	}
+	return filepath.Abs(s)
 }
 
 func resolveURL(base, ref string) (string, error) {
@@ -76,8 +91,11 @@ func resolveURL(base, ref string) (string, error) {
 	}
 
 	// filepath resolving
-	base, _ = split(base)
 	ref, fragment := split(ref)
+	if filepath.IsAbs(ref) {
+		return ref + fragment, nil
+	}
+	base, _ = split(base)
 	if ref == "" {
 		return base + fragment, nil
 	}

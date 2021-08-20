@@ -136,8 +136,8 @@ func (d *Draft) listSubschemas(r *resource, rr map[string]*resource) error {
 	return nil
 }
 
-func (r *resource) fillSubschemas(res *resource) error {
-	if err := NewCompiler().validateSchema(r, res.loc, res.doc); err != nil {
+func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
+	if err := c.validateSchema(r, res.loc, res.doc); err != nil {
 		return err
 	}
 
@@ -174,7 +174,7 @@ func (r *resource) findResource(url string) *resource {
 	return nil
 }
 
-func (r *resource) resolveFragment(sr *resource, f string) (*resource, error) {
+func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resource, error) {
 	if f == "#" || f == "#/" {
 		return sr, nil
 	}
@@ -242,7 +242,7 @@ func (r *resource) resolveFragment(sr *resource, f string) (*resource, error) {
 	}
 	res := &resource{url: id, loc: loc, doc: doc}
 	r.subresources[loc] = res
-	if err := r.fillSubschemas(res); err != nil {
+	if err := r.fillSubschemas(c, res); err != nil {
 		return nil, err
 	}
 	return res, nil

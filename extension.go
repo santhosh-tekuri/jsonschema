@@ -40,40 +40,36 @@ type CompilerContext struct {
 	c     *Compiler
 	r     *resource
 	stack []schemaRef
-	base  resource
+	res   *resource
 }
 
-// Compile compiles given value v into *Schema. This is useful in implementing
-// keyword like allOf/oneOf.
+// Compile compiles given value at ptr into *Schema. This is useful in implementing
+// keyword like allOf/not/patternProperties.
 //
-// vPtr is the jsonpointer to v.
+// ptr is the jsonpointer to the schema to be compiled.
 //
-// applicableOnSameInstance tells whether current schema and the given schema v
+// applicableOnSameInstance tells whether current schema and the given schema
 // are applied on same instance value. this is used to detect infinite loop in schema.
-func (ctx CompilerContext) Compile(v interface{}, vPtr string, applicableOnSameInstance bool) (*Schema, error) {
+func (ctx CompilerContext) Compile(ptr string, applicableOnSameInstance bool) (*Schema, error) {
 	var stack []schemaRef
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	_ = stack
-	return nil, nil
-	//return ctx.c.compile(ctx.r, stack, schemaRef{vPtr, nil}, ctx.base, v)
+	return ctx.c.compileRef(ctx.r, stack, ptr, ctx.res, ctx.r.url+ctx.res.loc+"/"+ptr)
 }
 
 // CompileRef compiles the schema referenced by ref uri
 //
 // refPtr is the jsonpointer to ref.
 //
-// applicableOnSameInstance tells whether current schema and the given schema v
+// applicableOnSameInstance tells whether current schema and the given schema
 // are applied on same instance value. this is used to detect infinite loop in schema.
 func (ctx CompilerContext) CompileRef(ref string, refPtr string, applicableOnSameInstance bool) (*Schema, error) {
 	var stack []schemaRef
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	_ = stack
-	return nil, nil
-	//return ctx.c.compileRef(ctx.r, stack, refPtr, ctx.base, ref)
+	return ctx.c.compileRef(ctx.r, stack, refPtr, ctx.res, ref)
 }
 
 // ValidationContext ---
