@@ -289,8 +289,8 @@ func TestInvalidDocs(t *testing.T) {
 	}
 }
 
-func TestInvalidSchema(t *testing.T) {
-	t.Run("MustCompile with panic", func(t *testing.T) {
+func TestMustCompile(t *testing.T) {
+	t.Run("invalid", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {
 				t.Error("panic expected")
@@ -299,16 +299,18 @@ func TestInvalidSchema(t *testing.T) {
 		jsonschema.MustCompile("testdata/invalid_schema.json")
 	})
 
-	t.Run("MustCompile without panic", func(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
 		defer func() {
 			if r := recover(); r != nil {
 				t.Error("panic not expected")
 				t.Log(r)
 			}
 		}()
-		jsonschema.MustCompile("testdata/customer_schema.json#/0")
+		jsonschema.MustCompile("testdata/person_schema.json")
 	})
+}
 
+func TestInvalidSchema(t *testing.T) {
 	t.Run("invalid json", func(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{")); err == nil {
 			t.Error("error expected")
