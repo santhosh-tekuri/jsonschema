@@ -29,7 +29,7 @@ type Compiler struct {
 	// in compiled Schema or not.
 	ExtractAnnotations bool
 
-	// LoadURL loads the document at given URL.
+	// LoadURL loads the document at given absolute URL.
 	//
 	// If nil, package global LoadURL is used.
 	LoadURL func(s string) (io.ReadCloser, error)

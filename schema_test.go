@@ -667,10 +667,14 @@ func TestCompiler_LoadURL(t *testing.T) {
 
 	c := jsonschema.NewCompiler()
 	c.LoadURL = func(s string) (io.ReadCloser, error) {
+		wd, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
 		switch s {
-		case "base.json":
+		case filepath.Join(wd, "base.json"):
 			return ioutil.NopCloser(strings.NewReader(base)), nil
-		case "schema.json":
+		case filepath.Join(wd, "schema.json"):
 			return ioutil.NopCloser(strings.NewReader(schema)), nil
 		default:
 			return nil, errors.New("unsupported schema")
