@@ -241,11 +241,6 @@ func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {
 }
 
 func (c *Compiler) compile(r *resource, stack []schemaRef, sref schemaRef, res *resource) (*Schema, error) {
-	//if sref.schema == nil {
-	//	u, _ := split(base.url)
-	//	sref.schema = newSchema(u, "", v)
-	//}
-
 	if err := c.compileDynamicAnchors(r, res); err != nil {
 		return nil, err
 	}
