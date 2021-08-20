@@ -103,6 +103,25 @@ func (c *Compiler) MustCompile(url string) *Schema {
 	return s
 }
 
+// Compile parses json-schema at given url returns, if successful,
+// a Schema object that can be used to match against json.
+//
+// error returned will be of type *SchemaError
+func (c *Compiler) Compile(url string) (*Schema, error) {
+	// make url absolute
+	u, err := toAbs(url)
+	if err != nil {
+		return nil, &SchemaError{url, err}
+	}
+	url = u
+
+	sch, err := c.compileURL(url, nil, "#")
+	if err != nil {
+		err = &SchemaError{url, err}
+	}
+	return sch, err
+}
+
 func (c *Compiler) findResource(url string) (*resource, error) {
 	if _, ok := c.resources[url]; !ok {
 		// load resource
@@ -152,25 +171,6 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 	}
 
 	return r, nil
-}
-
-// Compile parses json-schema at given url returns, if successful,
-// a Schema object that can be used to match against json.
-//
-// error returned will be of type *SchemaError
-func (c *Compiler) Compile(url string) (*Schema, error) {
-	// make url absolute
-	u, err := toAbs(url)
-	if err != nil {
-		return nil, &SchemaError{url, err}
-	}
-	url = u
-
-	sch, err := c.compileURL(url, nil, "#")
-	if err != nil {
-		err = &SchemaError{url, err}
-	}
-	return sch, err
 }
 
 func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schema, error) {
