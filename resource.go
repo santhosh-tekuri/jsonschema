@@ -232,5 +232,9 @@ func split(uri string) (string, string) {
 	if hash == -1 {
 		return uri, "#"
 	}
-	return uri[0:hash], uri[hash:]
+	f := uri[hash:]
+	if f == "#/" {
+		f = "#"
+	}
+	return uri[0:hash], f
 }
