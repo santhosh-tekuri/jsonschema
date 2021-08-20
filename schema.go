@@ -771,3 +771,19 @@ func escape(token string) string {
 	token = strings.Replace(token, "/", "~1", -1)
 	return url.PathEscape(token)
 }
+
+// DecodeJSON decodes json document from r.
+//
+// Note that number is decoded into json.Number instead of as a float64
+func DecodeJSON(r io.Reader) (interface{}, error) {
+	decoder := json.NewDecoder(r)
+	decoder.UseNumber()
+	var doc interface{}
+	if err := decoder.Decode(&doc); err != nil {
+		return nil, err
+	}
+	if t, _ := decoder.Token(); t != nil {
+		return nil, fmt.Errorf("invalid character %v after top-level value", t)
+	}
+	return doc, nil
+}
