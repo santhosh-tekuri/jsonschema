@@ -388,29 +388,32 @@ func TestCompileURL(t *testing.T) {
 	validTests := []struct {
 		schema, doc string
 	}{
-		{"testdata/customer_schema.json#/0", "testdata/customer.json"},
-		{toFileURL("testdata/customer_schema.json") + "#/0", "testdata/customer.json"},
-		{httpURL + "/customer_schema.json#/0", "testdata/customer.json"},
-		{httpsURL + "/customer_schema.json#/0", "testdata/customer.json"},
+		//{"testdata/customer_schema.json#/0", "testdata/customer.json"},
+		//{toFileURL("testdata/customer_schema.json") + "#/0", "testdata/customer.json"},
+		//{httpURL + "/customer_schema.json#/0", "testdata/customer.json"},
+		//{httpsURL + "/customer_schema.json#/0", "testdata/customer.json"},
 		{toFileURL("testdata/empty schema.json"), "testdata/empty schema.json"},
+		{httpURL + "/empty schema.json", "testdata/empty schema.json"},
+		{httpsURL + "/empty schema.json", "testdata/empty schema.json"},
 	}
 	for i, test := range validTests {
-		t.Logf("valid #%d: %+v", i, test)
-		s, err := jsonschema.Compile(test.schema)
-		if err != nil {
-			t.Errorf("valid #%d: %v", i, err)
-			return
-		}
-		f, err := os.Open(test.doc)
-		if err != nil {
-			t.Errorf("valid #%d: %v", i, err)
-			return
-		}
-		err = s.Validate(f)
-		_ = f.Close()
-		if err != nil {
-			t.Errorf("valid #%d: %v", i, err)
-		}
+		t.Run(test.schema, func(t *testing.T) {
+			s, err := jsonschema.Compile(test.schema)
+			if err != nil {
+				t.Errorf("valid #%d: %v", i, err)
+				return
+			}
+			f, err := os.Open(test.doc)
+			if err != nil {
+				t.Errorf("valid #%d: %v", i, err)
+				return
+			}
+			err = s.Validate(f)
+			_ = f.Close()
+			if err != nil {
+				t.Errorf("valid #%d: %v", i, err)
+			}
+		})
 	}
 }
 
