@@ -21,7 +21,7 @@ type Schema struct {
 	URL string // absolute url of the resource.
 	Ptr string // json-pointer to schema. always starts with `#`.
 
-	dynamicAnchors map[string]*Schema
+	dynamicAnchors []*Schema
 
 	// type agnostic validations
 	Format          string
@@ -104,17 +104,16 @@ type Schema struct {
 func newSchema(url, ptr string, doc interface{}) *Schema {
 	// fill with default values
 	s := &Schema{
-		URL:            url,
-		Ptr:            ptr,
-		dynamicAnchors: make(map[string]*Schema),
-		MinProperties:  -1,
-		MaxProperties:  -1,
-		MinItems:       -1,
-		MaxItems:       -1,
-		MinContains:    1,
-		MaxContains:    -1,
-		MinLength:      -1,
-		MaxLength:      -1,
+		URL:           url,
+		Ptr:           ptr,
+		MinProperties: -1,
+		MaxProperties: -1,
+		MinItems:      -1,
+		MaxItems:      -1,
+		MinContains:   1,
+		MaxContains:   -1,
+		MinLength:     -1,
+		MaxLength:     -1,
 	}
 
 	if doc, ok := doc.(map[string]interface{}); ok {
@@ -580,11 +579,10 @@ func (s *Schema) validate(scope []*Schema, v interface{}) (uneval uneval, err er
 	if s.DynamicRef != nil {
 		ref := s.DynamicRef
 		if ref.DynamicAnchor != "" {
-			// dynamicRef based on scope
-		Loop:
+		Loop: // dynamicRef based on scope
 			for _, e := range scope {
-				for u, sch := range e.dynamicAnchors {
-					if sch != ref && strings.HasSuffix(u, ref.DynamicAnchor) {
+				for _, sch := range e.dynamicAnchors {
+					if sch != ref && sch.DynamicAnchor == ref.DynamicAnchor {
 						ref = sch
 						break Loop
 					}
@@ -772,4 +770,20 @@ func escape(token string) string {
 	token = strings.Replace(token, "~", "~0", -1)
 	token = strings.Replace(token, "/", "~1", -1)
 	return url.PathEscape(token)
+}
+
+// DecodeJSON decodes json document from r.
+//
+// Note that number is decoded into json.Number instead of as a float64
+func DecodeJSON(r io.Reader) (interface{}, error) {
+	decoder := json.NewDecoder(r)
+	decoder.UseNumber()
+	var doc interface{}
+	if err := decoder.Decode(&doc); err != nil {
+		return nil, err
+	}
+	if t, _ := decoder.Token(); t != nil {
+		return nil, fmt.Errorf("invalid character %v after top-level value", t)
+	}
+	return doc, nil
 }

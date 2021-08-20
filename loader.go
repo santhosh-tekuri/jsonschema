@@ -27,8 +27,8 @@ func loadFileURL(s string) (io.ReadCloser, error) {
 	return os.Open(f)
 }
 
-// Loaders is a registry of functions, which know how to load url
-// of specific schema.
+// Loaders is a registry of functions, which know how to load
+// absolute url of specific schema.
 //
 // New loaders can be registered by adding to this map. Key is schema,
 // value is function that knows how to load url of that schema
@@ -45,7 +45,7 @@ func (e LoaderNotFoundError) Error() string {
 	return fmt.Sprintf("jsonschema: no Loader found for %q", string(e))
 }
 
-// LoadURL loads document at given URL. The default implementation
+// LoadURL loads document at given absolute URL. The default implementation
 // uses Loaders registry to lookup by schema and uses that loader.
 //
 // Users can change this variable, if they would like to take complete

@@ -4,16 +4,21 @@
 
 package jsonschema
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // A Draft represents json-schema draft
 type Draft struct {
-	meta    *Schema
-	id      string // property name used to represent schema id.
-	version int
+	version    int
+	meta       *Schema
+	id         string // property name used to represent schema id.
+	boolSchema bool   // is boolean valid schema
+	subschemas map[string]position
 }
 
-func (d *Draft) load(base string, schemas map[string]string) {
+func (d *Draft) loadMeta(base string, schemas map[string]string) {
 	c := NewCompiler()
 	c.AssertFormat = true
 	for u, schema := range schemas {
@@ -24,19 +29,193 @@ func (d *Draft) load(base string, schemas map[string]string) {
 	d.meta = c.MustCompile(base + "/schema")
 }
 
+func (d *Draft) getID(sch interface{}) string {
+	m, ok := sch.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	v, ok := m[d.id]
+	if !ok {
+		return ""
+	}
+	id, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return id
+}
+
+func (d *Draft) resolveID(base string, sch interface{}) (string, error) {
+	id, _ := split(d.getID(sch)) // strip fragment
+	if id == "" {
+		return "", nil
+	}
+	url, err := resolveURL(base, id)
+	url, _ = split(url) // strip fragment
+	return url, err
+}
+
+func (d *Draft) anchors(sch interface{}) []string {
+	m, ok := sch.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	var anchors []string
+
+	// before draft2019, anchor is specified in id
+	_, f := split(d.getID(m))
+	if f != "#" {
+		anchors = append(anchors, f[1:])
+	}
+
+	if v, ok := m["$anchor"]; ok && d.version >= 2019 {
+		anchors = append(anchors, v.(string))
+	}
+	if v, ok := m["$dynamicAnchor"]; ok && d.version >= 2020 {
+		anchors = append(anchors, v.(string))
+	}
+	return anchors
+}
+
+func (d *Draft) listSubschemas(r *resource, rr map[string]*resource) error {
+	add := func(loc string, sch interface{}) error {
+		loc = r.loc + "/" + loc
+		url, err := d.resolveID(r.url, sch)
+		if err != nil {
+			return err
+		}
+		sr := &resource{url: url, loc: loc, doc: sch}
+		rr[loc] = sr
+		return d.listSubschemas(sr, rr)
+	}
+
+	sch, ok := r.doc.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	for kw, pos := range d.subschemas {
+		v, ok := sch[kw]
+		if !ok {
+			continue
+		}
+		if pos&self != 0 {
+			switch v := v.(type) {
+			case map[string]interface{}:
+				if err := add(kw, v); err != nil {
+					return err
+				}
+			case bool:
+				if d.boolSchema {
+					if err := add(kw, v); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		if pos&item != 0 {
+			if v, ok := v.([]interface{}); ok {
+				for i, item := range v {
+					if err := add(kw+"/"+strconv.Itoa(i), item); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		if pos&prop != 0 {
+			if v, ok := v.(map[string]interface{}); ok {
+				for pname, pval := range v {
+					if err := add(kw+"/"+escape(pname), pval); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+type position uint
+
+const (
+	self position = 1 << iota
+	prop
+	item
+)
+
 // supported drafts
 var (
-	Draft4    = &Draft{id: "id", version: 4}
-	Draft6    = &Draft{id: "$id", version: 6}
-	Draft7    = &Draft{id: "$id", version: 7}
-	Draft2019 = &Draft{id: "$id", version: 2019}
-	Draft2020 = &Draft{id: "$id", version: 2020}
+	Draft4    = &Draft{version: 4, id: "id", boolSchema: false}
+	Draft6    = &Draft{version: 6, id: "$id", boolSchema: true}
+	Draft7    = &Draft{version: 7, id: "$id", boolSchema: true}
+	Draft2019 = &Draft{version: 2019, id: "$id", boolSchema: true}
+	Draft2020 = &Draft{version: 2020, id: "$id", boolSchema: true}
 
 	latest = Draft2020
 )
 
+func findDraft(url string) *Draft {
+	if strings.HasPrefix(url, "http://") {
+		url = "https://" + strings.TrimPrefix(url, "http://")
+	}
+	if strings.HasSuffix(url, "#") || strings.HasSuffix(url, "#/") {
+		url = url[:strings.IndexByte(url, '#')]
+	}
+	switch url {
+	case "https://json-schema.org/schema":
+		return latest
+	case "https://json-schema.org/draft/2020-12/schema":
+		return Draft2020
+	case "https://json-schema.org/draft/2019-09/schema":
+		return Draft2019
+	case "https://json-schema.org/draft-07/schema":
+		return Draft7
+	case "https://json-schema.org/draft-06/schema":
+		return Draft6
+	case "https://json-schema.org/draft-04/schema":
+		return Draft4
+	}
+	return nil
+}
+
 func init() {
-	Draft4.load("http://json-schema.org/draft-04", map[string]string{
+	subschemas := map[string]position{
+		// type agnostic
+		"definitions": prop,
+		"not":         self,
+		"allOf":       item,
+		"anyOf":       item,
+		"oneOf":       item,
+		// object
+		"properties":           prop,
+		"additionalProperties": self,
+		"patternProperties":    prop,
+		// array
+		"items":           self | item,
+		"additionalItems": self,
+		"dependencies":    prop,
+	}
+	Draft4.subschemas = clone(subschemas)
+
+	subschemas["propertyNames"] = self
+	subschemas["contains"] = self
+	Draft6.subschemas = clone(subschemas)
+
+	subschemas["if"] = self
+	subschemas["then"] = self
+	subschemas["else"] = self
+	Draft7.subschemas = clone(subschemas)
+
+	subschemas["$defs"] = prop
+	subschemas["dependentSchemas"] = prop
+	subschemas["unevaluatedProperties"] = self
+	subschemas["unevaluatedItems"] = self
+	Draft2019.subschemas = clone(subschemas)
+
+	subschemas["prefixItems"] = item
+	Draft2020.subschemas = clone(subschemas)
+
+	Draft4.loadMeta("http://json-schema.org/draft-04", map[string]string{
 		"schema": `{
 			"$schema": "http://json-schema.org/draft-04/schema#",
 			"description": "Core schema meta-schema",
@@ -191,7 +370,7 @@ func init() {
 			"default": {}
 		}`,
 	})
-	Draft6.load("http://json-schema.org/draft-06", map[string]string{
+	Draft6.loadMeta("http://json-schema.org/draft-06", map[string]string{
 		"schema": `{
 			"$schema": "http://json-schema.org/draft-06/schema#",
 			"$id": "http://json-schema.org/draft-06/schema#",
@@ -344,7 +523,7 @@ func init() {
 			"default": {}
 		}`,
 	})
-	Draft7.load("http://json-schema.org/draft-07", map[string]string{
+	Draft7.loadMeta("http://json-schema.org/draft-07", map[string]string{
 		"schema": `{
 			"$schema": "http://json-schema.org/draft-07/schema#",
 			"$id": "http://json-schema.org/draft-07/schema#",
@@ -518,7 +697,7 @@ func init() {
 			"default": true
 		}`,
 	})
-	Draft2019.load("https://json-schema.org/draft/2019-09", map[string]string{
+	Draft2019.loadMeta("https://json-schema.org/draft/2019-09", map[string]string{
 		"schema": `{
 			"$schema": "https://json-schema.org/draft/2019-09/schema",
 			"$id": "https://json-schema.org/draft/2019-09/schema",
@@ -841,7 +1020,7 @@ func init() {
 			}
 		}`,
 	})
-	Draft2020.load("https://json-schema.org/draft/2020-12", map[string]string{
+	Draft2020.loadMeta("https://json-schema.org/draft/2020-12", map[string]string{
 		"schema": `{
 			"$schema": "https://json-schema.org/draft/2020-12/schema",
 			"$id": "https://json-schema.org/draft/2020-12/schema",
@@ -1181,4 +1360,12 @@ func init() {
 			}
 		}`,
 	})
+}
+
+func clone(m map[string]position) map[string]position {
+	mm := make(map[string]position)
+	for k, v := range m {
+		mm[k] = v
+	}
+	return mm
 }
