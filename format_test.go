@@ -25,7 +25,7 @@ func TestIsDateTime(t *testing.T) {
 		{"06/19/1963 08:30:06 PST", false},       // invalid date delimiters
 		{"1963-06-19t08:30:06.283185z", true},    // case-insensitive T and Z
 		{"2013-350T01:01:01", false},             // invalid: only RFC3339 not all of ISO 8601 are valid
-		{"1963-6-19T08:30:06.283185Z", false},    //invalid: non-padded month
+		{"1963-6-19T08:30:06.283185Z", false},    // invalid: non-padded month
 		{"1963-06-1T08:30:06.283185Z", false},    // invalid: non-padded day
 		{"1985-04-12T23:20:50.52Z", true},
 		{"1996-12-19T16:39:57-08:00", true},
@@ -102,6 +102,7 @@ func TestIsTime(t *testing.T) {
 		{"01:02:03+24:00", false},  // invalid time numoffset hour
 		{"01:02:03+00:60", false},  // invalid time numoffset minute
 		{"01:02:03Z+00:30", false}, // invalid time with both Z and numoffset
+		{"01:29:60+01:30", true},   // leap second, positive time-offset
 	}
 	for i, test := range tests {
 		if test.valid != isTime(test.str) {

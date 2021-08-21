@@ -179,6 +179,9 @@ func isTime(v interface{}) bool {
 	hhmm := hh*60 + mm
 	hm := h*60 + m
 	hhmm += hm * sign
+	if hhmm < 0 {
+		hhmm = 24*60 + hhmm
+	}
 	hh = hhmm / 60
 	mm = hhmm % 60
 	if ss == 60 { // leap second
