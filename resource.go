@@ -49,7 +49,7 @@ func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
 	if r.subresources == nil {
 		r.subresources = make(map[string]*resource)
 	}
-	if err := r.draft.listSubschemas(res, r.subresources); err != nil {
+	if err := r.draft.listSubschemas(res, r.baseURL(res.loc), r.subresources); err != nil {
 		return err
 	}
 

@@ -78,16 +78,21 @@ func (d *Draft) anchors(sch interface{}) []string {
 	return anchors
 }
 
-func (d *Draft) listSubschemas(r *resource, rr map[string]*resource) error {
+func (d *Draft) listSubschemas(r *resource, base string, rr map[string]*resource) error {
 	add := func(loc string, sch interface{}) error {
 		loc = r.loc + "/" + loc
-		url, err := d.resolveID(r.url, sch)
+		url, err := d.resolveID(base, sch)
 		if err != nil {
 			return err
 		}
 		sr := &resource{url: url, loc: loc, doc: sch}
 		rr[loc] = sr
-		return d.listSubschemas(sr, rr)
+
+		base := base
+		if url != "" {
+			base = url
+		}
+		return d.listSubschemas(sr, base, rr)
 	}
 
 	sch, ok := r.doc.(map[string]interface{})

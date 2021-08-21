@@ -1,4 +1,25 @@
 [
+	{
+		"description": "$id resolve to nearest parent",
+		"schema": {
+			"$id": "http://example.com/a.json",
+			"not": {
+				"$id": "http://example.com/xxx/b.json",
+				"not": {
+					"not": {
+						"$id": "c.json"
+					}
+				}
+			},
+			"anyOf": [{
+				"$ref": "http://example.com/xxx/c.json"
+			}]
+		},
+		"tests": [{
+			"data": {},
+			"valid": false 
+		}]
+	},
   {
     "description": "absolute ref to $id with fragment",
     "schema": {
