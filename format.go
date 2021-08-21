@@ -88,10 +88,7 @@ func isTime(v interface{}) bool {
 
 	// hh:mm:ss
 	// 01234567
-	if len(str) < 9 {
-		return false
-	}
-	if str[2] != ':' || str[5] != ':' {
+	if len(str) < 9 || str[2] != ':' || str[5] != ':' {
 		return false
 	}
 	isInRange := func(str string, min, max int) (int, bool) {
@@ -104,86 +101,77 @@ func isTime(v interface{}) bool {
 		}
 		return n, true
 	}
-	h, ok := isInRange(str[0:2], 0, 23)
-	if !ok {
+	var h, m, s int
+	if h, ok = isInRange(str[0:2], 0, 23); !ok {
 		return false
 	}
-	m, ok := isInRange(str[3:5], 0, 59)
-	if !ok {
+	if m, ok = isInRange(str[3:5], 0, 59); !ok {
 		return false
 	}
-	s, ok := isInRange(str[6:8], 0, 60)
-	if !ok { // ss
+	if s, ok = isInRange(str[6:8], 0, 60); !ok {
 		return false
 	}
-
 	str = str[8:]
-	if str[0] == '.' { // secfrac: dot following more than one digit
+
+	// parse secfrac if present
+	if str[0] == '.' {
+		// dot following more than one digit
 		str = str[1:]
-		frac := false
-		for {
-			if len(str) == 0 {
-				break
-			}
+		var numDigits int
+		for str != "" {
 			if str[0] < '0' || str[0] > '9' {
 				break
 			}
-			frac = true
+			numDigits++
 			str = str[1:]
 		}
-		if !frac {
-			return false // no digit after dot
+		if numDigits == 0 {
+			return false
 		}
 	}
 
 	if len(str) == 0 {
 		return false
 	}
+
 	if str[0] == 'z' || str[0] == 'Z' {
-		if s == 60 { // leap second
-			if h != 23 || m != 59 {
-				return false
-			}
+		if len(str) != 1 {
+			return false
 		}
-		return len(str) == 1
-	}
-
-	// time-numoffset
-	// +hh:mm
-	// 012345
-	if len(str) != 6 {
-		return false
-	}
-	var sign int
-	if str[0] == '+' {
-		sign = -1
-	} else if str[0] == '-' {
-		sign = +1
 	} else {
-		return false
-	}
-	if str[3] != ':' {
-		return len(str) == 1
+		// time-numoffset
+		// +hh:mm
+		// 012345
+		if len(str) != 6 || str[3] != ':' {
+			return false
+		}
+
+		var sign int
+		if str[0] == '+' {
+			sign = -1
+		} else if str[0] == '-' {
+			sign = +1
+		} else {
+			return false
+		}
+
+		var zh, zm int
+		if zh, ok = isInRange(str[1:3], 0, 23); !ok {
+			return false
+		}
+		if zm, ok = isInRange(str[4:6], 0, 59); !ok {
+			return false
+		}
+
+		// apply timezone offset
+		hm := (h*60 + m) + sign*(zh*60+zm)
+		if hm < 0 {
+			hm += 24 * 60
+		}
+		h, m = hm/60, hm%60
 	}
 
-	zh, ok := isInRange(str[1:3], 0, 23)
-	if !ok {
-		return false
-	}
-	zm, ok := isInRange(str[4:6], 0, 59)
-	if !ok {
-		return false
-	}
-
-	// apply timezone offset
-	hm := h*60 + m
-	zhm := zh*60 + zm
-	hm += zhm * sign
-	if hm < 0 {
-		hm = 24*60 + hm
-	}
-	h = hm / 60
-	m = hm % 60
+	// check leapsecond
 	if s == 60 { // leap second
 		if h != 23 || m != 59 {
 			return false
