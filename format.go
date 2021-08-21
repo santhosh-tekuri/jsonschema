@@ -78,7 +78,7 @@ func isDate(v interface{}) bool {
 //
 // see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6, for details
 func isTime(v interface{}) bool {
-	s, ok := v.(string)
+	str, ok := v.(string)
 	if !ok {
 		return true
 	}
@@ -88,14 +88,14 @@ func isTime(v interface{}) bool {
 
 	// hh:mm:ss
 	// 01234567
-	if len(s) < 9 {
+	if len(str) < 9 {
 		return false
 	}
-	if s[2] != ':' || s[5] != ':' {
+	if str[2] != ':' || str[5] != ':' {
 		return false
 	}
-	isInRange := func(s string, min, max int) (int, bool) {
-		n, err := strconv.Atoi(s)
+	isInRange := func(str string, min, max int) (int, bool) {
+		n, err := strconv.Atoi(str)
 		if err != nil {
 			return 0, false
 		}
@@ -104,88 +104,88 @@ func isTime(v interface{}) bool {
 		}
 		return n, true
 	}
-	hh, ok := isInRange(s[0:2], 0, 23)
+	h, ok := isInRange(str[0:2], 0, 23)
 	if !ok {
 		return false
 	}
-	mm, ok := isInRange(s[3:5], 0, 59)
+	m, ok := isInRange(str[3:5], 0, 59)
 	if !ok {
 		return false
 	}
-	ss, ok := isInRange(s[6:8], 0, 60)
+	s, ok := isInRange(str[6:8], 0, 60)
 	if !ok { // ss
 		return false
 	}
 
-	s = s[8:]
-	if s[0] == '.' { // secfrac: dot following more than one digit
-		s = s[1:]
+	str = str[8:]
+	if str[0] == '.' { // secfrac: dot following more than one digit
+		str = str[1:]
 		frac := false
 		for {
-			if len(s) == 0 {
+			if len(str) == 0 {
 				break
 			}
-			if s[0] < '0' || s[0] > '9' {
+			if str[0] < '0' || str[0] > '9' {
 				break
 			}
 			frac = true
-			s = s[1:]
+			str = str[1:]
 		}
 		if !frac {
 			return false // no digit after dot
 		}
 	}
 
-	if len(s) == 0 {
+	if len(str) == 0 {
 		return false
 	}
-	if s[0] == 'z' || s[0] == 'Z' {
-		if ss == 60 { // leap second
-			if hh != 23 || mm != 59 {
+	if str[0] == 'z' || str[0] == 'Z' {
+		if s == 60 { // leap second
+			if h != 23 || m != 59 {
 				return false
 			}
 		}
-		return len(s) == 1
+		return len(str) == 1
 	}
 
 	// time-numoffset
 	// +hh:mm
 	// 012345
-	if len(s) != 6 {
+	if len(str) != 6 {
 		return false
 	}
 	var sign int
-	if s[0] == '+' {
+	if str[0] == '+' {
 		sign = -1
-	} else if s[0] == '-' {
+	} else if str[0] == '-' {
 		sign = +1
 	} else {
 		return false
 	}
-	if s[3] != ':' {
-		return len(s) == 1
+	if str[3] != ':' {
+		return len(str) == 1
 	}
 
-	h, ok := isInRange(s[1:3], 0, 23)
+	zh, ok := isInRange(str[1:3], 0, 23)
 	if !ok {
 		return false
 	}
-	m, ok := isInRange(s[4:6], 0, 59)
+	zm, ok := isInRange(str[4:6], 0, 59)
 	if !ok {
 		return false
 	}
 
 	// apply timezone offset
-	hhmm := hh*60 + mm
 	hm := h*60 + m
-	hhmm += hm * sign
-	if hhmm < 0 {
-		hhmm = 24*60 + hhmm
+	zhm := zh*60 + zm
+	hm += zhm * sign
+	if hm < 0 {
+		hm = 24*60 + hm
 	}
-	hh = hhmm / 60
-	mm = hhmm % 60
-	if ss == 60 { // leap second
-		if hh != 23 || mm != 59 {
+	h = hm / 60
+	m = hm % 60
+	if s == 60 { // leap second
+		if h != 23 || m != 59 {
 			return false
 		}
 	}
