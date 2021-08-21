@@ -3,12 +3,16 @@ on: [push, pull_request]
 jobs:
   gotest:
     name: gotest
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go: [1.15]
     steps:
     - name: setup go
       uses: actions/setup-go@v2.1.3
       with:
-        go-version: 1.15
+        go-version: ${{ matrix.go }}
     - name: checkout
       uses: actions/checkout@v2.3.4
     - name: test
