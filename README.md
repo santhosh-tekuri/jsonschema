@@ -108,7 +108,7 @@ jv [-draft INT] <schema-file> [<json-doc>]...
 ```
 
 if no `<json-doc>` arguments are passed, it simply validates the `<schema-file>`.  
-if `$schema` attribute is missing in schema, it uses draft7. this can be overriden by passing `-draft` flag
+if `$schema` attribute is missing in schema, it uses latest version. this can be overriden by passing `-draft` flag
 
 exit-code is 1, if there are any validation errors
 
