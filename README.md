@@ -28,7 +28,7 @@ Package jsonschema provides json-schema compilation and validation.
  - compiled schema can be introspected. easier to develop tools like generating go structs given schema
  - supports user-defined keywords via [extensions](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-Extension)
  - implements following formats (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedFormat))
-   - date-time, date, time, duration
+   - date-time, date, time, duration (supports leap-second)
    - uuid, hostname, email
    - ip-address, ipv4, ipv6
    - uri, uriref, uri-template(limited validation)

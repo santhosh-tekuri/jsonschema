@@ -20,7 +20,7 @@ Features:
  - compiled schema can be introspected. easier to develop tools like generating go structs given schema
  - supports user-defined keywords via extensions
  - implements following formats (supports user-defined)
-   - date-time, date, time, duration
+   - date-time, date, time, duration (supports leap-second)
    - uuid, hostname, email
    - ip-address, ipv4, ipv6
    - uri, uriref, uri-template(limited validation)
