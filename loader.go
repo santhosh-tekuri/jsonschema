@@ -10,10 +10,6 @@ import (
 	"strings"
 )
 
-func loadFile(path string) (io.ReadCloser, error) {
-	return os.Open(path)
-}
-
 func loadFileURL(s string) (io.ReadCloser, error) {
 	u, err := url.Parse(s)
 	if err != nil {
@@ -33,7 +29,6 @@ func loadFileURL(s string) (io.ReadCloser, error) {
 // New loaders can be registered by adding to this map. Key is schema,
 // value is function that knows how to load url of that schema
 var Loaders = map[string]func(url string) (io.ReadCloser, error){
-	"":     loadFile,
 	"file": loadFileURL,
 }
 

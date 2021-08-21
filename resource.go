@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -183,6 +184,12 @@ func (r *resource) baseURL(loc string) string {
 // url helpers ---
 
 func toAbs(s string) (string, error) {
+	// if windows absolute file path, convert to file url
+	// because: net/url parses driver name as scheme
+	if runtime.GOOS == "windows" && len(s) >= 3 && s[1:3] == `:\` {
+		s = "file:///" + filepath.ToSlash(s)
+	}
+
 	u, err := url.Parse(s)
 	if err != nil {
 		return "", err
@@ -190,7 +197,13 @@ func toAbs(s string) (string, error) {
 	if u.IsAbs() {
 		return s, nil
 	}
-	return filepath.Abs(s)
+	if s, err = filepath.Abs(s); err != nil {
+		return "", err
+	}
+	if runtime.GOOS == "windows" {
+		return "file:///" + filepath.ToSlash(s), nil
+	}
+	return "file://" + s, nil
 }
 
 func resolveURL(base, ref string) (string, error) {
