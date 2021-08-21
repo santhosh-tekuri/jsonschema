@@ -50,14 +50,13 @@ func main() {
 	}
 
 	for _, f := range flag.Args()[1:] {
-		r, err := jsonschema.LoadURL(f)
+		f, err := os.Open(f)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error in reading %q. reason: \n%v\n", f, err)
+			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
-
-		err = schema.Validate(r)
-		_ = r.Close()
+		defer f.Close()
+		err = schema.Validate(f)
 		if err != nil {
 			if _, ok := err.(*jsonschema.ValidationError); ok {
 				fmt.Fprintf(os.Stderr, "%#v\n", err)
