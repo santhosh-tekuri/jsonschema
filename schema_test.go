@@ -474,6 +474,18 @@ func TestValidateInterface(t *testing.T) {
 }
 
 func TestInvalidJsonTypeError(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Error("panic expected")
+		}
+		switch r.(type) {
+		case jsonschema.InvalidJSONTypeError:
+			// passed: struct is not valid json type
+		default:
+			t.Fatalf("got %v. want InvalidJSONTypeErr", r)
+		}
+	}()
 	compiler := jsonschema.NewCompiler()
 	err := compiler.AddResource("test.json", strings.NewReader(`{ "type": "string"}`))
 	if err != nil {
@@ -484,13 +496,7 @@ func TestInvalidJsonTypeError(t *testing.T) {
 		t.Fatalf("schema compilation failed. reason: %v\n", err)
 	}
 	v := struct{ name string }{"hello world"}
-	err = schema.ValidateInterface(v)
-	switch err.(type) {
-	case jsonschema.InvalidJSONTypeError:
-		// passed: struct is not valid json type
-	default:
-		t.Fatalf("got %v. want InvalidJSONTypeErr", err)
-	}
+	_ = schema.ValidateInterface(v)
 }
 
 func TestExtractAnnotations(t *testing.T) {

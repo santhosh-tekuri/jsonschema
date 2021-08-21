@@ -14,7 +14,7 @@ import (
 type InvalidJSONTypeError string
 
 func (e InvalidJSONTypeError) Error() string {
-	return fmt.Sprintf("invalid jsonType: %s", string(e))
+	return fmt.Sprintf("jsonschema: invalid jsonType: %s", string(e))
 }
 
 // InfiniteLoopError is returned by Compile.
