@@ -4,6 +4,8 @@
 
 package jsonschema
 
+import "fmt"
+
 // ExtCompiler compiles custom keyword(s) into ExtSchema.
 type ExtCompiler interface {
 	// Compile compiles the schema m and returns its compiled representation.
@@ -92,7 +94,11 @@ func (ctx ValidationContext) Validate(s *Schema, vpath string, v interface{}) er
 // Error used to construct validation error by extensions. schemaPtr is relative json pointer.
 func (ctx ValidationContext) Error(schemaPtr string, format string, a ...interface{}) *ValidationError {
 	sch := ctx.scope[len(ctx.scope)-1].schema
-	return sch.validationError(schemaPtr, format, a...)
+	return &ValidationError{
+		KeywordLocation:         keywordLocation(ctx.scope, schemaPtr),
+		AbsoluteKeywordLocation: sch.Location + "/" + schemaPtr,
+		Message:                 fmt.Sprintf(format, a...),
+	}
 }
 
 // Group is used by extensions to group multiple errors as causes to parent error.

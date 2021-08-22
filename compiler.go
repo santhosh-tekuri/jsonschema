@@ -644,6 +644,7 @@ func (c *Compiler) validateSchema(r *resource, vpath string, v interface{}) erro
 			_ = addContext(vpath, err)
 			finishInstanceContext(err)
 			return &ValidationError{
+				KeywordLocation:         "/",
 				AbsoluteKeywordLocation: meta.Location,
 				Message:                 fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
 				InstancePtr:             absPtr(vpath),
@@ -699,4 +700,18 @@ func checkLoop(stack []schemaRef, sref schemaRef) error {
 		}
 	}
 	return InfiniteLoopError(path + "/" + sref.ptr)
+}
+
+func keywordLocation(stack []schemaRef, path string) string {
+	var loc = stack[0].ptr
+	for _, ref := range stack[1:] {
+		loc += "/" + ref.ptr
+	}
+	if path != "" {
+		loc += "/" + path
+	}
+	if loc == "" {
+		return "/"
+	}
+	return loc
 }
