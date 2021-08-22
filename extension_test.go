@@ -43,8 +43,8 @@ func TestPowerOfExt(t *testing.T) {
 			if err := sch.Validate(strings.NewReader(`111`)); err == nil {
 				t.Fatal("validation must fail")
 			} else {
+				t.Logf("%#v", err)
 				if !strings.Contains(err.(*jsonschema.ValidationError).GoString(), "111 not powerOf 10") {
-					t.Logf("%#v", err)
 					t.Fatal("validation error expected to contain powerOf message")
 				}
 			}
