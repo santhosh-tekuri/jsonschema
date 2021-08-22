@@ -641,15 +641,13 @@ func (c *Compiler) validateSchema(r *resource, vpath string, v interface{}) erro
 			return nil
 		}
 		if _, err := meta.validate(nil, "", v); err != nil {
-			_ = addContext(vpath, "", err)
-			finishSchemaContext(err, meta)
+			_ = addContext(vpath, err)
 			finishInstanceContext(err)
 			return &ValidationError{
-				Message:     fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
-				InstancePtr: absPtr(vpath),
-				SchemaURL:   meta.URL,
-				SchemaPtr:   "#",
-				Causes:      []*ValidationError{err.(*ValidationError)},
+				AbsoluteKeywordLocation: meta.Location,
+				Message:                 fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
+				InstancePtr:             absPtr(vpath),
+				Causes:                  []*ValidationError{err.(*ValidationError)},
 			}
 		}
 		return nil

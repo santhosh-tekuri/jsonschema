@@ -59,21 +59,13 @@ type ValidationError struct {
 	// that is not valid
 	InstancePtr string
 
-	// SchemaURL is the url to json-schema against which validation failed.
-	// This is helpful, if your schema refers to external schemas
-	SchemaURL string
-
-	// SchemaPtr is json-pointer which refers to json-fragment in json schema
-	// that failed to satisfy
-	SchemaPtr string
-
 	// Causes details the nested validation errors
 	Causes []*ValidationError
 }
 
 func (ve *ValidationError) add(causes ...error) error {
 	for _, cause := range causes {
-		_ = addContext(ve.InstancePtr, ve.SchemaPtr, cause)
+		_ = addContext(ve.InstancePtr, cause)
 		ve.Causes = append(ve.Causes, cause.(*ValidationError))
 	}
 	return ve
@@ -106,30 +98,16 @@ func (ve *ValidationError) GoString() string {
 }
 
 func (s *Schema) validationError(schemaPtr string, format string, a ...interface{}) *ValidationError {
-	return &ValidationError{s.Location + "/" + schemaPtr, fmt.Sprintf(format, a...), "", "", schemaPtr, nil}
+	return &ValidationError{s.Location + "/" + schemaPtr, fmt.Sprintf(format, a...), "", nil}
 }
 
-func addContext(instancePtr, schemaPtr string, err error) error {
+func addContext(instancePtr string, err error) error {
 	ve := err.(*ValidationError)
 	ve.InstancePtr = joinPtr(instancePtr, ve.InstancePtr)
-	if ve.SchemaURL == "" {
-		ve.SchemaPtr = joinPtr(schemaPtr, ve.SchemaPtr)
-	}
 	for _, cause := range ve.Causes {
-		_ = addContext(instancePtr, schemaPtr, cause)
+		_ = addContext(instancePtr, cause)
 	}
 	return ve
-}
-
-func finishSchemaContext(err error, s *Schema) {
-	ve := err.(*ValidationError)
-	if len(ve.SchemaURL) == 0 {
-		ve.SchemaURL = s.URL
-		ve.SchemaPtr = joinPtr(s.Ptr, ve.SchemaPtr)
-		for _, cause := range ve.Causes {
-			finishSchemaContext(cause, s)
-		}
-	}
 }
 
 func finishInstanceContext(err error) {
