@@ -525,22 +525,25 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}) (uneva
 			}
 			return numVal
 		}
-
+		f64 := func(r *big.Rat) float64 {
+			f, _ := r.Float64()
+			return f
+		}
 		if s.Minimum != nil && num().Cmp(s.Minimum) < 0 {
-			errors = append(errors, validationError("minimum", "must be >= %v but found %v", s.Minimum, v))
+			errors = append(errors, validationError("minimum", "must be >= %v but found %v", f64(s.Minimum), v))
 		}
 		if s.ExclusiveMinimum != nil && num().Cmp(s.ExclusiveMinimum) <= 0 {
-			errors = append(errors, validationError("exclusiveMinimum", "must be > %v but found %v", s.ExclusiveMinimum, v))
+			errors = append(errors, validationError("exclusiveMinimum", "must be > %v but found %v", f64(s.ExclusiveMinimum), v))
 		}
 		if s.Maximum != nil && num().Cmp(s.Maximum) > 0 {
-			errors = append(errors, validationError("maximum", "must be <= %v but found %v", s.Maximum, v))
+			errors = append(errors, validationError("maximum", "must be <= %v but found %v", f64(s.Maximum), v))
 		}
 		if s.ExclusiveMaximum != nil && num().Cmp(s.ExclusiveMaximum) >= 0 {
-			errors = append(errors, validationError("exclusiveMaximum", "must be < %v but found %v", s.ExclusiveMaximum, v))
+			errors = append(errors, validationError("exclusiveMaximum", "must be < %v but found %v", f64(s.ExclusiveMaximum), v))
 		}
 		if s.MultipleOf != nil {
 			if q := new(big.Rat).Quo(num(), s.MultipleOf); !q.IsInt() {
-				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, s.MultipleOf))
+				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, f64(s.MultipleOf)))
 			}
 		}
 	}
