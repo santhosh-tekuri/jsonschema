@@ -46,44 +46,46 @@ type CompilerContext struct {
 // Compile compiles given value at ptr into *Schema. This is useful in implementing
 // keyword like allOf/not/patternProperties.
 //
-// ptr is the jsonpointer to the schema to be compiled.
+// schPath is the relative-json-pointer to the schema to be compiled from parent schema.
 //
 // applicableOnSameInstance tells whether current schema and the given schema
 // are applied on same instance value. this is used to detect infinite loop in schema.
-func (ctx CompilerContext) Compile(ptr string, applicableOnSameInstance bool) (*Schema, error) {
+func (ctx CompilerContext) Compile(schPath string, applicableOnSameInstance bool) (*Schema, error) {
 	var stack []schemaRef
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	return ctx.c.compileRef(ctx.r, stack, ptr, ctx.res, ctx.r.url+ctx.res.loc+"/"+ptr)
+	return ctx.c.compileRef(ctx.r, stack, schPath, ctx.res, ctx.r.url+ctx.res.loc+"/"+schPath)
 }
 
 // CompileRef compiles the schema referenced by ref uri
 //
-// refPtr is the jsonpointer to ref.
+// refPath is the relative-json-pointer to ref.
 //
 // applicableOnSameInstance tells whether current schema and the given schema
 // are applied on same instance value. this is used to detect infinite loop in schema.
-func (ctx CompilerContext) CompileRef(ref string, refPtr string, applicableOnSameInstance bool) (*Schema, error) {
+func (ctx CompilerContext) CompileRef(ref string, refPath string, applicableOnSameInstance bool) (*Schema, error) {
 	var stack []schemaRef
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	return ctx.c.compileRef(ctx.r, stack, refPtr, ctx.res, ref)
+	return ctx.c.compileRef(ctx.r, stack, refPath, ctx.res, ref)
 }
 
 // ValidationContext ---
 
 // ValidationContext provides additional context required in validating for extension.
 type ValidationContext struct {
-	scope []*Schema
+	scope []schemaRef
 }
 
 // Validate validates schema s with value v. Extension must use this method instead of
 // *Schema.ValidateInterface method. This will be useful in implementing keywords like
 // allOf/oneOf
-func (ctx ValidationContext) Validate(s *Schema, v interface{}) error {
-	_, err := s.validate(ctx.scope, v)
+//
+// vpath is relative-json-pointer to v from s.
+func (ctx ValidationContext) Validate(s *Schema, vpath string, v interface{}) error {
+	_, err := s.validate(ctx.scope, vpath, v)
 	return err
 }
 
