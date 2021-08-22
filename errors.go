@@ -52,6 +52,7 @@ func (se *SchemaError) GoString() string {
 type ValidationError struct {
 	KeywordLocation         string // validation path of validating keyword or schema
 	AbsoluteKeywordLocation string // absolute location of validating keyword or schema
+	InstanceLocation        string // location of the json value within the instance being validated
 
 	// Message describes error
 	Message string
@@ -80,12 +81,12 @@ func (ve *ValidationError) MessageFmt() string {
 }
 
 func (ve *ValidationError) Error() string {
-	f := ve.AbsoluteKeywordLocation
-	f = f[strings.IndexByte(f, '#')+1:]
-	if f == "" {
-		f = "/"
+	loc := ve.AbsoluteKeywordLocation
+	loc = loc[strings.IndexByte(loc, '#')+1:]
+	if loc == "" {
+		loc = "/"
 	}
-	return fmt.Sprintf("I[%s] S[%s] %s", ve.InstancePtr, f, ve.Message)
+	return fmt.Sprintf("I[%s] S[%s] %s", ve.InstanceLocation, loc, ve.Message)
 }
 
 func (ve *ValidationError) GoString() string {

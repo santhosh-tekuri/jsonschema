@@ -635,19 +635,20 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	return nil
 }
 
-func (c *Compiler) validateSchema(r *resource, vpath string, v interface{}) error {
+func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error {
 	validate := func(meta *Schema) error {
 		if meta == nil {
 			return nil
 		}
-		if _, err := meta.validate(nil, "", v); err != nil {
-			_ = addContext(vpath, err)
+		if _, err := meta.validate(nil, "", v, vloc); err != nil {
+			_ = addContext(vloc, err)
 			finishInstanceContext(err)
 			return &ValidationError{
 				KeywordLocation:         "/",
 				AbsoluteKeywordLocation: meta.Location,
+				InstanceLocation:        "/",
 				Message:                 fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
-				InstancePtr:             absPtr(vpath),
+				InstancePtr:             vloc,
 				Causes:                  []*ValidationError{err.(*ValidationError)},
 			}
 		}

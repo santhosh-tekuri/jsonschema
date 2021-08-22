@@ -43,7 +43,7 @@ func newResource(url string, r io.Reader) (*resource, error) {
 }
 
 func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
-	if err := c.validateSchema(r, res.loc, res.doc); err != nil {
+	if err := c.validateSchema(r, res.doc, res.loc[1:]); err != nil {
 		return err
 	}
 

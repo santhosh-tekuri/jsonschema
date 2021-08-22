@@ -85,9 +85,10 @@ type ValidationContext struct {
 // *Schema.ValidateInterface method. This will be useful in implementing keywords like
 // allOf/oneOf
 //
-// vpath is relative-json-pointer to v from s.
-func (ctx ValidationContext) Validate(s *Schema, vpath string, v interface{}) error {
-	_, err := s.validate(ctx.scope, vpath, v)
+// spath is relative-json-pointer to s
+// vpath is relative-json-pointer to v.
+func (ctx ValidationContext) Validate(s *Schema, spath string, v interface{}, vpath string) error {
+	_, err := s.validate(ctx.scope, spath, v, vpath)
 	return err
 }
 
