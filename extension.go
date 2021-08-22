@@ -90,8 +90,9 @@ func (ctx ValidationContext) Validate(s *Schema, vpath string, v interface{}) er
 }
 
 // Error used to construct validation error by extensions. schemaPtr is relative json pointer.
-func (ValidationContext) Error(schemaPtr string, format string, a ...interface{}) *ValidationError {
-	return validationError(schemaPtr, format, a...)
+func (ctx ValidationContext) Error(schemaPtr string, format string, a ...interface{}) *ValidationError {
+	sch := ctx.scope[len(ctx.scope)-1].schema
+	return sch.validationError(schemaPtr, format, a...)
 }
 
 // Group is used by extensions to group multiple errors as causes to parent error.

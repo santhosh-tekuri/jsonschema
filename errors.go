@@ -50,6 +50,8 @@ func (se *SchemaError) GoString() string {
 
 // ValidationError is the error type returned by Validate.
 type ValidationError struct {
+	AbsoluteKeywordLocation string // absolute location of validating keyword or schema
+
 	// Message describes error
 	Message string
 
@@ -85,7 +87,12 @@ func (ve *ValidationError) MessageFmt() string {
 }
 
 func (ve *ValidationError) Error() string {
-	return fmt.Sprintf("I[%s] S[%s] %s", ve.InstancePtr, ve.SchemaPtr, ve.Message)
+	f := ve.AbsoluteKeywordLocation
+	f = f[strings.IndexByte(f, '#')+1:]
+	if f == "" {
+		f = "/"
+	}
+	return fmt.Sprintf("I[%s] S[%s] %s", ve.InstancePtr, f, ve.Message)
 }
 
 func (ve *ValidationError) GoString() string {
@@ -98,8 +105,8 @@ func (ve *ValidationError) GoString() string {
 	return msg
 }
 
-func validationError(schemaPtr string, format string, a ...interface{}) *ValidationError {
-	return &ValidationError{fmt.Sprintf(format, a...), "", "", schemaPtr, nil}
+func (s *Schema) validationError(schemaPtr string, format string, a ...interface{}) *ValidationError {
+	return &ValidationError{s.Location + "/" + schemaPtr, fmt.Sprintf(format, a...), "", "", schemaPtr, nil}
 }
 
 func addContext(instancePtr, schemaPtr string, err error) error {
