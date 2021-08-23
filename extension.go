@@ -78,6 +78,7 @@ func (ctx CompilerContext) CompileRef(ref string, refPath string, applicableOnSa
 type ValidationContext struct {
 	uneval          uneval
 	validate        func(sch *Schema, schPath string, v interface{}, vpath string) error
+	validateInplace func(sch *Schema, schPath string) error
 	validationError func(keywordPath string, format string, a ...interface{}) *ValidationError
 }
 
@@ -98,6 +99,9 @@ func (ctx ValidationContext) EvaluatedItem(index int) {
 // spath is relative-json-pointer to s
 // vpath is relative-json-pointer to v.
 func (ctx ValidationContext) Validate(s *Schema, spath string, v interface{}, vpath string) error {
+	if vpath == "" {
+		return ctx.validateInplace(s, spath)
+	}
 	return ctx.validate(s, spath, v, vpath)
 }
 
