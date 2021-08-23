@@ -48,7 +48,7 @@ This package supports loading json-schema from filePath and fileURL.
 
 To load json-schema from HTTPURL, add following import:
 
-	import _ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
+	import _ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 
 you can validate yaml documents. see https://play.golang.org/p/sJy1qY7dXgA
 */

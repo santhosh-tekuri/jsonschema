@@ -8,7 +8,7 @@
 // registering its Loaders.
 //
 // To use httploader, link this package into your program:
-//	import _ "github.com/santhosh-tekuri/jsonschema/httploader"
+//	import _ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 //
 package httploader
 
@@ -17,7 +17,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/santhosh-tekuri/jsonschema/v4"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 // Client is the default HTTP Client used to Get the resource.

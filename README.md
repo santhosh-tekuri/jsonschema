@@ -1,7 +1,7 @@
-# jsonschema v4.0.0
+# jsonschema v5.0.0
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4)
+[![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5)
 [![Go Report Card](https://goreportcard.com/badge/github.com/santhosh-tekuri/jsonschema)](https://goreportcard.com/report/github.com/santhosh-tekuri/jsonschema)
 [![Build Status](https://github.com/santhosh-tekuri/jsonschema/actions/workflows/go.yaml/badge.svg?branch=master)](https://github.com/santhosh-tekuri/jsonschema/actions/workflows/go.yaml)
 [![codecov.io](https://codecov.io/github/santhosh-tekuri/jsonschema/coverage.svg?branch=master)](https://codecov.io/github/santhosh-tekuri/jsonschema?branch=master)
@@ -26,22 +26,22 @@ Package jsonschema provides json-schema compilation and validation.
  - supports enabling format and content Assertions in draft2019-09
    - make Compiler.AssertFormat, Compiler.AssertContent true
  - compiled schema can be introspected. easier to develop tools like generating go structs given schema
- - supports user-defined keywords via [extensions](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-Extension)
- - implements following formats (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedFormat))
+ - supports user-defined keywords via [extensions](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-Extension)
+ - implements following formats (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedFormat))
    - date-time, date, time, duration (supports leap-second)
    - uuid, hostname, email
    - ip-address, ipv4, ipv6
    - uri, uriref, uri-template(limited validation)
    - json-pointer, relative-json-pointer
    - regex, format
- - implements following contentEncoding (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedContent))
+ - implements following contentEncoding (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedContent))
    - base64
- - implements following contentMediaType (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedContent))
+ - implements following contentMediaType (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedContent))
    - application/json
- - can load from files/http/https/[string](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-FromString)/[]byte/io.Reader (suports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4/#example-package-UserDefinedLoader))
+ - can load from files/http/https/[string](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-FromString)/[]byte/io.Reader (suports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedLoader))
 
 
-see examples in [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v4)
+see examples in [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5)
 
 The schema is compiled against the version specified in `$schema` property.
 If `$schema` property is missing, it uses latest draft which currently is draft7.
@@ -60,7 +60,7 @@ This package supports loading json-schema from filePath and fileURL.
 To load json-schema from HTTPURL, add following import:
 
 ```go
-import _ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
+import _ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 ```
 
 ## Rich Errors

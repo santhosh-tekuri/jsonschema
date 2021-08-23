@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v4"
-	_ "github.com/santhosh-tekuri/jsonschema/v4/httploader"
+	"github.com/santhosh-tekuri/jsonschema/v5"
+	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
 var testSuite = "testdata/JSON-Schema-Test-Suite@76b529f"
