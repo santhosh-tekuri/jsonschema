@@ -673,7 +673,7 @@ func toStrings(arr []interface{}) []string {
 
 // SchemaRef captures schema and the path refering to it.
 type schemaRef struct {
-	ptr     string  // json-pointer leading to schema s
+	path    string  // relative-json-pointer to schema
 	schema  *Schema // target schema
 	discard bool    // true when scope left
 }
@@ -695,18 +695,18 @@ func checkLoop(stack []schemaRef, sref schemaRef) error {
 		if path == "" {
 			path += ref.schema.URL + ref.schema.Ptr
 		} else {
-			path += "/" + ref.ptr
+			path += "/" + ref.path
 		}
 	}
-	return InfiniteLoopError(path + "/" + sref.ptr)
+	return InfiniteLoopError(path + "/" + sref.path)
 }
 
 func keywordLocation(stack []schemaRef, path string) string {
 	var loc string
 	if len(stack) > 0 {
-		var loc = stack[0].ptr
+		var loc = stack[0].path
 		for _, ref := range stack[1:] {
-			loc += "/" + ref.ptr
+			loc += "/" + ref.path
 		}
 	}
 	if path != "" {
