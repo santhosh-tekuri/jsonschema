@@ -209,14 +209,14 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 	}
 
 	if sr.schema != nil {
-		if err := checkLoop(stack, schemaRef{refPtr, sr.schema}); err != nil {
+		if err := checkLoop(stack, schemaRef{refPtr, sr.schema, false}); err != nil {
 			return nil, err
 		}
 		return sr.schema, nil
 	}
 
 	sr.schema = newSchema(r.url, sr.loc, sr.doc)
-	return c.compile(r, stack, schemaRef{refPtr, sr.schema}, sr)
+	return c.compile(r, stack, schemaRef{refPtr, sr.schema, false}, sr)
 }
 
 func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {
@@ -673,8 +673,9 @@ func toStrings(arr []interface{}) []string {
 
 // SchemaRef captures schema and the path refering to it.
 type schemaRef struct {
-	ptr    string  // json-pointer leading to schema s
-	schema *Schema // target schema
+	ptr     string  // json-pointer leading to schema s
+	schema  *Schema // target schema
+	discard bool    // true when scope left
 }
 
 func checkLoop(stack []schemaRef, sref schemaRef) error {

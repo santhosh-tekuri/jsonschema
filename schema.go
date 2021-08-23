@@ -181,7 +181,7 @@ func (ue uneval) pnames() string {
 
 // validate validates given value v with this schema.
 func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc string) (uneval uneval, err error) {
-	scope = append(scope, schemaRef{spath, s})
+	scope = append(scope, schemaRef{spath, s, false})
 
 	// populate uneval
 	switch v := v.(type) {
@@ -594,12 +594,16 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 	if s.DynamicRef != nil {
 		sch := s.DynamicRef
 		if sch.DynamicAnchor != "" {
-		Loop: // dynamicRef based on scope
-			for _, e := range scope {
-				for _, dsch := range e.schema.dynamicAnchors {
-					if dsch != sch && dsch.DynamicAnchor == sch.DynamicAnchor {
-						sch = dsch
-						break Loop
+			// dynamicRef based on scope
+			for i := len(scope) - 1; i >= 0; i-- {
+				sr := scope[i]
+				if sr.discard {
+					break
+				}
+				for _, da := range sr.schema.dynamicAnchors {
+					if da.DynamicAnchor == s.DynamicRef.DynamicAnchor && da != s.DynamicRef {
+						sch = da
+						break
 					}
 				}
 			}
@@ -659,8 +663,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 	if s.If != nil {
 		err := validateInplace(s.If, "if")
 		// "if" leaves dynamic scope
-		tmp := scope
-		scope = nil
+		scope[len(scope)-1].discard = true
 		if err == nil {
 			if s.Then != nil {
 				if err := validateInplace(s.Then, "then"); err != nil {
@@ -675,7 +678,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 			}
 		}
 		// restore dynamic scope
-		scope = tmp
+		scope[len(scope)-1].discard = false
 	}
 
 	for _, ext := range s.Extensions {
