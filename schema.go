@@ -19,8 +19,6 @@ import (
 // A Schema represents compiled version of json-schema.
 type Schema struct {
 	Location string // absolute location
-	URL      string // absolute url of the resource.
-	Ptr      string // json-pointer to schema. always starts with `#`.
 
 	dynamicAnchors []*Schema
 
@@ -102,12 +100,10 @@ type Schema struct {
 	Extensions map[string]ExtSchema
 }
 
-func newSchema(url, ptr string, doc interface{}) *Schema {
+func newSchema(url, loc string, doc interface{}) *Schema {
 	// fill with default values
 	s := &Schema{
-		Location:      url + ptr,
-		URL:           url,
-		Ptr:           ptr,
+		Location:      url + loc,
 		MinProperties: -1,
 		MaxProperties: -1,
 		MinItems:      -1,
@@ -158,7 +154,7 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
 			InstanceLocation:        "/",
-			Message:                 fmt.Sprintf("doesn't validate with %q", s.URL+s.Ptr),
+			Message:                 fmt.Sprintf("doesn't validate with %q", s.Location),
 			Causes:                  []*ValidationError{err.(*ValidationError)},
 		}
 		return err
@@ -562,11 +558,9 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 	validateRef := func(sch *Schema, refPath string) error {
 		if sch != nil {
 			if err := validateInplace(sch, refPath); err != nil {
-				var url string
-				if s.URL == sch.URL {
-					url = sch.Ptr
-				} else {
-					url = sch.URL + sch.Ptr
+				var url = sch.Location
+				if s.url() == sch.url() {
+					url = sch.loc()
 				}
 				return validationError(refPath, "doesn't validate with %q", url).add(err)
 			}

@@ -645,7 +645,7 @@ func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error
 				KeywordLocation:         "/",
 				AbsoluteKeywordLocation: meta.Location,
 				InstanceLocation:        "/",
-				Message:                 fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
+				Message:                 fmt.Sprintf("doesn't validate with %q", meta.Location),
 				Causes:                  []*ValidationError{err.(*ValidationError)},
 			}
 		}
@@ -693,7 +693,7 @@ func checkLoop(stack []schemaRef, sref schemaRef) error {
 	var path string
 	for _, ref := range stack {
 		if path == "" {
-			path += ref.schema.URL + ref.schema.Ptr
+			path += ref.schema.Location
 		} else {
 			path += "/" + ref.path
 		}

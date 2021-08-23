@@ -251,3 +251,16 @@ func split(uri string) (string, string) {
 	}
 	return uri[0:hash], f
 }
+
+func (s *Schema) url() string {
+	u, _ := split(s.Location)
+	return u
+}
+
+func (s *Schema) loc() string {
+	_, f := split(s.Location)
+	if f == "#" {
+		return "/"
+	}
+	return f[1:]
+}
