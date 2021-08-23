@@ -676,6 +676,12 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 		scope = tmp
 	}
 
+	for _, ext := range s.Extensions {
+		if err := ext.Validate(ValidationContext{uneval, validate, validationError}, v); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
 	// unevaluatedProperties + unevaluatedItems
 	switch v := v.(type) {
 	case map[string]interface{}:
@@ -697,12 +703,6 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 				}
 			}
 			uneval.items = nil
-		}
-	}
-
-	for _, ext := range s.Extensions {
-		if err := ext.Validate(ValidationContext{validate, validationError}, v); err != nil {
-			errors = append(errors, err)
 		}
 	}
 

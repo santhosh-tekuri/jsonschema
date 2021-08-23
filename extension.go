@@ -76,8 +76,19 @@ func (ctx CompilerContext) CompileRef(ref string, refPath string, applicableOnSa
 
 // ValidationContext provides additional context required in validating for extension.
 type ValidationContext struct {
+	uneval          uneval
 	validate        func(sch *Schema, schPath string, v interface{}, vpath string) error
 	validationError func(keywordPath string, format string, a ...interface{}) *ValidationError
+}
+
+// EvaluatedProp marks given property of object as evaluated.
+func (ctx ValidationContext) EvaluatedProp(prop string) {
+	delete(ctx.uneval.props, prop)
+}
+
+// EvaluatedItem marks given property of object as evaluated.
+func (ctx ValidationContext) EvaluatedItem(index int) {
+	delete(ctx.uneval.items, index)
 }
 
 // Validate validates schema s with value v. Extension must use this method instead of
