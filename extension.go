@@ -86,7 +86,7 @@ func (ctx ValidationContext) EvaluatedProp(prop string) {
 	delete(ctx.uneval.props, prop)
 }
 
-// EvaluatedItem marks given property of object as evaluated.
+// EvaluatedItem marks given index of array as evaluated.
 func (ctx ValidationContext) EvaluatedItem(index int) {
 	delete(ctx.uneval.items, index)
 }
