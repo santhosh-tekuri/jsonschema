@@ -4,8 +4,6 @@
 
 package jsonschema
 
-import "fmt"
-
 // ExtCompiler compiles custom keyword(s) into ExtSchema.
 type ExtCompiler interface {
 	// Compile compiles the schema m and returns its compiled representation.
@@ -78,7 +76,8 @@ func (ctx CompilerContext) CompileRef(ref string, refPath string, applicableOnSa
 
 // ValidationContext provides additional context required in validating for extension.
 type ValidationContext struct {
-	scope []schemaRef
+	validate        func(sch *Schema, schPath string, v interface{}, vpath string) error
+	validationError func(keywordPath string, format string, a ...interface{}) *ValidationError
 }
 
 // Validate validates schema s with value v. Extension must use this method instead of
@@ -88,18 +87,14 @@ type ValidationContext struct {
 // spath is relative-json-pointer to s
 // vpath is relative-json-pointer to v.
 func (ctx ValidationContext) Validate(s *Schema, spath string, v interface{}, vpath string) error {
-	_, err := s.validate(ctx.scope, spath, v, vpath)
-	return err
+	return ctx.validate(s, spath, v, vpath)
 }
 
-// Error used to construct validation error by extensions. schemaPtr is relative json pointer.
-func (ctx ValidationContext) Error(schemaPtr string, format string, a ...interface{}) *ValidationError {
-	sch := ctx.scope[len(ctx.scope)-1].schema
-	return &ValidationError{
-		KeywordLocation:         keywordLocation(ctx.scope, schemaPtr),
-		AbsoluteKeywordLocation: sch.Location + "/" + schemaPtr,
-		Message:                 fmt.Sprintf(format, a...),
-	}
+// Error used to construct validation error by extensions.
+//
+// keywordPath is relative-json-pointer to keyword.
+func (ctx ValidationContext) Error(keywordPath string, format string, a ...interface{}) *ValidationError {
+	return ctx.validationError(keywordPath, format, a...)
 }
 
 // Group is used by extensions to group multiple errors as causes to parent error.
