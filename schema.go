@@ -149,6 +149,8 @@ func (s *Schema) Validate(r io.Reader) error {
 // the doc must be the value decoded by json package using interface{} type.
 // we recommend to use jsonschema.DecodeJSON(io.Reader) to decode JSON.
 //
+// err returned will be of type *ValidationError.
+//
 // panics if it detects any non json value in doc.
 func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 	if _, err := s.validate(nil, "", doc, ""); err != nil {
