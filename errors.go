@@ -50,24 +50,15 @@ func (se *SchemaError) GoString() string {
 
 // ValidationError is the error type returned by Validate.
 type ValidationError struct {
-	KeywordLocation         string // validation path of validating keyword or schema
-	AbsoluteKeywordLocation string // absolute location of validating keyword or schema
-	InstanceLocation        string // location of the json value within the instance being validated
-
-	// Message describes error
-	Message string
-
-	// InstancePtr is json-pointer which refers to json-fragment in json instance
-	// that is not valid
-	InstancePtr string
-
-	// Causes details the nested validation errors
-	Causes []*ValidationError
+	KeywordLocation         string             // validation path of validating keyword or schema
+	AbsoluteKeywordLocation string             // absolute location of validating keyword or schema
+	InstanceLocation        string             // location of the json value within the instance being validated
+	Message                 string             // describes error
+	Causes                  []*ValidationError // nested validation errors
 }
 
 func (ve *ValidationError) add(causes ...error) error {
 	for _, cause := range causes {
-		_ = addContext(ve.InstancePtr, cause)
 		ve.Causes = append(ve.Causes, cause.(*ValidationError))
 	}
 	return ve
@@ -97,23 +88,6 @@ func (ve *ValidationError) GoString() string {
 		}
 	}
 	return msg
-}
-
-func addContext(instancePtr string, err error) error {
-	ve := err.(*ValidationError)
-	ve.InstancePtr = joinPtr(instancePtr, ve.InstancePtr)
-	for _, cause := range ve.Causes {
-		_ = addContext(instancePtr, cause)
-	}
-	return ve
-}
-
-func finishInstanceContext(err error) {
-	ve := err.(*ValidationError)
-	ve.InstancePtr = absPtr(ve.InstancePtr)
-	for _, cause := range ve.Causes {
-		finishInstanceContext(cause)
-	}
 }
 
 func joinPtr(ptr1, ptr2 string) string {

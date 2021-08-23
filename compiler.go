@@ -641,14 +641,11 @@ func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error
 			return nil
 		}
 		if _, err := meta.validate(nil, "", v, vloc); err != nil {
-			_ = addContext(vloc, err)
-			finishInstanceContext(err)
 			return &ValidationError{
 				KeywordLocation:         "/",
 				AbsoluteKeywordLocation: meta.Location,
 				InstanceLocation:        "/",
 				Message:                 fmt.Sprintf("doesn't validate with %q", meta.URL+meta.Ptr),
-				InstancePtr:             vloc,
 				Causes:                  []*ValidationError{err.(*ValidationError)},
 			}
 		}

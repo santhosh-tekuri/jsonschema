@@ -152,13 +152,11 @@ func (s *Schema) Validate(r io.Reader) error {
 // panics if it detects any non json value in doc.
 func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 	if _, err := s.validate(nil, "", doc, ""); err != nil {
-		finishInstanceContext(err)
 		return &ValidationError{
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
 			InstanceLocation:        "/",
 			Message:                 fmt.Sprintf("doesn't validate with %q", s.URL+s.Ptr),
-			InstancePtr:             "#",
 			Causes:                  []*ValidationError{err.(*ValidationError)},
 		}
 		return err
@@ -318,7 +316,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 			if pvalue, ok := v[pname]; ok {
 				delete(uneval.props, pname)
 				if err := validate(sch, "properties/"+escape(pname), pvalue, escape(pname)); err != nil {
-					errors = append(errors, addContext(escape(pname), err))
+					errors = append(errors, err)
 				}
 			}
 		}
@@ -326,7 +324,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 		if s.PropertyNames != nil {
 			for pname := range v {
 				if err := validate(s.PropertyNames, "propertyNames", pname, escape(pname)); err != nil {
-					errors = append(errors, addContext(escape(pname), err))
+					errors = append(errors, err)
 				}
 			}
 		}
@@ -343,7 +341,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 				if pattern.MatchString(pname) {
 					delete(uneval.props, pname)
 					if err := validate(sch, "patternProperties/"+escape(pattern.String()), pvalue, escape(pname)); err != nil {
-						errors = append(errors, addContext(escape(pname), err))
+						errors = append(errors, err)
 					}
 				}
 			}
@@ -358,7 +356,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 				for pname := range uneval.props {
 					if pvalue, ok := v[pname]; ok {
 						if err := validate(schema, "additionalProperties", pvalue, escape(pname)); err != nil {
-							errors = append(errors, addContext(escape(pname), err))
+							errors = append(errors, err)
 						}
 					}
 				}
@@ -370,7 +368,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 				switch dvalue := dvalue.(type) {
 				case *Schema:
 					if err := validateInplace(dvalue, "dependencies/"+escape(dname)); err != nil {
-						errors = append(errors, addContext("", err))
+						errors = append(errors, err)
 					}
 				case []string:
 					for i, pname := range dvalue {
@@ -393,7 +391,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 		for dname, sch := range s.DependentSchemas {
 			if _, ok := v[dname]; ok {
 				if err := validateInplace(sch, "dependentSchemas/"+escape(dname)); err != nil {
-					errors = append(errors, addContext("", err))
+					errors = append(errors, err)
 				}
 			}
 		}
@@ -420,7 +418,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 		case *Schema:
 			for i, item := range v {
 				if err := validate(items, "items", item, strconv.Itoa(i)); err != nil {
-					errors = append(errors, addContext(strconv.Itoa(i), err))
+					errors = append(errors, err)
 				}
 			}
 			uneval.items = nil
@@ -429,12 +427,12 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 				if i < len(items) {
 					delete(uneval.items, i)
 					if err := validate(items[i], "items/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
-						errors = append(errors, addContext(strconv.Itoa(i), err))
+						errors = append(errors, err)
 					}
 				} else if sch, ok := s.AdditionalItems.(*Schema); ok {
 					delete(uneval.items, i)
 					if err := validate(sch, "additionalItems", item, strconv.Itoa(i)); err != nil {
-						errors = append(errors, addContext(strconv.Itoa(i), err))
+						errors = append(errors, err)
 					}
 				} else {
 					break
@@ -454,12 +452,12 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 			if i < len(s.PrefixItems) {
 				delete(uneval.items, i)
 				if err := validate(s.PrefixItems[i], "prefixItems/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
-					errors = append(errors, addContext(strconv.Itoa(i), err))
+					errors = append(errors, err)
 				}
 			} else if s.Items2020 != nil {
 				delete(uneval.items, i)
 				if err := validate(s.Items2020, "items", item, strconv.Itoa(i)); err != nil {
-					errors = append(errors, addContext(strconv.Itoa(i), err))
+					errors = append(errors, err)
 				}
 			} else {
 				break
@@ -472,7 +470,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 			var causes []error
 			for i, item := range v {
 				if err := validate(s.Contains, "contains", item, strconv.Itoa(i)); err != nil {
-					causes = append(causes, addContext(strconv.Itoa(i), err))
+					causes = append(causes, err)
 				} else {
 					matched++
 					if s.ContainsEval {
@@ -627,7 +625,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 			if err := validateInplace(sch, "anyOf/"+strconv.Itoa(i)); err == nil {
 				matched = true
 			} else {
-				causes = append(causes, addContext("", err))
+				causes = append(causes, err)
 			}
 		}
 		if !matched {
@@ -647,7 +645,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 					break
 				}
 			} else {
-				causes = append(causes, addContext("", err))
+				causes = append(causes, err)
 			}
 		}
 		if matched == -1 {
@@ -685,7 +683,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 			for pname := range uneval.props {
 				if pvalue, ok := v[pname]; ok {
 					if err := validate(s.UnevaluatedProperties, "unevaluatedProperties", pvalue, escape(pname)); err != nil {
-						errors = append(errors, addContext(escape(pname), err))
+						errors = append(errors, err)
 					}
 				}
 			}
@@ -695,7 +693,7 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 		if s.UnevaluatedItems != nil {
 			for i := range uneval.items {
 				if err := validate(s.UnevaluatedItems, "unevaluatedItems", v[i], strconv.Itoa(i)); err != nil {
-					errors = append(errors, addContext(strconv.Itoa(i), err))
+					errors = append(errors, err)
 				}
 			}
 			uneval.items = nil
