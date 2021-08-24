@@ -18,11 +18,23 @@ func (e InvalidJSONTypeError) Error() string {
 }
 
 // InfiniteLoopError is returned by Compile/Validate.
-// this gives keywordLocation that lead to infinity loop.
+// this gives url#keywordLocation that lead to infinity loop.
 type InfiniteLoopError string
 
 func (e InfiniteLoopError) Error() string {
 	return "jsonschema: infinite loop " + string(e)
+}
+
+func infiniteLoopError(stack []schemaRef, sref schemaRef) InfiniteLoopError {
+	var path string
+	for _, ref := range stack {
+		if path == "" {
+			path += ref.schema.Location
+		} else {
+			path += "/" + ref.path
+		}
+	}
+	return InfiniteLoopError(path + "/" + sref.path)
 }
 
 // SchemaError is the error type returned by Compile.

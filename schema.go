@@ -204,8 +204,8 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	}
 
 	sref := schemaRef{spath, s, false}
-	if isLoop(scope[len(scope)-vscope:], sref) {
-		panic(InfiniteLoopError(keywordLocation(scope, spath)))
+	if err := checkLoop(scope[len(scope)-vscope:], sref); err != nil {
+		panic(err)
 	}
 	scope = append(scope, sref)
 	vscope++

@@ -507,7 +507,6 @@ func TestInfiniteLoopError(t *testing.T) {
 				t.Errorf("        got: %s", string(err))
 				t.Errorf("want-suffix: %s", suffix)
 			}
-			// pass
 		default:
 			t.Fatalf("got %#v. want InfiniteLoopTypeErr", err)
 		}
@@ -521,12 +520,11 @@ func TestInfiniteLoopError(t *testing.T) {
 		err = schema.Validate(strings.NewReader(`{"prop": 1}`))
 		switch err := err.(type) {
 		case jsonschema.InfiniteLoopError:
-			want := "/$ref/$ref/not/$ref/allOf/0/$ref/anyOf/0/$ref/oneOf/0/$ref/dependencies/prop/$ref/dependentSchemas/prop/$ref/then/$ref/else/$dynamicRef/$ref"
-			if string(err) != want {
-				t.Errorf(" got: %s", string(err))
-				t.Errorf("want: %s", want)
+			suffix := "testdata/loop-validate.json#/$ref/$ref/not/$ref/allOf/0/$ref/anyOf/0/$ref/oneOf/0/$ref/dependencies/prop/$ref/dependentSchemas/prop/$ref/then/$ref/else/$dynamicRef/$ref"
+			if !strings.HasSuffix(string(err), suffix) {
+				t.Errorf("        got: %s", string(err))
+				t.Errorf("want-suffix: %s", suffix)
 			}
-			// pass
 		default:
 			t.Fatalf("got %#v. want InfiniteLoopTypeErr", err)
 		}

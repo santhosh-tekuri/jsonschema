@@ -682,30 +682,13 @@ func (sr schemaRef) String() string {
 	return fmt.Sprintf("(%s)%v", sr.path, sr.schema)
 }
 
-func isLoop(stack []schemaRef, sref schemaRef) bool {
+func checkLoop(stack []schemaRef, sref schemaRef) error {
 	for _, ref := range stack {
 		if ref.schema == sref.schema {
-			return true
-			break
+			return infiniteLoopError(stack, sref)
 		}
 	}
-	return false
-}
-
-func checkLoop(stack []schemaRef, sref schemaRef) error {
-	if !isLoop(stack, sref) {
-		return nil
-	}
-
-	var path string
-	for _, ref := range stack {
-		if path == "" {
-			path += ref.schema.Location
-		} else {
-			path += "/" + ref.path
-		}
-	}
-	return InfiniteLoopError(path + "/" + sref.path)
+	return nil
 }
 
 func keywordLocation(stack []schemaRef, path string) string {
