@@ -100,6 +100,10 @@ type Schema struct {
 	Extensions map[string]ExtSchema
 }
 
+func (s *Schema) String() {
+	return s.Location
+}
+
 func newSchema(url, loc string, doc interface{}) *Schema {
 	// fill with default values
 	s := &Schema{

@@ -678,15 +678,22 @@ type schemaRef struct {
 	discard bool    // true when scope left
 }
 
-func checkLoop(stack []schemaRef, sref schemaRef) error {
-	var loop bool
+func (sr schemaRef) String() string {
+	return fmt.Sprintf("(%s)%v", sr.path, sr.schema)
+}
+
+func isLoop(stack []schemaRef, sref schemaRef) bool {
 	for _, ref := range stack {
 		if ref.schema == sref.schema {
-			loop = true
+			return true
 			break
 		}
 	}
-	if !loop {
+	return false
+}
+
+func checkLoop(stack []schemaRef, sref schemaRef) error {
+	if !isLoop(stack, sref) {
 		return nil
 	}
 
