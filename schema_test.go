@@ -474,18 +474,6 @@ func TestValidateInterface(t *testing.T) {
 }
 
 func TestInvalidJsonTypeError(t *testing.T) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Error("panic expected")
-		}
-		switch r.(type) {
-		case jsonschema.InvalidJSONTypeError:
-			// passed: struct is not valid json type
-		default:
-			t.Fatalf("got %v. want InvalidJSONTypeErr", r)
-		}
-	}()
 	compiler := jsonschema.NewCompiler()
 	err := compiler.AddResource("test.json", strings.NewReader(`{ "type": "string"}`))
 	if err != nil {
@@ -496,7 +484,33 @@ func TestInvalidJsonTypeError(t *testing.T) {
 		t.Fatalf("schema compilation failed. reason: %v\n", err)
 	}
 	v := struct{ name string }{"hello world"}
-	_ = schema.ValidateInterface(v)
+	err = schema.ValidateInterface(v)
+	switch err.(type) {
+	case jsonschema.InvalidJSONTypeError:
+		// passed: struct is not valid json type
+	default:
+		t.Fatalf("got %v. want InvalidJSONTypeErr", err)
+	}
+}
+
+func TestInfiniteLoopError(t *testing.T) {
+	compiler := jsonschema.NewCompiler()
+	schema, err := compiler.Compile("testdata/loop-schema.json")
+	if err != nil {
+		t.Fatalf("schema compilation failed. reason: %v\n", err)
+	}
+	err = schema.Validate(strings.NewReader(`{"prop": 1}`))
+	switch err := err.(type) {
+	case jsonschema.InfiniteLoopError:
+		want := "/$ref/$ref/not/$ref/allOf/0/$ref/anyOf/0/$ref/oneOf/0/$ref/dependencies/prop/$ref/dependentSchemas/prop/$ref/then/$ref/else/$dynamicRef/$ref"
+		if string(err) != want {
+			t.Errorf(" got: %s", string(err))
+			t.Errorf("want: %s", want)
+		}
+		// pass
+	default:
+		t.Fatalf("got %v. want InfiniteLoopTypeErr", err)
+	}
 }
 
 func TestExtractAnnotations(t *testing.T) {

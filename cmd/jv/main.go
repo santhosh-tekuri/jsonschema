@@ -61,7 +61,7 @@ func main() {
 			if _, ok := err.(*jsonschema.ValidationError); ok {
 				fmt.Fprintf(os.Stderr, "%#v\n", err)
 			} else {
-				fmt.Fprintf(os.Stderr, "validation failed: %v", err)
+				fmt.Fprintf(os.Stderr, "validation failed: %v\n", err)
 			}
 			os.Exit(1)
 		}

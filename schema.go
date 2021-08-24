@@ -100,7 +100,7 @@ type Schema struct {
 	Extensions map[string]ExtSchema
 }
 
-func (s *Schema) String() {
+func (s *Schema) String() string {
 	return s.Location
 }
 
@@ -149,11 +149,20 @@ func (s *Schema) Validate(r io.Reader) error {
 // the doc must be the value decoded by json package using interface{} type.
 // we recommend to use jsonschema.DecodeJSON(io.Reader) to decode JSON.
 //
-// err returned will be of type *ValidationError.
-//
-// panics if it detects any non json value in doc.
+// returns *ValidationError if doc does not confirm with schema s.
+// returns InfiniteLoopError if it detects loop during validation.
+// returns InvalidJSONTypeError if it detects any non json value in doc.
 func (s *Schema) ValidateInterface(doc interface{}) (err error) {
-	if _, err := s.validate(nil, "", doc, ""); err != nil {
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(error); ok {
+				err = e
+			} else {
+				panic(r)
+			}
+		}
+	}()
+	if _, err := s.validate(nil, 0, "", doc, ""); err != nil {
 		return &ValidationError{
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
@@ -180,8 +189,26 @@ func (ue uneval) pnames() string {
 }
 
 // validate validates given value v with this schema.
-func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc string) (uneval uneval, err error) {
-	scope = append(scope, schemaRef{spath, s, false})
+func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interface{}, vloc string) (uneval uneval, err error) {
+	validationError := func(keywordPath string, format string, a ...interface{}) *ValidationError {
+		vloc := vloc
+		if vloc == "" {
+			vloc = "/"
+		}
+		return &ValidationError{
+			KeywordLocation:         keywordLocation(scope, keywordPath),
+			AbsoluteKeywordLocation: joinPtr(s.Location, keywordPath),
+			InstanceLocation:        vloc,
+			Message:                 fmt.Sprintf(format, a...),
+		}
+	}
+
+	sref := schemaRef{spath, s, false}
+	if isLoop(scope[len(scope)-vscope:], sref) {
+		panic(InfiniteLoopError(keywordLocation(scope, spath)))
+	}
+	scope = append(scope, sref)
+	vscope++
 
 	// populate uneval
 	switch v := v.(type) {
@@ -202,12 +229,12 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 		if vpath != "" {
 			vloc += "/" + vpath
 		}
-		_, err := sch.validate(scope, schPath, v, vloc)
+		_, err := sch.validate(scope, 0, schPath, v, vloc)
 		return err
 	}
 
 	validateInplace := func(sch *Schema, schPath string) error {
-		ue, err := sch.validate(scope, schPath, v, vloc)
+		ue, err := sch.validate(scope, vscope, schPath, v, vloc)
 		if err == nil {
 			// update uneval
 			for pname := range uneval.props {
@@ -222,19 +249,6 @@ func (s *Schema) validate(scope []schemaRef, spath string, v interface{}, vloc s
 			}
 		}
 		return err
-	}
-
-	validationError := func(keywordPath string, format string, a ...interface{}) *ValidationError {
-		vloc := vloc
-		if vloc == "" {
-			vloc = "/"
-		}
-		return &ValidationError{
-			KeywordLocation:         keywordLocation(scope, keywordPath),
-			AbsoluteKeywordLocation: joinPtr(s.Location, keywordPath),
-			InstanceLocation:        vloc,
-			Message:                 fmt.Sprintf(format, a...),
-		}
 	}
 
 	if s.Always != nil {

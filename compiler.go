@@ -640,7 +640,7 @@ func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error
 		if meta == nil {
 			return nil
 		}
-		if _, err := meta.validate(nil, "", v, vloc); err != nil {
+		if _, err := meta.validate(nil, 0, "", v, vloc); err != nil {
 			return &ValidationError{
 				KeywordLocation:         "/",
 				AbsoluteKeywordLocation: meta.Location,
