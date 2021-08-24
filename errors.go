@@ -17,7 +17,7 @@ func (e InvalidJSONTypeError) Error() string {
 	return fmt.Sprintf("jsonschema: invalid jsonType: %s", string(e))
 }
 
-// InfiniteLoopError is returned by Compile.
+// InfiniteLoopError is returned by Compile/Validate.
 // this gives keywordLocation that lead to infinity loop.
 type InfiniteLoopError string
 
