@@ -141,6 +141,10 @@ func newSchema(url, loc string, doc interface{}) *Schema {
 // returns InfiniteLoopError if it detects loop during validation.
 // returns InvalidJSONTypeError if it detects any non json value in v.
 func (s *Schema) Validate(v interface{}) (err error) {
+	return s.validateValue(v, "")
+}
+
+func (s *Schema) validateValue(v interface{}, vloc string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch r := r.(type) {
@@ -151,11 +155,14 @@ func (s *Schema) Validate(v interface{}) (err error) {
 			}
 		}
 	}()
-	if _, err := s.validate(nil, 0, "", v, ""); err != nil {
+	if _, err := s.validate(nil, 0, "", v, vloc); err != nil {
+		if vloc == "" {
+			vloc = "/"
+		}
 		ve := ValidationError{
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
-			InstanceLocation:        "/",
+			InstanceLocation:        vloc,
 			Message:                 fmt.Sprintf("doesn't validate with %s", s.Location),
 		}
 		return ve.causes(err)
