@@ -247,8 +247,12 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 							err = schema.Validate(bytes.NewReader(test.Data))
 							valid := err == nil
 							if !valid {
-								for _, line := range strings.Split(err.(*jsonschema.ValidationError).GoString(), "\n") {
-									t.Logf("        %s\n", line)
+								if _, ok := err.(*jsonschema.ValidationError); ok {
+									for _, line := range strings.Split(err.(*jsonschema.ValidationError).GoString(), "\n") {
+										t.Logf("        %s\n", line)
+									}
+								} else {
+									t.Fatalf("got: %#v, want: *jsonschema.ValidationError", err)
 								}
 							}
 							if test.Valid != valid {
