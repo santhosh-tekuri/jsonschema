@@ -80,6 +80,15 @@ func (ve *ValidationError) add(causes ...error) error {
 	return ve
 }
 
+func (ve *ValidationError) causes(err error) error {
+	if err := err.(*ValidationError); len(err.Causes) > 0 {
+		ve.Causes = err.Causes
+	} else {
+		ve.add(err)
+	}
+	return ve
+}
+
 // MessageFmt returns the Message formatted, but does not include child Cause messages.
 //
 // Deprecated: use Error method

@@ -152,14 +152,13 @@ func (s *Schema) Validate(v interface{}) (err error) {
 		}
 	}()
 	if _, err := s.validate(nil, 0, "", v, ""); err != nil {
-		return &ValidationError{
+		ve := ValidationError{
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
 			InstanceLocation:        "/",
 			Message:                 fmt.Sprintf("doesn't validate with %s", s.Location),
-			Causes:                  []*ValidationError{err.(*ValidationError)},
 		}
-		return err
+		return ve.causes(err)
 	}
 	return nil
 }
@@ -556,7 +555,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				if s.url() == sch.url() {
 					url = sch.loc()
 				}
-				return validationError(refPath, "doesn't validate with %q", url).add(err)
+				return validationError(refPath, "doesn't validate with %q", url).causes(err)
 			}
 		}
 		return nil
