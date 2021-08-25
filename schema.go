@@ -194,9 +194,9 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			result.unevalProps[pname] = struct{}{}
 		}
 	case []interface{}:
-		result.items = make(map[int]struct{})
+		result.unevalItems = make(map[int]struct{})
 		for i := range v {
-			result.items[i] = struct{}{}
+			result.unevalItems[i] = struct{}{}
 		}
 	}
 
@@ -218,9 +218,9 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 					delete(result.unevalProps, pname)
 				}
 			}
-			for i := range result.items {
-				if _, ok := vr.items[i]; !ok {
-					delete(result.items, i)
+			for i := range result.unevalItems {
+				if _, ok := vr.unevalItems[i]; !ok {
+					delete(result.unevalItems, i)
 				}
 			}
 		}
@@ -413,16 +413,16 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 					errors = append(errors, err)
 				}
 			}
-			result.items = nil
+			result.unevalItems = nil
 		case []*Schema:
 			for i, item := range v {
 				if i < len(items) {
-					delete(result.items, i)
+					delete(result.unevalItems, i)
 					if err := validate(items[i], "items/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
 						errors = append(errors, err)
 					}
 				} else if sch, ok := s.AdditionalItems.(*Schema); ok {
-					delete(result.items, i)
+					delete(result.unevalItems, i)
 					if err := validate(sch, "additionalItems", item, strconv.Itoa(i)); err != nil {
 						errors = append(errors, err)
 					}
@@ -432,7 +432,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 			if additionalItems, ok := s.AdditionalItems.(bool); ok {
 				if additionalItems {
-					result.items = nil
+					result.unevalItems = nil
 				} else if len(v) > len(items) {
 					errors = append(errors, validationError("additionalItems", "only %d items are allowed, but found %d items", len(items), len(v)))
 				}
@@ -442,12 +442,12 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		// prefixItems + items
 		for i, item := range v {
 			if i < len(s.PrefixItems) {
-				delete(result.items, i)
+				delete(result.unevalItems, i)
 				if err := validate(s.PrefixItems[i], "prefixItems/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
 					errors = append(errors, err)
 				}
 			} else if s.Items2020 != nil {
-				delete(result.items, i)
+				delete(result.unevalItems, i)
 				if err := validate(s.Items2020, "items", item, strconv.Itoa(i)); err != nil {
 					errors = append(errors, err)
 				}
@@ -466,7 +466,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				} else {
 					matched++
 					if s.ContainsEval {
-						delete(result.items, i)
+						delete(result.unevalItems, i)
 					}
 				}
 			}
@@ -690,12 +690,12 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 	case []interface{}:
 		if s.UnevaluatedItems != nil {
-			for i := range result.items {
+			for i := range result.unevalItems {
 				if err := validate(s.UnevaluatedItems, "UnevaluatedItems", v[i], strconv.Itoa(i)); err != nil {
 					errors = append(errors, err)
 				}
 			}
-			result.items = nil
+			result.unevalItems = nil
 		}
 	}
 
@@ -711,7 +711,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 
 type validationResult struct {
 	unevalProps map[string]struct{}
-	items       map[int]struct{}
+	unevalItems map[int]struct{}
 }
 
 func (vr validationResult) unevalPnames() string {

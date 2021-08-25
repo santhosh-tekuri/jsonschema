@@ -89,7 +89,7 @@ func (ctx ValidationContext) EvaluatedProp(prop string) {
 
 // EvaluatedItem marks given index of array as evaluated.
 func (ctx ValidationContext) EvaluatedItem(index int) {
-	delete(ctx.result.items, index)
+	delete(ctx.result.unevalItems, index)
 }
 
 // Validate validates schema s with value v. Extension must use this method instead of
