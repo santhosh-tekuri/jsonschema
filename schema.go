@@ -155,9 +155,10 @@ func (s *Schema) Validate(r io.Reader) error {
 func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			if e, ok := r.(error); ok {
-				err = e
-			} else {
+			switch r := r.(type) {
+			case InfiniteLoopError, InvalidJSONTypeError:
+				err = r.(error)
+			default:
 				panic(r)
 			}
 		}
