@@ -50,14 +50,18 @@ type SchemaError struct {
 }
 
 func (se *SchemaError) Error() string {
-	return fmt.Sprintf("json-schema %q compilation failed", se.SchemaURL)
+	s := fmt.Sprintf("json-schema %s compilation failed", se.SchemaURL)
+	if _, ok := se.Err.(*ValidationError); !ok {
+		return fmt.Sprintf("%s: %v", s, se.Err)
+	}
+	return s
 }
 
 func (se *SchemaError) GoString() string {
 	if _, ok := se.Err.(*ValidationError); ok {
-		return fmt.Sprintf("json-schema %q compilation failed. Reason:\n%#v", se.SchemaURL, se.Err)
+		return fmt.Sprintf("json-schema %s compilation failed\n%#v", se.SchemaURL, se.Err)
 	}
-	return fmt.Sprintf("json-schema %q compilation failed. Reason: %v", se.SchemaURL, se.Err)
+	return fmt.Sprintf("json-schema %s compilation failed: %v", se.SchemaURL, se.Err)
 }
 
 // ValidationError is the error type returned by Validate.

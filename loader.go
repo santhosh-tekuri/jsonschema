@@ -37,7 +37,7 @@ var Loaders = map[string]func(url string) (io.ReadCloser, error){
 type LoaderNotFoundError string
 
 func (e LoaderNotFoundError) Error() string {
-	return fmt.Sprintf("jsonschema: no Loader found for %q", string(e))
+	return fmt.Sprintf("jsonschema: no Loader found for %s", string(e))
 }
 
 // LoadURL loads document at given absolute URL. The default implementation

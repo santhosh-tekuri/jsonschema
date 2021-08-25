@@ -156,7 +156,7 @@ func (s *Schema) Validate(v interface{}) (err error) {
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
 			InstanceLocation:        "/",
-			Message:                 fmt.Sprintf("doesn't validate with %q", s.Location),
+			Message:                 fmt.Sprintf("doesn't validate with %s", s.Location),
 			Causes:                  []*ValidationError{err.(*ValidationError)},
 		}
 		return err

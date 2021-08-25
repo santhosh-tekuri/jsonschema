@@ -30,7 +30,7 @@ func newResource(url string, r io.Reader) (*resource, error) {
 	}
 	doc, err := unmarshal(r)
 	if err != nil {
-		return nil, fmt.Errorf("jsonschema: invalid json %q reason: %v", url, err)
+		return nil, fmt.Errorf("jsonschema: invalid json %s: %v", url, err)
 	}
 	url, err = toAbs(url)
 	if err != nil {

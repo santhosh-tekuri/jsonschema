@@ -149,11 +149,11 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 	if m, ok := r.doc.(map[string]interface{}); ok {
 		if sch, ok := m["$schema"]; ok {
 			if _, ok = sch.(string); !ok {
-				return nil, fmt.Errorf("jsonschema: invalid $schema in %q", url)
+				return nil, fmt.Errorf("jsonschema: invalid $schema in %s", url)
 			}
 			r.draft = findDraft(sch.(string))
 			if r.draft == nil {
-				return nil, fmt.Errorf("jsonschema: invalid $schema in %q", url)
+				return nil, fmt.Errorf("jsonschema: invalid $schema in %s", url)
 			}
 		}
 	}
@@ -205,7 +205,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		return nil, err
 	}
 	if sr == nil {
-		return nil, fmt.Errorf("jsonschema: %q not found", ref)
+		return nil, fmt.Errorf("jsonschema: %s not found", ref)
 	}
 
 	if sr.schema != nil {
@@ -645,7 +645,7 @@ func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error
 				KeywordLocation:         "/",
 				AbsoluteKeywordLocation: meta.Location,
 				InstanceLocation:        "/",
-				Message:                 fmt.Sprintf("doesn't validate with %q", meta.Location),
+				Message:                 fmt.Sprintf("doesn't validate with %s", meta.Location),
 				Causes:                  []*ValidationError{err.(*ValidationError)},
 			}
 		}

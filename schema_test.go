@@ -295,7 +295,7 @@ func TestInvalidSchema(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{")); err == nil {
 			t.Error("error expected")
 		} else {
-			t.Logf("%#v", err)
+			t.Logf("%v", err)
 		}
 	})
 
@@ -303,7 +303,7 @@ func TestInvalidSchema(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{}{}")); err == nil {
 			t.Error("error expected")
 		} else {
-			t.Logf("%#v", err)
+			t.Logf("%v", err)
 		}
 	})
 
@@ -313,7 +313,7 @@ func TestInvalidSchema(t *testing.T) {
 		description string
 		url         string
 	}{
-		{"invalid json", "testdata/syntax_error.json"},
+		{"syntax error", "testdata/syntax_error.json"},
 		{"missing filepath", "testdata/missing.json"},
 		{"missing fileurl", toFileURL("testdata/missing.json")},
 		{"missing httpurl", httpURL + "/missing.json"},
