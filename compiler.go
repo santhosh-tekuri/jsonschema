@@ -693,20 +693,11 @@ func checkLoop(stack []schemaRef, sref schemaRef) error {
 
 func keywordLocation(stack []schemaRef, path string) string {
 	var loc string
-	if len(stack) > 0 {
-		loc = stack[0].path
-		for _, ref := range stack[1:] {
-			loc += "/" + ref.path
-		}
+	for _, ref := range stack[1:] {
+		loc += "/" + ref.path
 	}
-	if path != "" {
-		loc += "/" + path
-	}
-	if loc == "" {
-		return "/"
-	}
-	if loc[0] != '/' {
-		loc = "/" + loc
+	if loc == "" || path != "" {
+		loc = loc + "/" + path
 	}
 	return loc
 }
