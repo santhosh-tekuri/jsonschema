@@ -35,12 +35,12 @@ func TestPowerOfExt(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Run("validInstance", func(t *testing.T) {
-			if err := sch.Validate(strings.NewReader(`100`)); err != nil {
+			if err := sch.Validate(100); err != nil {
 				t.Fatal(err)
 			}
 		})
 		t.Run("invalidInstance", func(t *testing.T) {
-			if err := sch.Validate(strings.NewReader(`111`)); err == nil {
+			if err := sch.Validate(111); err == nil {
 				t.Fatal("validation must fail")
 			} else {
 				t.Logf("%#v", err)

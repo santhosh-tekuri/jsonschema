@@ -5,6 +5,7 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -27,7 +28,7 @@ func newResource(url string, r io.Reader) (*resource, error) {
 	if strings.IndexByte(url, '#') != -1 {
 		panic(fmt.Sprintf("BUG: newResource(%q)", url))
 	}
-	doc, err := DecodeJSON(r)
+	doc, err := unmarshal(r)
 	if err != nil {
 		return nil, fmt.Errorf("jsonschema: invalid json %q reason: %v", url, err)
 	}
@@ -263,4 +264,17 @@ func (s *Schema) loc() string {
 		return "/"
 	}
 	return f[1:]
+}
+
+func unmarshal(r io.Reader) (interface{}, error) {
+	decoder := json.NewDecoder(r)
+	decoder.UseNumber()
+	var doc interface{}
+	if err := decoder.Decode(&doc); err != nil {
+		return nil, err
+	}
+	if t, _ := decoder.Token(); t != nil {
+		return nil, fmt.Errorf("invalid character %v after top-level value", t)
+	}
+	return doc, nil
 }

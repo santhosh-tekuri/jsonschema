@@ -203,20 +203,23 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 			if skip != nil && len(skip) == 0 {
 				t.Skip()
 			}
-			data, err := ioutil.ReadFile(path.Join(folder, fi.Name()))
+			f, err := os.Open(path.Join(folder, fi.Name()))
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer f.Close()
 			var tg []struct {
 				Description string
 				Schema      json.RawMessage
 				Tests       []struct {
 					Description string
-					Data        json.RawMessage
+					Data        interface{}
 					Valid       bool
 				}
 			}
-			if err = json.Unmarshal(data, &tg); err != nil {
+			dec := json.NewDecoder(f)
+			dec.UseNumber()
+			if err = dec.Decode(&tg); err != nil {
 				t.Fatal(err)
 			}
 			for _, group := range tg {
@@ -244,7 +247,7 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 									t.Skip()
 								}
 							}
-							err = schema.Validate(bytes.NewReader(test.Data))
+							err = schema.Validate(test.Data)
 							valid := err == nil
 							if !valid {
 								if _, ok := err.(*jsonschema.ValidationError); ok {
@@ -261,33 +264,6 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 						})
 					}
 				})
-			}
-		})
-	}
-}
-
-func TestInvalidDocs(t *testing.T) {
-	invalidDocTests := []struct {
-		description string
-		doc         string
-	}{
-		{"non json instance", "{"},
-		{"multiple json instance", "{}{}"},
-	}
-	for _, test := range invalidDocTests {
-		t.Run(test.description, func(t *testing.T) {
-			c := jsonschema.NewCompiler()
-			if err := c.AddResource("test.json", strings.NewReader("{}")); err != nil {
-				t.Fatal(err)
-			}
-			s, err := c.Compile("test.json")
-			if err != nil {
-				t.Fatalf("%#v", err)
-			}
-			if err := s.Validate(strings.NewReader(test.doc)); err != nil {
-				t.Logf("%#v", err)
-			} else {
-				t.Error("error expected")
 			}
 		})
 	}
@@ -421,62 +397,6 @@ func TestCompileURL(t *testing.T) {
 	}
 }
 
-func TestValidateInterface(t *testing.T) {
-	files := []string{
-		testSuite + "/tests/draft4/type.json",
-		testSuite + "/tests/draft4/minimum.json",
-		testSuite + "/tests/draft4/maximum.json",
-	}
-	for _, file := range files {
-		t.Log(filepath.Base(file))
-		data, err := ioutil.ReadFile(file)
-		if err != nil {
-			t.Errorf("  FAIL: %v\n", err)
-			return
-		}
-		var tg []testGroup
-		if err = json.Unmarshal(data, &tg); err != nil {
-			t.Errorf("  FAIL: %v\n", err)
-			return
-		}
-		for _, group := range tg {
-			t.Logf("  %s\n", group.Description)
-			c := jsonschema.NewCompiler()
-			if err := c.AddResource("test.json", bytes.NewReader(group.Schema)); err != nil {
-				t.Errorf("    FAIL: add resource failed, reason: %v\n", err)
-				continue
-			}
-			c.Draft = jsonschema.Draft4
-			schema, err := c.Compile("test.json")
-			if err != nil {
-				t.Errorf("    FAIL: schema compilation failed, reason: %v\n", err)
-				continue
-			}
-			for _, test := range group.Tests {
-				t.Logf("      %s\n", test.Description)
-
-				decoder := json.NewDecoder(bytes.NewReader(test.Data))
-				var doc interface{}
-				if err := decoder.Decode(&doc); err != nil {
-					t.Errorf("        FAIL: decode json failed, reason: %v\n", err)
-					continue
-				}
-
-				err = schema.ValidateInterface(doc)
-				valid := err == nil
-				if !valid {
-					for _, line := range strings.Split(err.Error(), "\n") {
-						t.Logf("        %s\n", line)
-					}
-				}
-				if test.Valid != valid {
-					t.Errorf("        FAIL: expected valid=%t got valid=%t\n", test.Valid, valid)
-				}
-			}
-		}
-	}
-}
-
 func TestInvalidJsonTypeError(t *testing.T) {
 	compiler := jsonschema.NewCompiler()
 	err := compiler.AddResource("test.json", strings.NewReader(`{ "type": "string"}`))
@@ -488,7 +408,7 @@ func TestInvalidJsonTypeError(t *testing.T) {
 		t.Fatalf("schema compilation failed. reason: %v\n", err)
 	}
 	v := struct{ name string }{"hello world"}
-	err = schema.ValidateInterface(v)
+	err = schema.Validate(v)
 	switch err.(type) {
 	case jsonschema.InvalidJSONTypeError:
 		// passed: struct is not valid json type
@@ -521,7 +441,7 @@ func TestInfiniteLoopError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = schema.Validate(strings.NewReader(`{"prop": 1}`))
+		err = schema.Validate(decodeString(t, `{"prop": 1}`))
 		switch err := err.(type) {
 		case jsonschema.InfiniteLoopError:
 			suffix := "testdata/loop-validate.json#/$ref/$ref/not/$ref/allOf/0/$ref/anyOf/0/$ref/oneOf/0/$ref/dependencies/prop/$ref/dependentSchemas/prop/$ref/then/$ref/else/$dynamicRef/$ref"
@@ -676,12 +596,8 @@ func TestPanic(t *testing.T) {
 func TestNonStringFormat(t *testing.T) {
 	jsonschema.Formats["even-number"] = func(v interface{}) bool {
 		switch v := v.(type) {
-		case json.Number:
-			i, err := v.Int64()
-			if err != nil {
-				return false
-			}
-			return i%2 == 0
+		case int:
+			return v%2 == 0
 		default:
 			return false
 		}
@@ -696,11 +612,11 @@ func TestNonStringFormat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = s.Validate(strings.NewReader("5")); err == nil {
+	if err = s.Validate(5); err == nil {
 		t.Fatal("error expected")
 	}
-	if err = s.Validate(strings.NewReader("6")); err != nil {
-		t.Fatal(err)
+	if err = s.Validate(6); err != nil {
+		t.Fatalf("%#v", err)
 	}
 }
 
@@ -725,10 +641,10 @@ func TestCompiler_LoadURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = s.Validate(strings.NewReader(`"foo"`)); err != nil {
+	if err = s.Validate("foo"); err != nil {
 		t.Fatal(err)
 	}
-	if err = s.Validate(strings.NewReader(`"long"`)); err == nil {
+	if err = s.Validate("long"); err == nil {
 		t.Fatal("error expected")
 	}
 }
@@ -748,4 +664,20 @@ func runHTTPServers() (httpURL, httpsURL string, cleanup func()) {
 		httpServer.Close()
 		httpsServer.Close()
 	}
+}
+
+func decodeString(t *testing.T, s string) interface{} {
+	t.Helper()
+	return decodeReader(t, strings.NewReader(s))
+}
+
+func decodeReader(t *testing.T, r io.Reader) interface{} {
+	t.Helper()
+	decoder := json.NewDecoder(r)
+	decoder.UseNumber()
+	var doc interface{}
+	if err := decoder.Decode(&doc); err != nil {
+		t.Fatal("invalid json:", err)
+	}
+	return doc
 }

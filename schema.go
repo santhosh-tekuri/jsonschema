@@ -7,7 +7,6 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/big"
 	"net/url"
 	"regexp"
@@ -133,26 +132,15 @@ func newSchema(url, loc string, doc interface{}) *Schema {
 	return s
 }
 
-// Validate validates the given json data, against the json-schema.
+// Validate validates given doc, against the json-schema s.
 //
-// Returned error can be *ValidationError.
-func (s *Schema) Validate(r io.Reader) error {
-	doc, err := DecodeJSON(r)
-	if err != nil {
-		return fmt.Errorf("jsonschema: instance is not valid json reason: %v", err)
-	}
-	return s.ValidateInterface(doc)
-}
-
-// ValidateInterface validates given doc, against the json-schema.
+// the v must be the raw json value. for number precision
+// unmarshal with json.UseNumber().
 //
-// the doc must be the value decoded by json package using interface{} type.
-// we recommend to use jsonschema.DecodeJSON(io.Reader) to decode JSON.
-//
-// returns *ValidationError if doc does not confirm with schema s.
+// returns *ValidationError if v does not confirm with schema s.
 // returns InfiniteLoopError if it detects loop during validation.
-// returns InvalidJSONTypeError if it detects any non json value in doc.
-func (s *Schema) ValidateInterface(doc interface{}) (err error) {
+// returns InvalidJSONTypeError if it detects any non json value in v.
+func (s *Schema) Validate(v interface{}) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch r := r.(type) {
@@ -163,7 +151,7 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 			}
 		}
 	}()
-	if _, err := s.validate(nil, 0, "", doc, ""); err != nil {
+	if _, err := s.validate(nil, 0, "", v, ""); err != nil {
 		return &ValidationError{
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
@@ -802,20 +790,4 @@ func escape(token string) string {
 	token = strings.Replace(token, "~", "~0", -1)
 	token = strings.Replace(token, "/", "~1", -1)
 	return url.PathEscape(token)
-}
-
-// DecodeJSON decodes json document from r.
-//
-// Note that number is decoded into json.Number instead of as a float64
-func DecodeJSON(r io.Reader) (interface{}, error) {
-	decoder := json.NewDecoder(r)
-	decoder.UseNumber()
-	var doc interface{}
-	if err := decoder.Decode(&doc); err != nil {
-		return nil, err
-	}
-	if t, _ := decoder.Token(); t != nil {
-		return nil, fmt.Errorf("invalid character %v after top-level value", t)
-	}
-	return doc, nil
 }

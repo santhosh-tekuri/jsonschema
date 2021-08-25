@@ -12,7 +12,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 
@@ -25,13 +24,17 @@ func Example() {
 		log.Fatalf("%#v", err)
 	}
 
-	f, err := os.Open("testdata/person.json")
+	data, err := ioutil.ReadFile("testdata/person.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
 
-	if err = sch.Validate(f); err != nil {
+	var v interface{}
+	if err := json.Unmarshal(data, &v); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = sch.Validate(v); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
@@ -47,7 +50,12 @@ func Example_fromString() {
 		log.Fatalf("%#v", err)
 	}
 
-	if err = sch.Validate(strings.NewReader(instance)); err != nil {
+	var v interface{}
+	if err := json.Unmarshal([]byte(instance), &v); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = sch.Validate(v); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
@@ -67,7 +75,12 @@ func Example_fromStrings() {
 		log.Fatalf("%#v", err)
 	}
 
-	if err = sch.Validate(strings.NewReader(`{}`)); err != nil {
+	var v interface{}
+	if err := json.Unmarshal([]byte("{}"), &v); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = sch.Validate(v); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
@@ -90,14 +103,14 @@ func Example_userDefinedFormat() {
 		"type": "integer",
 		"format": "odd-number"
 	}`
-	instance := `5`
+	instance := 5
 
 	sch, err := jsonschema.CompileString("schema.json", schema)
 	if err != nil {
 		log.Fatalf("%#v", err)
 	}
 
-	if err = sch.Validate(strings.NewReader(instance)); err != nil {
+	if err = sch.Validate(instance); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
@@ -129,7 +142,12 @@ func Example_userDefinedContent() {
 		log.Fatalf("%#v", err)
 	}
 
-	if err = sch.Validate(strings.NewReader(instance)); err != nil {
+	var v interface{}
+	if err := json.Unmarshal([]byte(instance), &v); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = sch.Validate(v); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
@@ -157,7 +175,12 @@ func Example_userDefinedLoader() {
 		log.Fatalf("%+v", err)
 	}
 
-	if err = sch.Validate(strings.NewReader(`{}`)); err != nil {
+	var v interface{}
+	if err := json.Unmarshal([]byte("{}"), &v); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = sch.Validate(v); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:

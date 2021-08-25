@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -50,13 +51,21 @@ func main() {
 	}
 
 	for _, f := range flag.Args()[1:] {
-		f, err := os.Open(f)
+		file, err := os.Open(f)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
-		defer f.Close()
-		err = schema.Validate(f)
+		defer file.Close()
+
+		var v interface{}
+		dec := json.NewDecoder(file)
+		dec.UseNumber()
+		if err := dec.Decode(&v); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid json file %s: %v", f, err)
+		}
+
+		err = schema.Validate(v)
 		if err != nil {
 			if _, ok := err.(*jsonschema.ValidationError); ok {
 				fmt.Fprintf(os.Stderr, "%#v\n", err)
