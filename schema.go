@@ -341,7 +341,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if s.AdditionalProperties != nil {
 			if allowed, ok := s.AdditionalProperties.(bool); ok {
 				if !allowed && len(result.unevalProps) > 0 {
-					errors = append(errors, validationError("additionalProperties", "additionalProperties %s not allowed", result.pnames()))
+					errors = append(errors, validationError("additionalProperties", "additionalProperties %s not allowed", result.unevalPnames()))
 				}
 			} else {
 				schema := s.AdditionalProperties.(*Schema)
@@ -714,7 +714,7 @@ type validationResult struct {
 	items       map[int]struct{}
 }
 
-func (vr validationResult) pnames() string {
+func (vr validationResult) unevalPnames() string {
 	pnames := make([]string, 0, len(vr.unevalProps))
 	for pname := range vr.unevalProps {
 		pnames = append(pnames, strconv.Quote(pname))
