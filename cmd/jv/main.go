@@ -20,7 +20,8 @@ func usage() {
 }
 
 func main() {
-	draft := flag.Int("draft", 2020, "draft used when '$schema' attribute is missing")
+	draft := flag.Int("draft", 2020, "draft used when '$schema' attribute is missing. valid values 4, 5, 7, 2019, 2020")
+	output := flag.String("output", "", "output format. valid values flag, basic, detailed")
 	flag.Usage = usage
 	flag.Parse()
 	if len(flag.Args()) == 0 {
@@ -44,6 +45,19 @@ func main() {
 		fmt.Fprintln(os.Stderr, "draft must be 4, 5, 7, 2019 or 2020")
 		os.Exit(1)
 	}
+
+	var validOutput bool
+	for _, out := range []string{"", "flag", "basic", "detailed"} {
+		if *output == out {
+			validOutput = true
+			break
+		}
+	}
+	if !validOutput {
+		fmt.Fprintln(os.Stderr, "output must be flag, basic or detailed")
+		os.Exit(1)
+	}
+
 	schema, err := compiler.Compile(flag.Arg(0))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%#v\n", err)
@@ -67,8 +81,22 @@ func main() {
 
 		err = schema.Validate(v)
 		if err != nil {
-			if _, ok := err.(*jsonschema.ValidationError); ok {
-				fmt.Fprintf(os.Stderr, "%#v\n", err)
+			if ve, ok := err.(*jsonschema.ValidationError); ok {
+				var out interface{}
+				switch *output {
+				case "flag":
+					out = ve.FlagOutput()
+				case "basic":
+					out = ve.BasicOutput()
+				case "detailed":
+					out = ve.DetailedOutput()
+				}
+				if out == nil {
+					fmt.Fprintf(os.Stderr, "%#v\n", err)
+				} else {
+					b, _ := json.MarshalIndent(out, "", "  ")
+					fmt.Fprintln(os.Stderr, string(b))
+				}
 			} else {
 				fmt.Fprintf(os.Stderr, "validation failed: %v\n", err)
 			}
