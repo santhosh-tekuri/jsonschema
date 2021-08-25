@@ -84,7 +84,7 @@ type ValidationContext struct {
 
 // EvaluatedProp marks given property of object as evaluated.
 func (ctx ValidationContext) EvaluatedProp(prop string) {
-	delete(ctx.result.props, prop)
+	delete(ctx.result.unevalProps, prop)
 }
 
 // EvaluatedItem marks given index of array as evaluated.
