@@ -25,7 +25,7 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
-var testSuite = "testdata/JSON-Schema-Test-Suite@76b529f"
+var testSuite = "testdata/JSON-Schema-Test-Suite@ab0b1ae"
 
 var skipTests = map[string]map[string][]string{
 	"TestDraft4/optional/unicode.json": {}, // golang regex works on ascii only
