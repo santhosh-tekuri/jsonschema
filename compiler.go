@@ -188,7 +188,7 @@ func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schem
 }
 
 func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res *resource, ref string) (*Schema, error) {
-	base := r.baseURL(res.loc)
+	base := r.baseURL(res.floc)
 	ref, err := resolveURL(base, ref)
 	if err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		return sr.schema, nil
 	}
 
-	sr.schema = newSchema(r.url, sr.loc, sr.doc)
+	sr.schema = newSchema(r.url, sr.floc, sr.doc)
 	return c.compile(r, stack, schemaRef{refPtr, sr.schema, false}, sr)
 }
 
@@ -229,7 +229,7 @@ func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {
 	for _, sr := range rr {
 		if m, ok := sr.doc.(map[string]interface{}); ok {
 			if _, ok := m["$dynamicAnchor"]; ok {
-				sch, err := c.compileRef(r, nil, "IGNORED", r, sr.loc)
+				sch, err := c.compileRef(r, nil, "IGNORED", r, sr.floc)
 				if err != nil {
 					return err
 				}
@@ -327,7 +327,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	}
 
 	compile := func(stack []schemaRef, ptr string) (*Schema, error) {
-		return c.compileRef(r, stack, ptr, res, r.url+res.loc+"/"+ptr)
+		return c.compileRef(r, stack, ptr, res, r.url+res.floc+"/"+ptr)
 	}
 
 	loadSchema := func(pname string, stack []schemaRef) (*Schema, error) {

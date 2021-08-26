@@ -16,11 +16,11 @@ import (
 )
 
 type resource struct {
-	url          string
-	loc          string
+	url          string // base url of resource. can be empty
+	floc         string // fragment with json-pointer from root resource
 	doc          interface{}
 	draft        *Draft
-	subresources map[string]*resource
+	subresources map[string]*resource // key is floc. only applicable for root resource
 	schema       *Schema
 }
 
@@ -37,32 +37,32 @@ func newResource(url string, r io.Reader) (*resource, error) {
 		return nil, err
 	}
 	return &resource{
-		url: url,
-		loc: "#",
-		doc: doc,
+		url:  url,
+		floc: "#",
+		doc:  doc,
 	}, nil
 }
 
 func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
-	if err := c.validateSchema(r, res.doc, res.loc[1:]); err != nil {
+	if err := c.validateSchema(r, res.doc, res.floc[1:]); err != nil {
 		return err
 	}
 
 	if r.subresources == nil {
 		r.subresources = make(map[string]*resource)
 	}
-	if err := r.draft.listSubschemas(res, r.baseURL(res.loc), r.subresources); err != nil {
+	if err := r.draft.listSubschemas(res, r.baseURL(res.floc), r.subresources); err != nil {
 		return err
 	}
 
 	// ensure subresource.url uniquness
-	url2loc := make(map[string]string)
+	url2floc := make(map[string]string)
 	for _, sr := range r.subresources {
 		if sr.url != "" {
-			if loc, ok := url2loc[sr.url]; ok {
-				return fmt.Errorf("jsonschema: %s and %s in %s have same canonical-uri", loc, sr.loc, r.url)
+			if floc, ok := url2floc[sr.url]; ok {
+				return fmt.Errorf("jsonschema: %q and %q in %s have same canonical-uri", floc[1:], sr.floc[1:], r.url)
 			}
-			url2loc[sr.url] = sr.loc
+			url2floc[sr.url] = sr.floc
 		}
 	}
 
@@ -71,9 +71,9 @@ func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
 
 func (r *resource) findResources(res *resource) []*resource {
 	var result []*resource
-	loc := res.loc + "/"
+	prefix := res.floc + "/"
 	for _, sr := range r.subresources {
-		if strings.HasPrefix(sr.loc, loc) {
+		if strings.HasPrefix(sr.floc, prefix) {
 			result = append(result, sr)
 		}
 	}
@@ -92,6 +92,7 @@ func (r *resource) findResource(url string) *resource {
 	return nil
 }
 
+// resolve fragment f with sr as base
 func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resource, error) {
 	if f == "#" || f == "#/" {
 		return sr, nil
@@ -108,7 +109,7 @@ func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resour
 
 		// check in subresources
 		for _, res := range r.subresources {
-			if res.loc == sr.loc || strings.HasPrefix(res.loc, sr.loc+"/") {
+			if res.floc == sr.floc || strings.HasPrefix(res.floc, sr.floc+"/") {
 				for _, anchor := range r.draft.anchors(res.doc) {
 					if anchor == f[1:] {
 						return res, nil
@@ -120,14 +121,14 @@ func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resour
 	}
 
 	// resolve by ptr
-	loc := sr.loc + f[1:]
-	if res, ok := r.subresources[loc]; ok {
+	floc := sr.floc + f[1:]
+	if res, ok := r.subresources[floc]; ok {
 		return res, nil
 	}
 
 	// non-standrad location
 	doc := r.doc
-	for _, item := range strings.Split(loc[2:], "/") {
+	for _, item := range strings.Split(floc[2:], "/") {
 		item = strings.Replace(item, "~1", "/", -1)
 		item = strings.Replace(item, "~0", "~", -1)
 		item, err := url.PathUnescape(item)
@@ -154,30 +155,30 @@ func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resour
 		}
 	}
 
-	id, err := r.draft.resolveID(r.baseURL(loc), doc)
+	id, err := r.draft.resolveID(r.baseURL(floc), doc)
 	if err != nil {
 		return nil, err
 	}
-	res := &resource{url: id, loc: loc, doc: doc}
-	r.subresources[loc] = res
+	res := &resource{url: id, floc: floc, doc: doc}
+	r.subresources[floc] = res
 	if err := r.fillSubschemas(c, res); err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (r *resource) baseURL(loc string) string {
+func (r *resource) baseURL(floc string) string {
 	for {
-		if sr, ok := r.subresources[loc]; ok {
+		if sr, ok := r.subresources[floc]; ok {
 			if sr.url != "" {
 				return sr.url
 			}
 		}
-		slash := strings.LastIndexByte(loc, '/')
+		slash := strings.LastIndexByte(floc, '/')
 		if slash == -1 {
 			break
 		}
-		loc = loc[:slash]
+		floc = floc[:slash]
 	}
 	return r.url
 }

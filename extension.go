@@ -55,7 +55,7 @@ func (ctx CompilerContext) Compile(schPath string, applicableOnSameInstance bool
 	if applicableOnSameInstance {
 		stack = ctx.stack
 	}
-	return ctx.c.compileRef(ctx.r, stack, schPath, ctx.res, ctx.r.url+ctx.res.loc+"/"+schPath)
+	return ctx.c.compileRef(ctx.r, stack, schPath, ctx.res, ctx.r.url+ctx.res.floc+"/"+schPath)
 }
 
 // CompileRef compiles the schema referenced by ref uri

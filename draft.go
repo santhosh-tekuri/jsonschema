@@ -80,13 +80,13 @@ func (d *Draft) anchors(sch interface{}) []string {
 
 func (d *Draft) listSubschemas(r *resource, base string, rr map[string]*resource) error {
 	add := func(loc string, sch interface{}) error {
-		loc = r.loc + "/" + loc
+		floc := r.floc + "/" + loc
 		url, err := d.resolveID(base, sch)
 		if err != nil {
 			return err
 		}
-		sr := &resource{url: url, loc: loc, doc: sch}
-		rr[loc] = sr
+		sr := &resource{url: url, floc: floc, doc: sch}
+		rr[floc] = sr
 
 		base := base
 		if url != "" {
