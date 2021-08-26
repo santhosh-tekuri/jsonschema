@@ -101,9 +101,6 @@ func (ve *ValidationError) MessageFmt() string {
 func (ve *ValidationError) Error() string {
 	loc := ve.AbsoluteKeywordLocation
 	loc = loc[strings.IndexByte(loc, '#')+1:]
-	if loc == "" {
-		loc = "/"
-	}
 	return fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, loc, ve.Message)
 }
 
