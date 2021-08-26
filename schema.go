@@ -156,9 +156,6 @@ func (s *Schema) validateValue(v interface{}, vloc string) (err error) {
 		}
 	}()
 	if _, err := s.validate(nil, 0, "", v, vloc); err != nil {
-		if vloc == "" {
-			vloc = "/"
-		}
 		ve := ValidationError{
 			KeywordLocation:         "/",
 			AbsoluteKeywordLocation: s.Location,
@@ -173,10 +170,6 @@ func (s *Schema) validateValue(v interface{}, vloc string) (err error) {
 // validate validates given value v with this schema.
 func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interface{}, vloc string) (result validationResult, err error) {
 	validationError := func(keywordPath string, format string, a ...interface{}) *ValidationError {
-		vloc := vloc
-		if vloc == "" {
-			vloc = "/"
-		}
 		return &ValidationError{
 			KeywordLocation:         keywordLocation(scope, keywordPath),
 			AbsoluteKeywordLocation: joinPtr(s.Location, keywordPath),
