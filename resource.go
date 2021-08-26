@@ -111,10 +111,10 @@ func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resour
 			}
 		}
 
-		// check in subresources
+		// check in subresources that has same base url
 		prefix := sr.floc + "/"
 		for _, res := range r.subresources {
-			if strings.HasPrefix(res.floc, prefix) {
+			if strings.HasPrefix(res.floc, prefix) && r.baseURL(res.floc) == sr.url {
 				for _, anchor := range r.draft.anchors(res.doc) {
 					if anchor == f[1:] {
 						return res, nil
