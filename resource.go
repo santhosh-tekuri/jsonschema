@@ -260,9 +260,6 @@ func (s *Schema) url() string {
 
 func (s *Schema) loc() string {
 	_, f := split(s.Location)
-	if f == "#" {
-		return "/"
-	}
 	return f[1:]
 }
 

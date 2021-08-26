@@ -157,7 +157,7 @@ func (s *Schema) validateValue(v interface{}, vloc string) (err error) {
 	}()
 	if _, err := s.validate(nil, 0, "", v, vloc); err != nil {
 		ve := ValidationError{
-			KeywordLocation:         "/",
+			KeywordLocation:         "",
 			AbsoluteKeywordLocation: s.Location,
 			InstanceLocation:        vloc,
 			Message:                 fmt.Sprintf("doesn't validate with %s", s.Location),

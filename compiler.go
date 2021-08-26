@@ -687,7 +687,7 @@ func keywordLocation(stack []schemaRef, path string) string {
 	for _, ref := range stack[1:] {
 		loc += "/" + ref.path
 	}
-	if loc == "" || path != "" {
+	if path != "" {
 		loc = loc + "/" + path
 	}
 	return loc
