@@ -287,7 +287,11 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	}
 
 	if s.format != nil && !s.format(v) {
-		errors = append(errors, validationError("format", "%q is not valid %q", v, s.Format))
+		var val = v
+		if v, ok := v.(string); ok {
+			val = quote(v)
+		}
+		errors = append(errors, validationError("format", "%v is not valid %s", val, quote(s.Format)))
 	}
 
 	switch v := v.(type) {
@@ -302,7 +306,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			var missing []string
 			for _, pname := range s.Required {
 				if _, ok := v[pname]; !ok {
-					missing = append(missing, strconv.Quote(pname))
+					missing = append(missing, quote(pname))
 				}
 			}
 			if len(missing) > 0 {
@@ -330,7 +334,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if s.RegexProperties {
 			for pname := range v {
 				if !isRegex(pname) {
-					errors = append(errors, validationError("", "patternProperty %q is not valid regex", pname))
+					errors = append(errors, validationError("", "patternProperty %s is not valid regex", quote(pname)))
 				}
 			}
 		}
@@ -371,7 +375,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				case []string:
 					for i, pname := range dvalue {
 						if _, ok := v[pname]; !ok {
-							errors = append(errors, validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %q is required, if %q property exists", pname, dname))
+							errors = append(errors, validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", quote(pname), quote(dname)))
 						}
 					}
 				}
@@ -381,7 +385,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			if _, ok := v[dname]; ok {
 				for i, pname := range dvalue {
 					if _, ok := v[pname]; !ok {
-						errors = append(errors, validationError("dependentRequired/"+escape(dname)+"/"+strconv.Itoa(i), "property %q is required, if %q property exists", pname, dname))
+						errors = append(errors, validationError("dependentRequired/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", quote(pname), quote(dname)))
 					}
 				}
 			}
@@ -396,10 +400,10 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 
 	case []interface{}:
 		if s.MinItems != -1 && len(v) < s.MinItems {
-			errors = append(errors, validationError("minItems", "minimum %d items allowed, but found %d items", s.MinItems, len(v)))
+			errors = append(errors, validationError("minItems", "minimum %d items required, but found %d items", s.MinItems, len(v)))
 		}
 		if s.MaxItems != -1 && len(v) > s.MaxItems {
-			errors = append(errors, validationError("maxItems", "maximum %d items allowed, but found %d items", s.MaxItems, len(v)))
+			errors = append(errors, validationError("maxItems", "maximum %d items required, but found %d items", s.MaxItems, len(v)))
 		}
 		if s.UniqueItems {
 			for i := 1; i < len(v); i++ {
@@ -497,7 +501,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 
 		if s.Pattern != nil && !s.Pattern.MatchString(v) {
-			errors = append(errors, validationError("pattern", "does not match pattern %q", s.Pattern))
+			errors = append(errors, validationError("pattern", "does not match pattern %s", quote(s.Pattern.String())))
 		}
 
 		// contentEncoding + contentMediaType
@@ -507,7 +511,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			if s.decoder != nil {
 				b, err := s.decoder(v)
 				if err != nil {
-					errors = append(errors, validationError("contentEncoding", "%q is not %s encoded", v, s.ContentEncoding))
+					errors = append(errors, validationError("contentEncoding", "%s is not %s encoded", quote(v), s.ContentEncoding))
 				} else {
 					content, decoded = b, true
 				}
@@ -517,7 +521,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 					content = []byte(v)
 				}
 				if err := s.mediaType(content); err != nil {
-					errors = append(errors, validationError("contentMediaType", "value is not of mediatype %q", s.ContentMediaType))
+					errors = append(errors, validationError("contentMediaType", "value is not of mediatype %s", quote(s.ContentMediaType)))
 				}
 			}
 		}
@@ -562,7 +566,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				if s.url() == sch.url() {
 					url = sch.loc()
 				}
-				return validationError(refPath, "doesn't validate with %q", url).causes(err)
+				return validationError(refPath, "doesn't validate with %s", quote(url)).causes(err)
 			}
 		}
 		return nil
@@ -723,7 +727,7 @@ type validationResult struct {
 func (vr validationResult) unevalPnames() string {
 	pnames := make([]string, 0, len(vr.unevalProps))
 	for pname := range vr.unevalProps {
-		pnames = append(pnames, strconv.Quote(pname))
+		pnames = append(pnames, quote(pname))
 	}
 	return strings.Join(pnames, ", ")
 }
