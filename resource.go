@@ -112,8 +112,9 @@ func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resour
 		}
 
 		// check in subresources
+		prefix := sr.floc + "/"
 		for _, res := range r.subresources {
-			if res.floc == sr.floc || strings.HasPrefix(res.floc, sr.floc+"/") {
+			if strings.HasPrefix(res.floc, prefix) {
 				for _, anchor := range r.draft.anchors(res.doc) {
 					if anchor == f[1:] {
 						return res, nil
