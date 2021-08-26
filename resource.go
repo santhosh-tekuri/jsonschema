@@ -24,6 +24,10 @@ type resource struct {
 	schema       *Schema
 }
 
+func (r *resource) String() string {
+	return r.url + r.floc
+}
+
 func newResource(url string, r io.Reader) (*resource, error) {
 	if strings.IndexByte(url, '#') != -1 {
 		panic(fmt.Sprintf("BUG: newResource(%q)", url))
