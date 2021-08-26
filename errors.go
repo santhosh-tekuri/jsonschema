@@ -104,7 +104,7 @@ func (ve *ValidationError) Error() string {
 	if loc == "" {
 		loc = "/"
 	}
-	return fmt.Sprintf("I[%s] S[%s] %s", ve.InstanceLocation, loc, ve.Message)
+	return fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, loc, ve.Message)
 }
 
 func (ve *ValidationError) GoString() string {
