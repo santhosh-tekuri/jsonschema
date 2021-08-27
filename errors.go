@@ -51,8 +51,12 @@ type SchemaError struct {
 	Err error
 }
 
+func (se *SchemaError) Unwrap() error {
+	return se.Err
+}
+
 func (se *SchemaError) Error() string {
-	s := fmt.Sprintf("json-schema %s compilation failed", se.SchemaURL)
+	s := fmt.Sprintf("jsonschema %s compilation failed", se.SchemaURL)
 	if _, ok := se.Err.(*ValidationError); !ok {
 		return fmt.Sprintf("%s: %v", s, se.Err)
 	}
@@ -61,9 +65,9 @@ func (se *SchemaError) Error() string {
 
 func (se *SchemaError) GoString() string {
 	if _, ok := se.Err.(*ValidationError); ok {
-		return fmt.Sprintf("json-schema %s compilation failed\n%#v", se.SchemaURL, se.Err)
+		return fmt.Sprintf("jsonschema %s compilation failed\n%#v", se.SchemaURL, se.Err)
 	}
-	return fmt.Sprintf("json-schema %s compilation failed: %v", se.SchemaURL, se.Err)
+	return fmt.Sprintf("jsonschema %s compilation failed: %v", se.SchemaURL, se.Err)
 }
 
 // ValidationError is the error type returned by Validate.
@@ -99,9 +103,9 @@ func (ve *ValidationError) MessageFmt() string {
 }
 
 func (ve *ValidationError) Error() string {
-	loc := ve.AbsoluteKeywordLocation
-	loc = loc[strings.IndexByte(loc, '#')+1:]
-	return fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, loc, ve.Message)
+	sloc := ve.AbsoluteKeywordLocation
+	sloc = sloc[strings.IndexByte(sloc, '#')+1:]
+	return fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, sloc, ve.Message)
 }
 
 func (ve *ValidationError) GoString() string {
