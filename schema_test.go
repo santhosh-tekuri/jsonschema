@@ -159,7 +159,12 @@ func TestDraft2020(t *testing.T) {
 }
 
 func TestExtra(t *testing.T) {
-	testFolder(t, "testdata/tests/draft7", jsonschema.Draft7)
+	t.Run("draft7", func(t *testing.T) {
+		testFolder(t, "testdata/tests/draft7", jsonschema.Draft7)
+	})
+	t.Run("draft2020", func(t *testing.T) {
+		testFolder(t, "testdata/tests/draft2020", jsonschema.Draft2020)
+	})
 }
 
 type testGroup struct {
