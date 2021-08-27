@@ -654,6 +654,12 @@ func TestCompiler_LoadURL(t *testing.T) {
 	}
 }
 
+func TestFilePathSpaces(t *testing.T) {
+	if _, err := jsonschema.Compile("testdata/person schema.json"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func runHTTPServers() (httpURL, httpsURL string, cleanup func()) {
 	tr := http.DefaultTransport.(*http.Transport)
 	if tr.TLSClientConfig == nil {

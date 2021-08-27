@@ -204,13 +204,18 @@ func toAbs(s string) (string, error) {
 	if u.IsAbs() {
 		return s, nil
 	}
+
+	// s is filepath
 	if s, err = filepath.Abs(s); err != nil {
 		return "", err
 	}
 	if runtime.GOOS == "windows" {
-		return "file:///" + filepath.ToSlash(s), nil
+		s = "file:///" + filepath.ToSlash(s)
+	} else {
+		s = "file://" + s
 	}
-	return "file://" + s, nil
+	u, err = url.Parse(s) // to fix spaces in filepath
+	return u.String(), err
 }
 
 func resolveURL(base, ref string) (string, error) {
