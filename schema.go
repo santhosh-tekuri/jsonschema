@@ -561,7 +561,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		return nil
 	}
 	if err := validateRef(s.Ref, "$ref"); err != nil {
-		return result, err
+		errors = append(errors, err)
 	}
 	if s.RecursiveRef != nil {
 		sch := s.RecursiveRef
@@ -575,7 +575,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 		if err := validateRef(sch, "$recursiveRef"); err != nil {
-			return result, err
+			errors = append(errors, err)
 		}
 	}
 	if s.DynamicRef != nil {
@@ -596,7 +596,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 		if err := validateRef(sch, "$dynamicRef"); err != nil {
-			return result, err
+			errors = append(errors, err)
 		}
 	}
 
