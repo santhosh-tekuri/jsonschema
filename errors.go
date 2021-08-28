@@ -83,7 +83,7 @@ func (ve *ValidationError) add(causes ...error) error {
 }
 
 func (ve *ValidationError) causes(err error) error {
-	if err := err.(*ValidationError); len(err.Causes) > 0 {
+	if err := err.(*ValidationError); err.Message == "" {
 		ve.Causes = err.Causes
 	} else {
 		ve.add(err)

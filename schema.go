@@ -704,7 +704,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	case 1:
 		return result, errors[0]
 	default:
-		return result, validationError("", "validation failed").add(errors...)
+		return result, validationError("", "").add(errors...) // empty message, used just for wrapping
 	}
 }
 
