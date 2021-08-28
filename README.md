@@ -183,10 +183,14 @@ Prints:
 ## CLI
 
 ```bash
-jv [-draft INT] <schema-file> [<json-doc>]...
+jv [-draft INT] [-output FORMAT] <json-schema> [<json-doc>]...
+  -draft int
+    	draft used when '$schema' attribute is missing. valid values 4, 5, 7, 2019, 2020 (default 2020)
+  -output string
+    	output format. valid values flag, basic, detailed
 ```
 
-if no `<json-doc>` arguments are passed, it simply validates the `<schema-file>`.  
+if no `<json-doc>` arguments are passed, it simply validates the `<json-schema>`.  
 if `$schema` attribute is missing in schema, it uses latest version. this can be overriden by passing `-draft` flag
 
 exit-code is 1, if there are any validation errors
