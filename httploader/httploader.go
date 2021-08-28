@@ -1,7 +1,3 @@
-// Copyright 2017 Santhosh Kumar Tekuri. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
 // Package httploader implements loader.Loader for http/https url.
 //
 // The package is typically only imported for the side effect of
