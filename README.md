@@ -23,6 +23,7 @@ Package jsonschema provides json-schema compilation and validation.
  - detects infinite loop in schemas
  - thread safe validation
  - rich, intutive hierarchial error messages with json-pointers to exact location
+ - supports output formats flag, basic and detailed
  - supports enabling format and content Assertions in draft2019-09
    - make Compiler.AssertFormat, Compiler.AssertContent true
  - compiled schema can be introspected. easier to develop tools like generating go structs given schema
@@ -90,16 +91,94 @@ doc.json:
 1
 ```
 
-Validating `doc.json` with `schema.json`, gives following ValidationError:
+assuming `err` is the ValidationError returned when `doc.json` validated with `schema.json`,
+```go
+fmt.Printf("%#v\n", err) // using %#v prints errors hierarchy
 ```
-I[#] S[#] doesn't validate with "schema.json#"
-  I[#] S[#/$ref] doesn't valide with "t.json#/definitions/employee"
-    I[#] S[#/definitions/employee/type] expected string, but got number
+Prints:
+```
+[I#] [S#] doesn't validate with file:///Users/santhosh/jsonschema/schema.json#
+  [I#] [S#/$ref] doesn't validate with 'file:///Users/santhosh/jsonschema/t.json#/definitions/employee'
+    [I#] [S#/definitions/employee/type] expected string, but got number
 ```
 
 Here `I` stands for instance document and `S` stands for schema document.  
 The json-fragments that caused error in instance and schema documents are represented using json-pointer notation.  
 Nested causes are printed with indent.
+
+To output `err` in `flag` output format:
+```go
+b, _ := json.MarshalIndent(err.FlagOutput(), "", "  ")
+fmt.Println(string(b))
+```
+Prints:
+```json
+{
+  "valid": false
+}
+```
+To output `err` in `basic` output format:
+```go
+b, _ := json.MarshalIndent(err.BasicOutput(), "", "  ")
+fmt.Println(string(b))
+```
+Prints:
+```json
+{
+  "valid": false,
+  "errors": [
+    {
+      "keywordLocation": "",
+      "absoluteKeywordLocation": "file:///Users/santhosh/jsonschema/schema.json#",
+      "instanceLocation": "",
+      "error": "doesn't validate with file:///Users/santhosh/jsonschema/schema.json#"
+    },
+    {
+      "keywordLocation": "/$ref",
+      "absoluteKeywordLocation": "file:///Users/santhosh/jsonschema/schema.json#/$ref",
+      "instanceLocation": "",
+      "error": "doesn't validate with 'file:///Users/santhosh/jsonschema/t.json#/definitions/employee'"
+    },
+    {
+      "keywordLocation": "/$ref/type",
+      "absoluteKeywordLocation": "file:///Users/santhosh/jsonschema/t.json#/definitions/employee/type",
+      "instanceLocation": "",
+      "error": "expected string, but got number"
+    }
+  ]
+}
+```
+To output `err` in `detailed` output format:
+```go
+b, _ := json.MarshalIndent(err.DetailedOutput(), "", "  ")
+fmt.Println(string(b))
+```
+Prints:
+```json
+{
+  "valid": false,
+  "keywordLocation": "",
+  "absoluteKeywordLocation": "file:///Users/santhosh/jsonschema/schema.json#",
+  "instanceLocation": "",
+  "errors": [
+    {
+      "valid": false,
+      "keywordLocation": "/$ref",
+      "absoluteKeywordLocation": "file:///Users/santhosh/jsonschema/schema.json#/$ref",
+      "instanceLocation": "",
+      "errors": [
+        {
+          "valid": false,
+          "keywordLocation": "/$ref/type",
+          "absoluteKeywordLocation": "file:///Users/santhosh/jsonschema/t.json#/definitions/employee/type",
+          "instanceLocation": "",
+          "error": "expected string, but got number"
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## CLI
 
