@@ -1,7 +1,6 @@
 package jsonschema
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 )
@@ -25,7 +24,6 @@ var MediaTypes = map[string]func([]byte) error{
 }
 
 func validateJSON(b []byte) error {
-	decoder := json.NewDecoder(bytes.NewReader(b))
 	var v interface{}
-	return decoder.Decode(&v)
+	return json.Unmarshal(b, &v)
 }
