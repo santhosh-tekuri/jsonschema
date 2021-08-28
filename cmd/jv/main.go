@@ -11,7 +11,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "jv [-draft INT] <json-schema> [<json-doc>]...")
+	fmt.Fprintln(os.Stderr, "jv [-draft INT] [-output FORMAT] <json-schema> [<json-doc>]...")
 	flag.PrintDefaults()
 }
 
