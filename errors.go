@@ -98,14 +98,29 @@ func (ve *ValidationError) MessageFmt() string {
 	return ve.Error()
 }
 
+func (ve *ValidationError) leaf() *ValidationError {
+	if strings.HasSuffix(ve.KeywordLocation, "/anyOf") || strings.HasSuffix(ve.KeywordLocation, "/oneOf") {
+		if len(ve.Causes) == 1 {
+			return ve.Causes[0].leaf()
+		}
+		return ve
+	}
+	if len(ve.Causes) > 0 {
+		return ve.Causes[0].leaf()
+	}
+	return ve
+}
+
 func (ve *ValidationError) Error() string {
-	sloc := ve.AbsoluteKeywordLocation
-	sloc = sloc[strings.IndexByte(sloc, '#')+1:]
-	return fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, sloc, ve.Message)
+	err := ve.leaf()
+	u, _ := split(ve.AbsoluteKeywordLocation)
+	return fmt.Sprintf("jsonschema: %s does not validate with %s: %s", quote(err.InstanceLocation), u+"#"+err.KeywordLocation, err.Message)
 }
 
 func (ve *ValidationError) GoString() string {
-	msg := ve.Error()
+	sloc := ve.AbsoluteKeywordLocation
+	sloc = sloc[strings.IndexByte(sloc, '#')+1:]
+	msg := fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, sloc, ve.Message)
 	for _, c := range ve.Causes {
 		for _, line := range strings.Split(c.GoString(), "\n") {
 			msg += "\n  " + line
