@@ -99,10 +99,10 @@ func (s *Schema) String() string {
 	return s.Location
 }
 
-func newSchema(url, loc string, doc interface{}) *Schema {
+func newSchema(url, floc string, doc interface{}) *Schema {
 	// fill with default values
 	s := &Schema{
-		Location:      url + loc,
+		Location:      url + floc,
 		MinProperties: -1,
 		MaxProperties: -1,
 		MinItems:      -1,
