@@ -53,8 +53,8 @@ func (se *SchemaError) Unwrap() error {
 
 func (se *SchemaError) Error() string {
 	s := fmt.Sprintf("jsonschema %s compilation failed", se.SchemaURL)
-	if _, ok := se.Err.(*ValidationError); !ok {
-		return fmt.Sprintf("%s: %v", s, se.Err)
+	if se.Err != nil {
+		return fmt.Sprintf("%s: %v", s, strings.TrimPrefix(se.Err.Error(), "jsonschema: "))
 	}
 	return s
 }
@@ -63,7 +63,7 @@ func (se *SchemaError) GoString() string {
 	if _, ok := se.Err.(*ValidationError); ok {
 		return fmt.Sprintf("jsonschema %s compilation failed\n%#v", se.SchemaURL, se.Err)
 	}
-	return fmt.Sprintf("jsonschema %s compilation failed: %v", se.SchemaURL, se.Err)
+	return se.Error()
 }
 
 // ValidationError is the error type returned by Validate.
