@@ -139,16 +139,6 @@ func joinPtr(ptr1, ptr2 string) string {
 	return ptr1 + "/" + ptr2
 }
 
-func absPtr(ptr string) string {
-	if ptr == "" {
-		return "#"
-	}
-	if ptr[0] != '#' {
-		return "#/" + ptr
-	}
-	return ptr
-}
-
 func quote(s string) string {
 	var w = bytes.NewBuffer(make([]byte, 0, len(s)+10))
 	w.WriteByte('\'')
