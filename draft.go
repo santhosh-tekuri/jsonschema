@@ -74,13 +74,14 @@ func (d *Draft) anchors(sch interface{}) []string {
 	return anchors
 }
 
+// listSubschemas collects subschemas in r into rr.
 func (d *Draft) listSubschemas(r *resource, base string, rr map[string]*resource) error {
 	add := func(loc string, sch interface{}) error {
-		floc := r.floc + "/" + loc
 		url, err := d.resolveID(base, sch)
 		if err != nil {
 			return err
 		}
+		floc := r.floc + "/" + loc
 		sr := &resource{url: url, floc: floc, doc: sch}
 		rr[floc] = sr
 
