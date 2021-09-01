@@ -233,21 +233,7 @@ func resolveURL(base, ref string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if baseURL.IsAbs() {
-		return baseURL.ResolveReference(refURL).String(), nil
-	}
-
-	// filepath resolving
-	ref, fragment := split(ref)
-	if filepath.IsAbs(ref) {
-		return ref + fragment, nil
-	}
-	base, _ = split(base)
-	if ref == "" {
-		return base + fragment, nil
-	}
-	dir, _ := filepath.Split(base)
-	return filepath.Join(dir, ref) + fragment, nil
+	return baseURL.ResolveReference(refURL).String(), nil
 }
 
 func split(uri string) (string, string) {
