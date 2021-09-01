@@ -220,7 +220,7 @@ func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {
 		return nil
 	}
 
-	rr := r.findResources(res)
+	rr := r.listResources(res)
 	rr = append(rr, res)
 	for _, sr := range rr {
 		if m, ok := sr.doc.(map[string]interface{}); ok {

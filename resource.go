@@ -43,6 +43,7 @@ func newResource(url string, r io.Reader) (*resource, error) {
 	}, nil
 }
 
+// fillSubschemas fills subschemas in res into r.subresources
 func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
 	if err := c.validateSchema(r, res.doc, res.floc[1:]); err != nil {
 		return err
@@ -69,7 +70,8 @@ func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
 	return nil
 }
 
-func (r *resource) findResources(res *resource) []*resource {
+// listResources lists all subresources in res
+func (r *resource) listResources(res *resource) []*resource {
 	var result []*resource
 	prefix := res.floc + "/"
 	for _, sr := range r.subresources {
