@@ -2,7 +2,7 @@ package jsonschema
 
 // ExtCompiler compiles custom keyword(s) into ExtSchema.
 type ExtCompiler interface {
-	// Compile compiles the schema m and returns its compiled representation.
+	// Compile compiles the custom keywords in schema m and returns its compiled representation.
 	// if the schema m does not contain the keywords defined by this extension,
 	// compiled representation nil should be returned.
 	Compile(ctx CompilerContext, m map[string]interface{}) (ExtSchema, error)
