@@ -85,11 +85,12 @@ type Schema struct {
 	// annotations. captured only when Compiler.ExtractAnnotations is true.
 	Title       string
 	Description string
-	Comment     string
 	Default     interface{}
+	Comment     string
 	ReadOnly    bool
 	WriteOnly   bool
 	Examples    []interface{}
+	Deprecated  bool
 
 	// user defined extensions
 	Extensions map[string]ExtSchema

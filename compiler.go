@@ -613,6 +613,12 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if s.MinContains == -1 {
 			s.MinContains = 1
 		}
+
+		if c.ExtractAnnotations {
+			if deprecated, ok := m["deprecated"]; ok {
+				s.Deprecated = deprecated.(bool)
+			}
+		}
 	}
 
 	for name, ext := range c.extensions {
