@@ -16,7 +16,7 @@ Package jsonschema provides json-schema compilation and validation.
    [draft-6](https://json-schema.org/specification-links.html#draft-6),
    [draft-4](https://json-schema.org/specification-links.html#draft-4)
  - fully compliant with [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite), (excluding some optional)
-   - list of optioanl tests that are excluded can be found in schema_test.go(variable [skipTests](https://github.com/santhosh-tekuri/jsonschema/blob/master/schema_test.go#L30))
+   - list of optional tests that are excluded can be found in schema_test.go(variable [skipTests](https://github.com/santhosh-tekuri/jsonschema/blob/master/schema_test.go#L30))
  - validates schemas against meta-schema
  - full support of remote references
  - support of recursive references between schemas
@@ -24,8 +24,8 @@ Package jsonschema provides json-schema compilation and validation.
  - thread safe validation
  - rich, intutive hierarchial error messages with json-pointers to exact location
  - supports output formats flag, basic and detailed
- - supports enabling format and content Assertions in draft2019-09
-   - make Compiler.AssertFormat, Compiler.AssertContent true
+ - supports enabling format and content Assertions in draft2019-09 or above
+   - change `Compiler.AssertFormat`, `Compiler.AssertContent` to `true`
  - compiled schema can be introspected. easier to develop tools like generating go structs given schema
  - supports user-defined keywords via [extensions](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-Extension)
  - implements following formats (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedFormat))
