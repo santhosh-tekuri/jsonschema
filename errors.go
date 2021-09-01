@@ -91,13 +91,6 @@ func (ve *ValidationError) causes(err error) error {
 	return ve
 }
 
-// MessageFmt returns the Message formatted, but does not include child Cause messages.
-//
-// Deprecated: use Error method
-func (ve *ValidationError) MessageFmt() string {
-	return ve.Error()
-}
-
 func (ve *ValidationError) leaf() *ValidationError {
 	if strings.HasSuffix(ve.KeywordLocation, "/anyOf") || strings.HasSuffix(ve.KeywordLocation, "/oneOf") {
 		if len(ve.Causes) == 1 {
