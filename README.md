@@ -201,7 +201,7 @@ since yaml supports non-string keys, such yaml documents are rendered as invalid
 yaml parser returns `map[interface{}]interface{}` for object, whereas json parser returns `map[string]interafce{}`.  
 this package accepts only `map[string]interface{}`, so we need to manually convert them to `map[string]interface{}`
 
-https://play.golang.org/p/sJy1qY7dXgA
+https://play.golang.org/p/voSN4i0u973
 
 the above example shows how to validate yaml document with jsonschema.  
 the convertion explained above is implemented by `toStringKeys` function
