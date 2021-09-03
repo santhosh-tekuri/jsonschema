@@ -16,7 +16,7 @@ Package jsonschema provides json-schema compilation and validation.
    [draft-6](https://json-schema.org/specification-links.html#draft-6),
    [draft-4](https://json-schema.org/specification-links.html#draft-4)
  - fully compliant with [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite), (excluding some optional)
-   - list of optional tests that are excluded can be found in schema_test.go(variable [skipTests](https://github.com/santhosh-tekuri/jsonschema/blob/master/schema_test.go#L30))
+   - list of optional tests that are excluded can be found in schema_test.go(variable [skipTests](https://github.com/santhosh-tekuri/jsonschema/blob/master/schema_test.go#L26))
  - validates schemas against meta-schema
  - full support of remote references
  - support of recursive references between schemas
