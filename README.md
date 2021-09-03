@@ -8,6 +8,8 @@
 
 Package jsonschema provides json-schema compilation and validation.
 
+[Benchmarks](https://dev.to/vearutop/benchmarking-correctness-and-performance-of-go-json-schema-validators-3247)
+
 ### Features:
  - implements
    [draft 2020-12](https://json-schema.org/specification-links.html#2020-12),
