@@ -38,9 +38,6 @@ You can force to use specific draft,  when "$schema" is missing, as follows:
 	compiler := jsonschema.NewCompiler()
 	compler.Draft = jsonschema.Draft4
 
-you can also validate go value using schema.ValidateInterface(interface{}) method.
-but the argument should not be user-defined struct.
-
 This package supports loading json-schema from filePath and fileURL.
 
 To load json-schema from HTTPURL, add following import:
