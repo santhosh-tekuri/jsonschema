@@ -664,7 +664,7 @@ func toStrings(arr []interface{}) []string {
 	return s
 }
 
-// SchemaRef captures schema and the path refering to it.
+// SchemaRef captures schema and the path referring to it.
 type schemaRef struct {
 	path    string  // relative-json-pointer to schema
 	schema  *Schema // target schema

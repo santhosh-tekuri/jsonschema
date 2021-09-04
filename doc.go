@@ -10,7 +10,7 @@ Features:
  - support of recursive references between schemas
  - detects infinite loop in schemas
  - thread safe validation
- - rich, intutive hierarchial error messages with json-pointers to exact location
+ - rich, intuitive hierarchial error messages with json-pointers to exact location
  - supports output formats flag, basic and detailed
  - supports enabling format and content Assertions in draft2019-09 or above
    - change Compiler.AssertFormat, Compiler.AssertContent to true
