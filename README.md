@@ -47,7 +47,9 @@ Package jsonschema provides json-schema compilation and validation.
 see examples in [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5)
 
 The schema is compiled against the version specified in `$schema` property.
-If `$schema` property is missing, it uses latest draft which currently is draft7.
+If "$schema" property is missing, it uses latest draft which currently implemented
+by this library.
+
 You can force to use specific version, when `$schema` is missing, as follows:
 
 ```go
