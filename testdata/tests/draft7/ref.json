@@ -1,36 +1,4 @@
 [
-    {
-        "description": "$id must be resolved against nearest parent, not just immediate parent",
-        "schema": {
-            "$id": "http://example.com/a.json",
-            "definitions": {
-                "x": {
-                    "$id": "http://example.com/b/c.json",
-                    "not": {
-                        "definitions": {
-                            "y": {
-                                "$id": "d.json",
-                                "type": "number"
-                            }
-                        }
-                    }
-                }
-            },
-            "$ref": "http://example.com/b/d.json"
-        },
-        "tests": [
-            {
-                "description": "number should pass",
-                "data": 1,
-                "valid": true
-            },
-            {
-                "description": "non-number should fail",
-                "data": "a",
-                "valid": false
-            }
-        ]
-    },
   {
     "description": "absolute ref to $id with fragment",
     "schema": {

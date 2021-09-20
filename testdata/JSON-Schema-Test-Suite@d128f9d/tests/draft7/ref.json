@@ -54,9 +54,9 @@
     {
         "description": "relative pointer ref to array",
         "schema": {
-            "prefixItems": [
+            "items": [
                 {"type": "integer"},
-                {"$ref": "#/prefixItems/0"}
+                {"$ref": "#/items/0"}
             ]
         },
         "tests": [
@@ -75,15 +75,15 @@
     {
         "description": "escaped pointer ref",
         "schema": {
-            "$defs": {
+            "definitions": {
                 "tilde~field": {"type": "integer"},
                 "slash/field": {"type": "integer"},
                 "percent%field": {"type": "integer"}
             },
             "properties": {
-                "tilde": {"$ref": "#/$defs/tilde~0field"},
-                "slash": {"$ref": "#/$defs/slash~1field"},
-                "percent": {"$ref": "#/$defs/percent%25field"}
+                "tilde": {"$ref": "#/definitions/tilde~0field"},
+                "slash": {"$ref": "#/definitions/slash~1field"},
+                "percent": {"$ref": "#/definitions/percent%25field"}
             }
         },
         "tests": [
@@ -122,12 +122,12 @@
     {
         "description": "nested refs",
         "schema": {
-            "$defs": {
+            "definitions": {
                 "a": {"type": "integer"},
-                "b": {"$ref": "#/$defs/a"},
-                "c": {"$ref": "#/$defs/b"}
+                "b": {"$ref": "#/definitions/a"},
+                "c": {"$ref": "#/definitions/b"}
             },
-            "$ref": "#/$defs/c"
+            "allOf": [{ "$ref": "#/definitions/c" }]
         },
         "tests": [
             {
@@ -143,30 +143,30 @@
         ]
     },
     {
-        "description": "ref applies alongside sibling keywords",
+        "description": "ref overrides any sibling keywords",
         "schema": {
-            "$defs": {
+            "definitions": {
                 "reffed": {
                     "type": "array"
                 }
             },
             "properties": {
                 "foo": {
-                    "$ref": "#/$defs/reffed",
+                    "$ref": "#/definitions/reffed",
                     "maxItems": 2
                 }
             }
         },
         "tests": [
             {
-                "description": "ref valid, maxItems valid",
+                "description": "ref valid",
                 "data": { "foo": [] },
                 "valid": true
             },
             {
-                "description": "ref valid, maxItems invalid",
-                "data": { "foo": [1, 2, 3] },
-                "valid": false
+                "description": "ref valid, maxItems ignored",
+                "data": { "foo": [ 1, 2, 3] },
+                "valid": true
             },
             {
                 "description": "ref invalid",
@@ -176,10 +176,44 @@
         ]
     },
     {
-        "description": "remote ref, containing refs itself",
+        "description": "$ref prevents a sibling $id from changing the base uri",
         "schema": {
-            "$ref": "https://json-schema.org/draft/future/schema"
+            "$id": "http://localhost:1234/sibling_id/base/",
+            "definitions": {
+                "foo": {
+                    "$id": "http://localhost:1234/sibling_id/foo.json",
+                    "minimum": 2
+                },
+                "base_foo": {
+                    "$comment": "this canonical uri is http://localhost:1234/sibling_id/base/foo.json",
+                    "$id": "foo.json",
+                    "minimum": 5
+                }
+            },
+            "allOf": [
+                {
+                    "$comment": "$ref resolves to http://localhost:1234/sibling_id/base/foo.json, not ttp://localhost:1234/sibling_id/foo.json",
+                    "$id": "http://localhost:1234/sibling_id/",
+                    "$ref": "foo.json"
+                }
+            ]
         },
+        "tests": [
+            {
+                "description": "$ref resolves to /definitions/foo, data validates",
+                "data": 10,
+                "valid": true
+            },
+            {
+                "description": "$ref resolves to /definitions/foo, data does not validate",
+                "data": 1,
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "remote ref, containing refs itself",
+        "schema": {"$ref": "http://json-schema.org/draft-07/schema#"},
         "tests": [
             {
                 "description": "remote ref valid",
@@ -217,9 +251,9 @@
         "description": "property named $ref, containing an actual $ref",
         "schema": {
             "properties": {
-                "$ref": {"$ref": "#/$defs/is-string"}
+                "$ref": {"$ref": "#/definitions/is-string"}
             },
-            "$defs": {
+            "definitions": {
                 "is-string": {
                     "type": "string"
                 }
@@ -241,8 +275,8 @@
     {
         "description": "$ref to boolean schema true",
         "schema": {
-            "$ref": "#/$defs/bool",
-            "$defs": {
+            "allOf": [{ "$ref": "#/definitions/bool" }],
+            "definitions": {
                 "bool": true
             }
         },
@@ -257,8 +291,8 @@
     {
         "description": "$ref to boolean schema false",
         "schema": {
-            "$ref": "#/$defs/bool",
-            "$defs": {
+            "allOf": [{ "$ref": "#/definitions/bool" }],
+            "definitions": {
                 "bool": false
             }
         },
@@ -284,7 +318,7 @@
                 }
             },
             "required": ["meta", "nodes"],
-            "$defs": {
+            "definitions": {
                 "node": {
                     "$id": "http://localhost:1234/node",
                     "description": "node",
@@ -300,7 +334,7 @@
         "tests": [
             {
                 "description": "valid tree",
-                "data": {
+                "data": { 
                     "meta": "root",
                     "nodes": [
                         {
@@ -329,7 +363,7 @@
             },
             {
                 "description": "invalid tree",
-                "data": {
+                "data": { 
                     "meta": "root",
                     "nodes": [
                         {
@@ -362,9 +396,9 @@
         "description": "refs with quote",
         "schema": {
             "properties": {
-                "foo\"bar": {"$ref": "#/$defs/foo%22bar"}
+                "foo\"bar": {"$ref": "#/definitions/foo%22bar"}
             },
-            "$defs": {
+            "definitions": {
                 "foo\"bar": {"type": "number"}
             }
         },
@@ -386,26 +420,59 @@
         ]
     },
     {
-        "description": "ref creates new scope when adjacent to keywords",
+        "description": "Location-independent identifier",
         "schema": {
-            "$defs": {
+            "allOf": [{
+                "$ref": "#foo"
+            }],
+            "definitions": {
                 "A": {
-                    "unevaluatedProperties": false
+                    "$id": "#foo",
+                    "type": "integer"
                 }
-            },
-            "properties": {
-                "prop1": {
-                    "type": "string"
-                }
-            },
-            "$ref": "#/$defs/A"
+            }
         },
         "tests": [
             {
-                "description": "referenced subschema doesn't see annotations from properties",
-                "data": {
-                    "prop1": "match"
-                },
+                "data": 1,
+                "description": "match",
+                "valid": true
+            },
+            {
+                "data": "a",
+                "description": "mismatch",
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "Location-independent identifier with base URI change in subschema",
+        "schema": {
+            "$id": "http://localhost:1234/root",
+            "allOf": [{
+                "$ref": "http://localhost:1234/nested.json#foo"
+            }],
+            "definitions": {
+                "A": {
+                    "$id": "nested.json",
+                    "definitions": {
+                        "B": {
+                            "$id": "#foo",
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "tests": [
+            {
+                "data": 1,
+                "description": "match",
+                "valid": true
+            },
+            {
+                "data": "a",
+                "description": "mismatch",
                 "valid": false
             }
         ]
@@ -413,11 +480,11 @@
     {
         "description": "naive replacement of $ref with its destination is not correct",
         "schema": {
-            "$defs": {
+            "definitions": {
                 "a_string": { "type": "string" }
             },
             "enum": [
-                { "$ref": "#/$defs/a_string" }
+                { "$ref": "#/definitions/a_string" }
             ]
         },
         "tests": [
@@ -433,7 +500,7 @@
             },
             {
                 "description": "match the enum exactly",
-                "data": { "$ref": "#/$defs/a_string" },
+                "data": { "$ref": "#/definitions/a_string" },
                 "valid": true
             }
         ]
@@ -445,17 +512,17 @@
             "properties": {
                 "foo": {
                     "$id": "schema-relative-uri-defs2.json",
-                    "$defs": {
+                    "definitions": {
                         "inner": {
                             "properties": {
                                 "bar": { "type": "string" }
                             }
                         }
                     },
-                    "$ref": "#/$defs/inner"
+                    "allOf": [ { "$ref": "#/definitions/inner" } ]
                 }
             },
-            "$ref": "schema-relative-uri-defs2.json"
+            "allOf": [ { "$ref": "schema-relative-uri-defs2.json" } ]
         },
         "tests": [
             {
@@ -497,17 +564,17 @@
             "properties": {
                 "foo": {
                     "$id": "http://example.com/schema-refs-absolute-uris-defs2.json",
-                    "$defs": {
+                    "definitions": {
                         "inner": {
                             "properties": {
                                 "bar": { "type": "string" }
                             }
                         }
                     },
-                    "$ref": "#/$defs/inner"
+                    "allOf": [ { "$ref": "#/definitions/inner" } ]
                 }
             },
-            "$ref": "schema-refs-absolute-uris-defs2.json"
+            "allOf": [ { "$ref": "schema-refs-absolute-uris-defs2.json" } ]
         },
         "tests": [
             {
@@ -539,6 +606,42 @@
                     "bar": "a"
                 },
                 "valid": true
+            }
+        ]
+    },
+    {
+        "description": "$id must be resolved against nearest parent, not just immediate parent",
+        "schema": {
+            "$id": "http://example.com/a.json",
+            "definitions": {
+                "x": {
+                    "$id": "http://example.com/b/c.json",
+                    "not": {
+                        "definitions": {
+                            "y": {
+                                "$id": "d.json",
+                                "type": "number"
+                            }
+                        }
+                    }
+                }
+            },
+            "allOf": [
+                {
+                    "$ref": "http://example.com/b/d.json"
+                }
+            ]
+        },
+        "tests": [
+            {
+                "description": "number should pass",
+                "data": 1,
+                "valid": true
+            },
+            {
+                "description": "non-number should fail",
+                "data": "a",
+                "valid": false
             }
         ]
     }

@@ -54,9 +54,9 @@
     {
         "description": "relative pointer ref to array",
         "schema": {
-            "items": [
+            "prefixItems": [
                 {"type": "integer"},
-                {"$ref": "#/items/0"}
+                {"$ref": "#/prefixItems/0"}
             ]
         },
         "tests": [
@@ -177,7 +177,9 @@
     },
     {
         "description": "remote ref, containing refs itself",
-        "schema": {"$ref": "https://json-schema.org/draft/2019-09/schema"},
+        "schema": {
+            "$ref": "https://json-schema.org/draft/future/schema"
+        },
         "tests": [
             {
                 "description": "remote ref valid",
@@ -298,7 +300,7 @@
         "tests": [
             {
                 "description": "valid tree",
-                "data": { 
+                "data": {
                     "meta": "root",
                     "nodes": [
                         {
@@ -327,7 +329,7 @@
             },
             {
                 "description": "invalid tree",
-                "data": { 
+                "data": {
                     "meta": "root",
                     "nodes": [
                         {
@@ -537,6 +539,42 @@
                     "bar": "a"
                 },
                 "valid": true
+            }
+        ]
+    },
+    {
+        "description": "$id must be resolved against nearest parent, not just immediate parent",
+        "schema": {
+            "$id": "http://example.com/a.json",
+            "$defs": {
+                "x": {
+                    "$id": "http://example.com/b/c.json",
+                    "not": {
+                        "$defs": {
+                            "y": {
+                                "$id": "d.json",
+                                "type": "number"
+                            }
+                        }
+                    }
+                }
+            },
+            "allOf": [
+                {
+                    "$ref": "http://example.com/b/d.json"
+                }
+            ]
+        },
+        "tests": [
+            {
+                "description": "number should pass",
+                "data": 1,
+                "valid": true
+            },
+            {
+                "description": "non-number should fail",
+                "data": "a",
+                "valid": false
             }
         ]
     }
