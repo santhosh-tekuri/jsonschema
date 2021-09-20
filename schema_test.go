@@ -21,7 +21,7 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
-var testSuite = "testdata/JSON-Schema-Test-Suite@f300dd1"
+var testSuite = "testdata/JSON-Schema-Test-Suite@7334b4c"
 
 var skipTests = map[string]map[string][]string{
 	"TestDraft4/optional/unicode.json": {}, // golang regex works on ascii only
@@ -43,8 +43,11 @@ var skipTests = map[string]map[string][]string{
 			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
 			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
 		},
-		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
-		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and upper letter":      {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter":      {}, // \cX is not supported
+		"unicode semantics should be used for all pattern matching":           {}, // invalid regex "\\p{Letter}cole"
+		"unicode digits are more than 0 through 9":                            {}, // invalid regex "^\\p{digit}+$"
+		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
 	"TestDraft6/optional/unicode.json": {}, // golang regex works on ascii only
@@ -63,8 +66,11 @@ var skipTests = map[string]map[string][]string{
 			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
 			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
 		},
-		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
-		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and upper letter":      {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter":      {}, // \cX is not supported
+		"unicode semantics should be used for all pattern matching":           {}, // invalid regex "\\p{Letter}cole"
+		"unicode digits are more than 0 through 9":                            {}, // invalid regex "^\\p{digit}+$"
+		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
 	"TestDraft7/optional/unicode.json":             {}, // golang regex works on ascii only
@@ -85,8 +91,11 @@ var skipTests = map[string]map[string][]string{
 			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
 			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
 		},
-		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
-		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and upper letter":      {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter":      {}, // \cX is not supported
+		"unicode semantics should be used for all pattern matching":           {}, // invalid regex "\\p{Letter}cole"
+		"unicode digits are more than 0 through 9":                            {}, // invalid regex "^\\p{digit}+$"
+		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
 	"TestDraft2019/optional/unicode.json":             {}, // golang regex works on ascii only
@@ -107,8 +116,11 @@ var skipTests = map[string]map[string][]string{
 			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
 			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
 		},
-		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
-		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and upper letter":      {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter":      {}, // \cX is not supported
+		"unicode semantics should be used for all pattern matching":           {}, // invalid regex "\\p{Letter}cole"
+		"unicode digits are more than 0 through 9":                            {}, // invalid regex "^\\p{digit}+$"
+		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
 	"TestDraft2020/optional/unicode.json":             {}, // golang regex works on ascii only
@@ -129,8 +141,11 @@ var skipTests = map[string]map[string][]string{
 			"paragraph separator does not match (line terminator)", // \S matches unicode whitespace
 			"EM SPACE does not match (Space_Separator)",            // \S matches unicode whitespace
 		},
-		"ECMA 262 regex escapes control codes with \\c and upper letter": {}, // \cX is not supported
-		"ECMA 262 regex escapes control codes with \\c and lower letter": {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and upper letter":      {}, // \cX is not supported
+		"ECMA 262 regex escapes control codes with \\c and lower letter":      {}, // \cX is not supported
+		"unicode semantics should be used for all pattern matching":           {}, // invalid regex "\\p{Letter}cole"
+		"unicode digits are more than 0 through 9":                            {}, // invalid regex "^\\p{digit}+$"
+		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 }
 
