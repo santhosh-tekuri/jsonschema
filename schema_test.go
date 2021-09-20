@@ -24,7 +24,6 @@ import (
 var testSuite = "testdata/JSON-Schema-Test-Suite@7334b4c"
 
 var skipTests = map[string]map[string][]string{
-	"TestDraft4/optional/unicode.json": {}, // golang regex works on ascii only
 	"TestDraft4/optional/zeroTerminatedFloats.json": {
 		"some languages do not distinguish between different types of numeric value": {}, // this behavior is changed in new drafts
 	},
@@ -50,7 +49,6 @@ var skipTests = map[string]map[string][]string{
 		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
-	"TestDraft6/optional/unicode.json": {}, // golang regex works on ascii only
 	"TestDraft6/optional/ecmascript-regex.json": {
 		"ECMA 262 \\s matches whitespace": {
 			"Line tabulation matches",                       // \s does not match vertical tab
@@ -73,7 +71,6 @@ var skipTests = map[string]map[string][]string{
 		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
-	"TestDraft7/optional/unicode.json":             {}, // golang regex works on ascii only
 	"TestDraft7/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
 	"TestDraft7/optional/format/idn-email.json":    {}, // idn-email format is not implemented
 	"TestDraft7/optional/ecmascript-regex.json": {
@@ -98,7 +95,6 @@ var skipTests = map[string]map[string][]string{
 		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
-	"TestDraft2019/optional/unicode.json":             {}, // golang regex works on ascii only
 	"TestDraft2019/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
 	"TestDraft2019/optional/format/idn-email.json":    {}, // idn-email format is not implemented
 	"TestDraft2019/optional/ecmascript-regex.json": {
@@ -123,7 +119,6 @@ var skipTests = map[string]map[string][]string{
 		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
-	"TestDraft2020/optional/unicode.json":             {}, // golang regex works on ascii only
 	"TestDraft2020/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
 	"TestDraft2020/optional/format/idn-email.json":    {}, // idn-email format is not implemented
 	"TestDraft2020/optional/ecmascript-regex.json": {
