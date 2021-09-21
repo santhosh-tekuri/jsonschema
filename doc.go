@@ -36,7 +36,7 @@ by this library.
 You can force to use specific draft,  when "$schema" is missing, as follows:
 
 	compiler := jsonschema.NewCompiler()
-	compler.Draft = jsonschema.Draft4
+	compiler.Draft = jsonschema.Draft4
 
 This package supports loading json-schema from filePath and fileURL.
 
