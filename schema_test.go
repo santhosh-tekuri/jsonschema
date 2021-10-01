@@ -21,7 +21,7 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
-var testSuite = "testdata/JSON-Schema-Test-Suite@02d7cb5"
+var testSuite = "testdata/JSON-Schema-Test-Suite@8e5b2f1"
 
 var skipTests = map[string]map[string][]string{
 	"TestDraft4/optional/zeroTerminatedFloats.json": {
