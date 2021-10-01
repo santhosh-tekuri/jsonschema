@@ -225,14 +225,14 @@
         },
         "tests": [
             {
-                "description": "$ref resolves to /definitions/foo, data validates",
+                "description": "$ref resolves to /definitions/base_foo, data does not validate",
                 "data": "a",
-                "valid": true
+                "valid": false
             },
             {
-                "description": "$ref resolves to /definitions/foo, data does not validate",
+                "description": "$ref resolves to /definitions/base_foo, data validates",
                 "data": 1,
-                "valid": false
+                "valid": true
             }
         ]
     },

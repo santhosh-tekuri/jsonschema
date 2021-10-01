@@ -200,20 +200,20 @@
         },
         "tests": [
             {
-                "description": "$ref resolves to /definitions/foo, data validates",
+                "description": "$ref resolves to /definitions/base_foo, data does not validate",
                 "data": "a",
-                "valid": true
+                "valid": false
             },
             {
-                "description": "$ref resolves to /definitions/foo, data does not validate",
+                "description": "$ref resolves to /definitions/base_foo, data validates",
                 "data": 1,
-                "valid": false
+                "valid": true
             }
         ]
     },
     {
         "description": "remote ref, containing refs itself",
-        "schema": {"$ref": "http://json-schema.org/draft-07/schema#"},
+        "schema": {"$ref": "http://json-schema.org/draft-06/schema#"},
         "tests": [
             {
                 "description": "remote ref valid",
@@ -606,42 +606,6 @@
                     "bar": "a"
                 },
                 "valid": true
-            }
-        ]
-    },
-    {
-        "description": "$id must be resolved against nearest parent, not just immediate parent",
-        "schema": {
-            "$id": "http://example.com/a.json",
-            "definitions": {
-                "x": {
-                    "$id": "http://example.com/b/c.json",
-                    "not": {
-                        "definitions": {
-                            "y": {
-                                "$id": "d.json",
-                                "type": "number"
-                            }
-                        }
-                    }
-                }
-            },
-            "allOf": [
-                {
-                    "$ref": "http://example.com/b/d.json"
-                }
-            ]
-        },
-        "tests": [
-            {
-                "description": "number should pass",
-                "data": 1,
-                "valid": true
-            },
-            {
-                "description": "non-number should fail",
-                "data": "a",
-                "valid": false
             }
         ]
     }
