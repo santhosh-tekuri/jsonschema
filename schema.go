@@ -13,87 +13,87 @@ import (
 
 // A Schema represents compiled version of json-schema.
 type Schema struct {
-	Location string // absolute location
+	Location string `json:"location,omitempty"` // absolute location
 
-	dynamicAnchors []*Schema
+	dynamicAnchors []*Schema `json:"dynamic_anchors,omitempty"`
 
 	// type agnostic validations
-	Format          string
-	format          func(interface{}) bool
-	Always          *bool // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref             *Schema
-	RecursiveAnchor bool
-	RecursiveRef    *Schema
-	DynamicAnchor   string
-	DynamicRef      *Schema
-	Types           []string      // allowed types.
-	Constant        []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
-	Enum            []interface{} // allowed values.
-	enumError       string        // error message for enum fail. captured here to avoid constructing error message every time.
-	Not             *Schema
-	AllOf           []*Schema
-	AnyOf           []*Schema
-	OneOf           []*Schema
-	If              *Schema
-	Then            *Schema // nil, when If is nil.
-	Else            *Schema // nil, when If is nil.
+	Format          string                 `json:"format,omitempty"`
+	format          func(interface{}) bool `json:"format,omitempty"`
+	Always          *bool                  `json:"always,omitempty"` // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref             *Schema                `json:"ref,omitempty"`
+	RecursiveAnchor bool                   `json:"recursive_anchor,omitempty"`
+	RecursiveRef    *Schema                `json:"recursive_ref,omitempty"`
+	DynamicAnchor   string                 `json:"dynamic_anchor,omitempty"`
+	DynamicRef      *Schema                `json:"dynamic_ref,omitempty"`
+	Types           []string               `json:"types,omitempty"`      // allowed types.
+	Constant        []interface{}          `json:"constant,omitempty"`   // first element in slice is constant value. note: slice is used to capture nil constant.
+	Enum            []interface{}          `json:"enum,omitempty"`       // allowed values.
+	enumError       string                 `json:"enum_error,omitempty"` // error message for enum fail. captured here to avoid constructing error message every time.
+	Not             *Schema                `json:"not,omitempty"`
+	AllOf           []*Schema              `json:"all_of,omitempty"`
+	AnyOf           []*Schema              `json:"any_of,omitempty"`
+	OneOf           []*Schema              `json:"one_of,omitempty"`
+	If              *Schema                `json:"if,omitempty"`
+	Then            *Schema                `json:"then,omitempty"` // nil, when If is nil.
+	Else            *Schema                `json:"else,omitempty"` // nil, when If is nil.
 
 	// object validations
-	MinProperties         int      // -1 if not specified.
-	MaxProperties         int      // -1 if not specified.
-	Required              []string // list of required properties.
-	Properties            map[string]*Schema
-	PropertyNames         *Schema
-	RegexProperties       bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
-	PatternProperties     map[*regexp.Regexp]*Schema
-	AdditionalProperties  interface{}            // nil or bool or *Schema.
-	Dependencies          map[string]interface{} // map value is *Schema or []string.
-	DependentRequired     map[string][]string
-	DependentSchemas      map[string]*Schema
-	UnevaluatedProperties *Schema
+	MinProperties         int                        `json:"min_properties,omitempty"` // -1 if not specified.
+	MaxProperties         int                        `json:"max_properties,omitempty"` // -1 if not specified.
+	Required              []string                   `json:"required,omitempty"`       // list of required properties.
+	Properties            map[string]*Schema         `json:"properties,omitempty"`
+	PropertyNames         *Schema                    `json:"property_names,omitempty"`
+	RegexProperties       bool                       `json:"regex_properties,omitempty"` // property names must be valid regex. used only in draft4 as workaround in metaschema.
+	PatternProperties     map[*regexp.Regexp]*Schema `json:"pattern_properties,omitempty"`
+	AdditionalProperties  interface{}                `json:"additional_properties,omitempty"` // nil or bool or *Schema.
+	Dependencies          map[string]interface{}     `json:"dependencies,omitempty"`          // map value is *Schema or []string.
+	DependentRequired     map[string][]string        `json:"dependent_required,omitempty"`
+	DependentSchemas      map[string]*Schema         `json:"dependent_schemas,omitempty"`
+	UnevaluatedProperties *Schema                    `json:"unevaluated_properties,omitempty"`
 
 	// array validations
-	MinItems         int // -1 if not specified.
-	MaxItems         int // -1 if not specified.
-	UniqueItems      bool
-	Items            interface{} // nil or *Schema or []*Schema
-	AdditionalItems  interface{} // nil or bool or *Schema.
-	PrefixItems      []*Schema
-	Items2020        *Schema // items keyword reintroduced in draft 2020-12
-	Contains         *Schema
-	ContainsEval     bool // whether any item in an array that passes validation of the contains schema is considered "evaluated"
-	MinContains      int  // 1 if not specified
-	MaxContains      int  // -1 if not specified
-	UnevaluatedItems *Schema
+	MinItems         int         `json:"min_items,omitempty"` // -1 if not specified.
+	MaxItems         int         `json:"max_items,omitempty"` // -1 if not specified.
+	UniqueItems      bool        `json:"unique_items,omitempty"`
+	Items            interface{} `json:"items,omitempty"`            // nil or *Schema or []*Schema
+	AdditionalItems  interface{} `json:"additional_items,omitempty"` // nil or bool or *Schema.
+	PrefixItems      []*Schema   `json:"prefix_items,omitempty"`
+	Items2020        *Schema     `json:"items_2020,omitempty"` // items keyword reintroduced in draft 2020-12
+	Contains         *Schema     `json:"contains,omitempty"`
+	ContainsEval     bool        `json:"contains_eval,omitempty"` // whether any item in an array that passes validation of the contains schema is considered "evaluated"
+	MinContains      int         `json:"min_contains,omitempty"`  // 1 if not specified
+	MaxContains      int         `json:"max_contains,omitempty"`  // -1 if not specified
+	UnevaluatedItems *Schema     `json:"unevaluated_items,omitempty"`
 
 	// string validations
-	MinLength        int // -1 if not specified.
-	MaxLength        int // -1 if not specified.
-	Pattern          *regexp.Regexp
-	ContentEncoding  string
-	decoder          func(string) ([]byte, error)
-	ContentMediaType string
-	mediaType        func([]byte) error
+	MinLength        int                          `json:"min_length,omitempty"` // -1 if not specified.
+	MaxLength        int                          `json:"max_length,omitempty"` // -1 if not specified.
+	Pattern          *regexp.Regexp               `json:"pattern,omitempty"`
+	ContentEncoding  string                       `json:"content_encoding,omitempty"`
+	decoder          func(string) ([]byte, error) `json:"decoder,omitempty"`
+	ContentMediaType string                       `json:"content_media_type,omitempty"`
+	mediaType        func([]byte) error           `json:"media_type,omitempty"`
 
 	// number validators
-	Minimum          *big.Rat
-	ExclusiveMinimum *big.Rat
-	Maximum          *big.Rat
-	ExclusiveMaximum *big.Rat
-	MultipleOf       *big.Rat
+	Minimum          *big.Rat `json:"minimum,omitempty"`
+	ExclusiveMinimum *big.Rat `json:"exclusive_minimum,omitempty"`
+	Maximum          *big.Rat `json:"maximum,omitempty"`
+	ExclusiveMaximum *big.Rat `json:"exclusive_maximum,omitempty"`
+	MultipleOf       *big.Rat `json:"multiple_of,omitempty"`
 
 	// annotations. captured only when Compiler.ExtractAnnotations is true.
-	Title       string
-	Description string
-	Default     interface{}
-	Comment     string
-	ReadOnly    bool
-	WriteOnly   bool
-	Examples    []interface{}
-	Deprecated  bool
+	Title       string        `json:"title,omitempty"`
+	Description string        `json:"description,omitempty"`
+	Default     interface{}   `json:"default,omitempty"`
+	Comment     string        `json:"comment,omitempty"`
+	ReadOnly    bool          `json:"read_only,omitempty"`
+	WriteOnly   bool          `json:"write_only,omitempty"`
+	Examples    []interface{} `json:"examples,omitempty"`
+	Deprecated  bool          `json:"deprecated,omitempty"`
 
 	// user defined extensions
-	Extensions map[string]ExtSchema
+	Extensions map[string]ExtSchema `json:"extensions,omitempty"`
 }
 
 func (s *Schema) String() string {
