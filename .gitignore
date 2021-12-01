@@ -1,4 +1,6 @@
 .vscode
 .idea
 *.swp
-jv
+/jv
+/cmd/jv/jv
+*.exe
