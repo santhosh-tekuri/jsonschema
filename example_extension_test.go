@@ -65,7 +65,12 @@ func Example_extension() {
 		log.Fatalf("%#v", err)
 	}
 
-	if err = sch.Validate(strings.NewReader(instance)); err != nil {
+	var v interface{}
+	if err := json.Unmarshal([]byte(instance), &v); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = sch.Validate(v); err != nil {
 		log.Fatalf("%#v", err)
 	}
 	// Output:
