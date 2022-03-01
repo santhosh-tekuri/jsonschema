@@ -203,6 +203,15 @@ func toAbs(s string) (string, error) {
 		return s, nil
 	}
 
+	// Workaround for WASM: relative filepaths cannot be resolved in
+	// WASM ebcause not all filesystem functions are implemented.
+	if runtime.GOOS == "js" {
+		if !strings.HasPrefix(s, "file://") && s[0] != '/' {
+			s = "file://" + s
+		}
+		return s, nil
+	}
+
 	// s is filepath
 	if s, err = filepath.Abs(s); err != nil {
 		return "", err
