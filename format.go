@@ -5,10 +5,11 @@ import (
 	"net"
 	"net/mail"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dlclark/regexp2"
 )
 
 // Formats is a registry of functions, which know how to validate
@@ -465,13 +466,13 @@ func isURITemplate(v interface{}) bool {
 // isRegex tells whether given string is a valid regular expression,
 // according to the ECMA 262 regular expression dialect.
 //
-// The implementation uses go-lang regexp package.
+// The implementation uses the github.com/dlclark/regexp2 package.
 func isRegex(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return true
 	}
-	_, err := regexp.Compile(s)
+	_, err := regexp2.Compile(s, regexp2.ECMAScript)
 	return err == nil
 }
 

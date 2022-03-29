@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"regexp"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/dlclark/regexp2"
 )
+
+var defaultMatchTimeout = time.Second
 
 // A Compiler represents a json-schema compiler.
 type Compiler struct {
@@ -35,6 +39,9 @@ type Compiler struct {
 
 	// AssertContent for specifications >= draft2019-09.
 	AssertContent bool
+
+	// matchTimeout is the timeout for regular expression matches
+	matchTimeout time.Duration
 }
 
 // Compile parses json-schema at given url returns, if successful,
@@ -116,6 +123,15 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 		err = &SchemaError{url, err}
 	}
 	return sch, err
+}
+
+func (c *Compiler) compileRegexp(pattern string) *regexp2.Regexp {
+	re := regexp2.MustCompile(pattern, regexp2.ECMAScript)
+	re.MatchTimeout = c.matchTimeout
+	if re.MatchTimeout == 0 {
+		re.MatchTimeout = defaultMatchTimeout
+	}
+	return re
 }
 
 func (c *Compiler) findResource(url string) (*resource, error) {
@@ -432,7 +448,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
 
 		if pattern, ok := m["pattern"]; ok {
-			s.Pattern = regexp.MustCompile(pattern.(string))
+			s.Pattern = c.compileRegexp(pattern.(string))
 		}
 
 		if r.draft.version >= 2019 {
@@ -509,9 +525,10 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 
 		if patternProps, ok := m["patternProperties"]; ok {
 			patternProps := patternProps.(map[string]interface{})
-			s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
+			s.PatternProperties = make(map[*regexp2.Regexp]*Schema, len(patternProps))
 			for pattern := range patternProps {
-				s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
+				re := c.compileRegexp(pattern)
+				s.PatternProperties[re], err = compile(nil, "patternProperties/"+escape(pattern))
 				if err != nil {
 					return err
 				}

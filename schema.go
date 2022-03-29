@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"math/big"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/dlclark/regexp2"
 )
 
 // A Schema represents compiled version of json-schema.
@@ -49,7 +50,7 @@ type Schema struct {
 	Properties            map[string]*Schema
 	PropertyNames         *Schema
 	RegexProperties       bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
-	PatternProperties     map[*regexp.Regexp]*Schema
+	PatternProperties     map[*regexp2.Regexp]*Schema
 	AdditionalProperties  interface{}            // nil or bool or *Schema.
 	Dependencies          map[string]interface{} // map value is *Schema or []string.
 	DependentRequired     map[string][]string
@@ -73,7 +74,7 @@ type Schema struct {
 	// string validations
 	MinLength        int // -1 if not specified.
 	MaxLength        int // -1 if not specified.
-	Pattern          *regexp.Regexp
+	Pattern          *regexp2.Regexp
 	ContentEncoding  string
 	decoder          func(string) ([]byte, error)
 	ContentMediaType string
@@ -354,7 +355,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 		for pattern, sch := range s.PatternProperties {
 			for pname, pvalue := range v {
-				if pattern.MatchString(pname) {
+				if match, _ := pattern.MatchString(pname); match {
 					delete(result.unevalProps, pname)
 					if err := validate(sch, "patternProperties/"+escape(pattern.String()), pvalue, escape(pname)); err != nil {
 						errors = append(errors, err)
@@ -514,8 +515,10 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 
-		if s.Pattern != nil && !s.Pattern.MatchString(v) {
-			errors = append(errors, validationError("pattern", "does not match pattern %s", quote(s.Pattern.String())))
+		if s.Pattern != nil {
+			if match, _ := s.Pattern.MatchString(v); !match {
+				errors = append(errors, validationError("pattern", "does not match pattern %s", quote(s.Pattern.String())))
+			}
 		}
 
 		// contentEncoding + contentMediaType
