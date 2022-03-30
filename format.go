@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/mail"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -435,13 +434,14 @@ func isURITemplate(v interface{}) bool {
 // isRegex tells whether given string is a valid regular expression,
 // according to the ECMA 262 regular expression dialect.
 //
-// The implementation uses go-lang regexp package.
+// The default implementation uses go-lang regexp package.
 func isRegex(v interface{}) bool {
 	s, ok := v.(string)
 	if !ok {
 		return true
 	}
-	_, err := regexp.Compile(s)
+	re := newRegexp()
+	err := re.Compile(s)
 	return err == nil
 }
 

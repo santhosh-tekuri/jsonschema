@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -392,9 +391,11 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 
 	if patternProps, ok := m["patternProperties"]; ok {
 		patternProps := patternProps.(map[string]interface{})
-		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
+		s.PatternProperties = make(map[Regexp]*Schema, len(patternProps))
 		for pattern := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
+			re := newRegexp()
+			re.MustCompile(pattern)
+			s.PatternProperties[re], err = compile(nil, "patternProperties/"+escape(pattern))
 			if err != nil {
 				return err
 			}
@@ -499,7 +500,9 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
 
 	if pattern, ok := m["pattern"]; ok {
-		s.Pattern = regexp.MustCompile(pattern.(string))
+		re := newRegexp()
+		re.MustCompile(pattern.(string))
+		s.Pattern = re
 	}
 
 	if format, ok := m["format"]; ok {
