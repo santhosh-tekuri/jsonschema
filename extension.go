@@ -11,7 +11,7 @@ type ExtCompiler interface {
 // ExtSchema is schema representation of custom keyword(s)
 type ExtSchema interface {
 	// Validate validates the json value v with this ExtSchema.
-	// Returned error must be *ValidationError.
+	// Returned error must be *ValidationError or nil.
 	Validate(ctx ValidationContext, v interface{}) error
 }
 
@@ -83,7 +83,7 @@ func (ctx ValidationContext) EvaluatedProp(prop string) {
 	delete(ctx.result.unevalProps, prop)
 }
 
-// EvaluatedItem marks given index of array as evaluated.
+// EvaluatedItem marks given index of an array as evaluated.
 func (ctx ValidationContext) EvaluatedItem(index int) {
 	delete(ctx.result.unevalItems, index)
 }
