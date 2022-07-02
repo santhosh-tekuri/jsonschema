@@ -364,7 +364,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 
 	loadInt := func(pname string) int {
 		if num, ok := m[pname]; ok {
-			i, _ := num.(json.Number).Int64()
+			i, _ := num.(json.Number).Float64()
 			return int(i)
 		}
 		return -1
