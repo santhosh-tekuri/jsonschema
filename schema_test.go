@@ -21,7 +21,7 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
-var testSuite = "testdata/JSON-Schema-Test-Suite@3fcee38"
+var testSuite = "testdata/JSON-Schema-Test-Suite@af5075c"
 
 var skipTests = map[string]map[string][]string{
 	"TestDraft4/optional/zeroTerminatedFloats.json": {
@@ -95,6 +95,7 @@ var skipTests = map[string]map[string][]string{
 		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
+	"TestDraft2019/vocabulary.json":                   {}, // custom metaschema is not implemented
 	"TestDraft2019/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
 	"TestDraft2019/optional/format/idn-email.json":    {}, // idn-email format is not implemented
 	"TestDraft2019/optional/ecmascript-regex.json": {
@@ -119,6 +120,8 @@ var skipTests = map[string]map[string][]string{
 		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
+	"TestDraft2020/vocabulary.json":                   {}, // custom metaschema is not implemented
+	"TestDraft2020/optional/format-assertion.json":    {}, // custom metaschema is not implemented
 	"TestDraft2020/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
 	"TestDraft2020/optional/format/idn-email.json":    {}, // idn-email format is not implemented
 	"TestDraft2020/optional/ecmascript-regex.json": {
@@ -139,6 +142,7 @@ var skipTests = map[string]map[string][]string{
 		"ECMA 262 regex escapes control codes with \\c and upper letter":      {}, // \cX is not supported
 		"ECMA 262 regex escapes control codes with \\c and lower letter":      {}, // \cX is not supported
 		"unicode semantics should be used for all pattern matching":           {}, // invalid regex "\\p{Letter}cole"
+		"\\a is not an ECMA 262 control escape":                               {}, // \a is valid control sequence in go-regex
 		"unicode digits are more than 0 through 9":                            {}, // invalid regex "^\\p{digit}+$"
 		"unicode semantics should be used for all patternProperties matching": {}, // invalid regex "\\p{Letter}cole"
 	},
