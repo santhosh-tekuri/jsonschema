@@ -308,6 +308,15 @@ func isEmail(v interface{}) bool {
 		return false
 	}
 
+	// domain if enclosed in brackets, must match an IP address
+	if len(domain) >= 2 && domain[0] == '[' && domain[len(domain)-1] == ']' {
+		ip := domain[1 : len(domain)-1]
+		if strings.HasPrefix(ip, "IPv6:") {
+			return isIPV6(strings.TrimPrefix(ip, "IPv6:"))
+		}
+		return isIPV4(ip)
+	}
+
 	// domain must match the requirements for a hostname
 	if !isHostname(domain) {
 		return false
