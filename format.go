@@ -21,6 +21,7 @@ var Formats = map[string]func(interface{}) bool{
 	"date":                  isDate,
 	"time":                  isTime,
 	"duration":              isDuration,
+	"period":                isPeriod,
 	"hostname":              isHostname,
 	"email":                 isEmail,
 	"ip-address":            isIPV4,
@@ -232,6 +233,26 @@ func isDuration(v interface{}) bool {
 	s = s[1:]
 	units, ok = parseUnits()
 	return ok && len(s) == 0 && len(units) > 0 && strings.Index("HMS", units) != -1
+}
+
+// isPeriod tells whether given string is a valid period format
+// from the ISO 8601 ABNF as given in Appendix A of RFC 3339.
+//
+// see https://datatracker.ietf.org/doc/html/rfc3339#appendix-A, for details
+func isPeriod(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return true
+	}
+	slash := strings.IndexByte(s, '/')
+	if slash == -1 {
+		return false
+	}
+	start, end := s[:slash], s[slash+1:]
+	if isDateTime(start) {
+		return isDateTime(end) || isDuration(end)
+	}
+	return isDuration(start) && isDateTime(end)
 }
 
 // isHostname tells whether given string is a valid representation

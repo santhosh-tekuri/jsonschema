@@ -134,6 +134,30 @@ func TestIsDuration(t *testing.T) {
 	}
 }
 
+func TestIsPeriod(t *testing.T) {
+	dt := "1963-06-19T08:30:06Z"
+	dur := "P4DT12H30M5S"
+	tests := []test{
+		{dt + "/" + dt, true},  // period-explicit
+		{dt + "/" + dur, true}, // period-start
+		{dur + "/" + dt, true}, // period-end
+		{dur + "/" + dur, false},
+		{dt, false},
+		{dur, false},
+		{dt + "/" + dt + "/" + dt, false},
+		{dt + " " + dt, false},
+		{dt + "-" + dt, false},
+		{"foo/bar", false},
+		{"", false},
+		{"/", false},
+	}
+	for i, test := range tests {
+		if test.valid != isPeriod(test.str) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
+
 func TestIsHostname(t *testing.T) {
 	tests := []test{
 		{"www.example.com", true},
