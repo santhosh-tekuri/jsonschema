@@ -41,7 +41,7 @@ Package jsonschema provides json-schema compilation and validation.
    - base64
  - implements following contentMediaType (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedContent))
    - application/json
- - can load from files/http/https/[string](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-FromString)/[]byte/io.Reader (suports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedLoader))
+ - can load from files/http/https/[string](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-FromString)/[]byte/io.Reader (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedLoader))
 
 
 see examples in [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5)
@@ -192,18 +192,18 @@ jv [-draft INT] [-output FORMAT] <json-schema> [<json-doc>]...
 ```
 
 if no `<json-doc>` arguments are passed, it simply validates the `<json-schema>`.  
-if `$schema` attribute is missing in schema, it uses latest version. this can be overriden by passing `-draft` flag
+if `$schema` attribute is missing in schema, it uses latest version. this can be overridden by passing `-draft` flag
 
 exit-code is 1, if there are any validation errors
 
-## Validating YAML Document
+## Validating YAML Documents
 
 since yaml supports non-string keys, such yaml documents are rendered as invalid json documents.  
-yaml parser returns `map[interface{}]interface{}` for object, whereas json parser returns `map[string]interafce{}`.  
+yaml parser returns `map[interface{}]interface{}` for object, whereas json parser returns `map[string]interface{}`.  
 this package accepts only `map[string]interface{}`, so we need to manually convert them to `map[string]interface{}`
 
 https://play.golang.org/p/Hhax3MrtD8r
 
 the above example shows how to validate yaml document with jsonschema.  
-the convertion explained above is implemented by `toStringKeys` function
+the conversion explained above is implemented by `toStringKeys` function
 

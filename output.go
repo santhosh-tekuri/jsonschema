@@ -47,7 +47,7 @@ func (ve *ValidationError) BasicOutput() Basic {
 
 // Detailed ---
 
-// Detailed is output format based on structre of schema.
+// Detailed is output format based on structure of schema.
 type Detailed struct {
 	Valid                   bool       `json:"valid"`
 	KeywordLocation         string     `json:"keywordLocation"`
