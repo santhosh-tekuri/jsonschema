@@ -27,7 +27,7 @@ Features:
    - base64
  - implements following contentMediaType (supports user-defined)
    - application/json
- - can load from files/http/https/string/[]byte/io.Reader (suports user-defined)
+ - can load from files/http/https/string/[]byte/io.Reader (supports user-defined)
 
 The schema is compiled against the version specified in "$schema" property.
 If "$schema" property is missing, it uses latest draft which currently implemented

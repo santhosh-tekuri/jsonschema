@@ -56,7 +56,7 @@ func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
 		return err
 	}
 
-	// ensure subresource.url uniquness
+	// ensure subresource.url uniqueness
 	url2floc := make(map[string]string)
 	for _, sr := range r.subresources {
 		if sr.url != "" {
