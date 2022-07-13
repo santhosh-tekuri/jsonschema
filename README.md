@@ -184,7 +184,9 @@ Prints:
 ## CLI
 
 ```bash
-jv [-draft INT] [-output FORMAT] <json-schema> [<json-doc>]...
+jv [-draft INT] [-output FORMAT] [-assertformat] <json-schema> [<json-doc>]...
+  -assertformat
+    	enable format assertions with draft >= 2019
   -draft int
     	draft used when '$schema' attribute is missing. valid values 4, 5, 7, 2019, 2020 (default 2020)
   -output string
