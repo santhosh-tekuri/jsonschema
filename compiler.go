@@ -14,7 +14,7 @@ import (
 type Compiler struct {
 	// Draft represents the draft used when '$schema' attribute is missing.
 	//
-	// This defaults to latest draft (currently draft2019-09).
+	// This defaults to latest supported draft (currently 2020-12).
 	Draft     *Draft
 	resources map[string]*resource
 
