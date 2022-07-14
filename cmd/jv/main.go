@@ -11,13 +11,14 @@ import (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "jv [-draft INT] [-output FORMAT] <json-schema> [<json-doc>]...")
+	fmt.Fprintln(os.Stderr, "jv [-draft INT] [-output FORMAT] [-assertformat] <json-schema> [<json-doc>]...")
 	flag.PrintDefaults()
 }
 
 func main() {
 	draft := flag.Int("draft", 2020, "draft used when '$schema' attribute is missing. valid values 4, 5, 7, 2019, 2020")
 	output := flag.String("output", "", "output format. valid values flag, basic, detailed")
+	assertFormat := flag.Bool("assertformat", false, "enable format assertions with draft >= 2019")
 	flag.Usage = usage
 	flag.Parse()
 	if len(flag.Args()) == 0 {
@@ -41,6 +42,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "draft must be 4, 5, 7, 2019 or 2020")
 		os.Exit(1)
 	}
+
+	compiler.AssertFormat = *assertFormat
 
 	var validOutput bool
 	for _, out := range []string{"", "flag", "basic", "detailed"} {
