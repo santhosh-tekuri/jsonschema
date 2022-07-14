@@ -75,7 +75,8 @@ func main() {
 		dec := json.NewDecoder(file)
 		dec.UseNumber()
 		if err := dec.Decode(&v); err != nil {
-			fmt.Fprintf(os.Stderr, "invalid json file %s: %v", f, err)
+			fmt.Fprintf(os.Stderr, "invalid json file %s: %v\n", f, err)
+			os.Exit(1)
 		}
 
 		err = schema.Validate(v)
