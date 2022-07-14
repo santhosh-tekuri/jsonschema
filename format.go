@@ -1,7 +1,10 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"errors"
+	"math"
+	"math/big"
 	"net"
 	"net/mail"
 	"net/url"
@@ -37,6 +40,8 @@ var Formats = map[string]func(interface{}) bool{
 	"json-pointer":          isJSONPointer,
 	"relative-json-pointer": isRelativeJSONPointer,
 	"uuid":                  isUUID,
+	"int32":                 isInt32,  // OpenAPI
+	"int64":                 isInt64,  // OpenAPI
 }
 
 // isDateTime tells whether given string is a valid date representation
@@ -564,4 +569,64 @@ func isUUID(v interface{}) bool {
 		s = s[1:]
 	}
 	return true
+}
+
+// isInt32 tells whether given integer is a valid 32-bit one
+// as specified in OpenAPI 3.1.0.
+//
+// see https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#data-types, for details
+func isInt32(v interface{}) bool {
+	var bv *big.Rat
+	switch v := v.(type) {
+	case json.Number:
+		// v.Int64() and big.Int.SetString fail with .0 fractionals, which is inconsistent with basic integer test
+		var ok bool
+		if bv, ok = new(big.Rat).SetString(v.String()); !ok {
+			return false
+		}
+	case int:
+		bv = new(big.Rat).SetInt64(int64(v))
+	case int32:
+		return true
+	case int64:
+		bv = new(big.Rat).SetInt64(v)
+	case float64:
+		if bv = new(big.Rat).SetFloat64(v); bv == nil {
+			return false
+		}
+	default:
+		return true
+	}
+	if !bv.IsInt() {
+		return false
+	}
+	bl := new(big.Rat)
+	return bv.Cmp(bl.SetInt64(math.MinInt32)) != -1 && bv.Cmp(bl.SetInt64(math.MaxInt32)) != 1
+}
+
+// isInt64 tells whether given integer is a valid 64-bit one
+// as specified in OpenAPI 3.1.0.
+//
+// see https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#data-types, for details
+func isInt64(v interface{}) bool {
+	var bv *big.Rat
+	switch v := v.(type) {
+	case json.Number:
+		// v.Int64() and big.Int.SetString fail with .0 fractionals, which is inconsistent with basic integer test
+		var ok bool
+		if bv, ok = new(big.Rat).SetString(v.String()); !ok {
+			return false
+		}
+	case float64:
+		if bv = new(big.Rat).SetFloat64(v); bv == nil {
+			return false
+		}
+	default:
+		return true
+	}
+	if !bv.IsInt() {
+		return false
+	}
+	bl := new(big.Rat)
+	return bv.Cmp(bl.SetInt64(math.MinInt64)) != -1 && bv.Cmp(bl.SetInt64(math.MaxInt64)) != 1
 }
