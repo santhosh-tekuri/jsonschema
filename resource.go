@@ -220,6 +220,9 @@ func resolveURL(base, ref string) (string, error) {
 	if ref == "" {
 		return base, nil
 	}
+	if strings.HasPrefix(ref, "urn:") {
+		return ref, nil
+	}
 
 	refURL, err := url.Parse(ref)
 	if err != nil {
@@ -227,6 +230,11 @@ func resolveURL(base, ref string) (string, error) {
 	}
 	if refURL.IsAbs() {
 		return ref, nil
+	}
+
+	if strings.HasPrefix(base, "urn:") {
+		base, _ = split(base)
+		return base + ref, nil
 	}
 
 	baseURL, err := url.Parse(base)
