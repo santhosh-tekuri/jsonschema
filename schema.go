@@ -240,7 +240,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			} else if t == "integer" && vType == "number" {
 				num, ok := new(big.Rat).SetString(fmt.Sprint(v))
 				if !ok {
-					return result, validationError("", "malformed number: %s", fmt.Sprint(v))
+					return result, validationError("type", "malformed number: %s", fmt.Sprint(v))
 				}
 				if num.IsInt() {
 					matched = true
@@ -527,7 +527,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				var ok bool
 				numVal, ok = new(big.Rat).SetString(fmt.Sprint(v))
 				if !ok {
-					return nil, validationError("", "malformed number: %v", fmt.Sprintf("%v", v))
+					return nil, validationError("type", "malformed number: %v", fmt.Sprintf("%v", v))
 				}
 			}
 			return numVal, nil
