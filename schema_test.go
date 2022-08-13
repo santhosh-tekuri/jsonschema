@@ -250,7 +250,7 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 					}
 					c := jsonschema.NewCompiler()
 					c.Draft = draft
-					if strings.Index(folder, "optional") != -1 {
+					if strings.Contains(folder, "optional") {
 						c.AssertFormat = true
 					}
 					if err := c.AddResource("schema.json", bytes.NewReader(group.Schema)); err != nil {
@@ -672,6 +672,23 @@ func TestCompiler_LoadURL(t *testing.T) {
 func TestFilePathSpaces(t *testing.T) {
 	if _, err := jsonschema.Compile("testdata/person schema.json"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestIssue77(t *testing.T) {
+	schema := `{"type": "integer"}`
+	instance := json.Number("abc")
+
+	sch, err := jsonschema.CompileString("schema.json", schema)
+	if err != nil {
+		t.Error(err)
+	}
+	if err = sch.Validate(instance); err == nil {
+		t.Error("error expected")
+	} else {
+		if !errors.Is(err, jsonschema.ErrInvalidJSON) {
+			t.Fail()
+		}
 	}
 }
 

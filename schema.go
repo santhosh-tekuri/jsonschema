@@ -142,17 +142,10 @@ func (s *Schema) Validate(v interface{}) (err error) {
 }
 
 func (s *Schema) validateValue(v interface{}, vloc string) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			switch r := r.(type) {
-			case InfiniteLoopError, InvalidJSONTypeError:
-				err = r.(error)
-			default:
-				panic(r)
-			}
-		}
-	}()
 	if _, err := s.validate(nil, 0, "", v, vloc); err != nil {
+		if !IsValidationError(err) {
+			return err
+		}
 		ve := ValidationError{
 			KeywordLocation:         "",
 			AbsoluteKeywordLocation: s.Location,
@@ -176,8 +169,8 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	}
 
 	sref := schemaRef{spath, s, false}
-	if err := checkLoop(scope[len(scope)-vscope:], sref); err != nil {
-		panic(err)
+	if err = checkLoop(scope[len(scope)-vscope:], sref); err != nil {
+		return result, err
 	}
 	scope = append(scope, sref)
 	vscope++
@@ -207,6 +200,9 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 
 	validateInplace := func(sch *Schema, schPath string) error {
 		vr, err := sch.validate(scope, vscope, schPath, v, vloc)
+		if err != nil && !IsValidationError(err) {
+			return err
+		}
 		if err == nil {
 			// update result
 			for pname := range result.unevalProps {
@@ -229,9 +225,12 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 		return result, nil
 	}
-
+	var vType string
 	if len(s.Types) > 0 {
-		vType := jsonType(v)
+		vType, err = jsonType(v)
+		if err != nil {
+			return result, err
+		}
 		matched := false
 		for _, t := range s.Types {
 			if vType == t {
@@ -240,7 +239,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			} else if t == "integer" && vType == "number" {
 				num, ok := new(big.Rat).SetString(fmt.Sprint(v))
 				if !ok {
-					return result, validationError("", "malformed number: %s", fmt.Sprint(v))
+					return result, invalidJSONTypeError(v)
 				}
 				if num.IsInt() {
 					matched = true
@@ -253,29 +252,43 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 	}
 
-	var errors []error
+	var errs []error
 
 	if len(s.Constant) > 0 {
-		if !equals(v, s.Constant[0]) {
-			switch jsonType(s.Constant[0]) {
+		eq, err := equals(v, s.Constant[0])
+		if err != nil {
+			return result, err
+		}
+		typ, err := jsonType(s.Constant[0])
+		if err != nil {
+			return result, err
+		}
+		if !eq {
+			switch typ {
 			case "object", "array":
-				errors = append(errors, validationError("const", "const failed"))
+				errs = append(errs, validationError("const", "const failed"))
 			default:
-				errors = append(errors, validationError("const", "value must be %#v", s.Constant[0]))
+				errs = append(errs, validationError("const", "value must be %#v", s.Constant[0]))
 			}
 		}
 	}
 
 	if len(s.Enum) > 0 {
 		matched := false
+		var err error
+		var eq bool
 		for _, item := range s.Enum {
-			if equals(v, item) {
+			eq, err = equals(v, item)
+			if err != nil {
+				return result, err
+			}
+			if eq {
 				matched = true
 				break
 			}
 		}
 		if !matched {
-			errors = append(errors, validationError("enum", s.enumError))
+			errs = append(errs, validationError("enum", s.enumError))
 		}
 	}
 
@@ -284,16 +297,16 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if v, ok := v.(string); ok {
 			val = quote(v)
 		}
-		errors = append(errors, validationError("format", "%v is not valid %s", val, quote(s.Format)))
+		errs = append(errs, validationError("format", "%v is not valid %s", val, quote(s.Format)))
 	}
 
 	switch v := v.(type) {
 	case map[string]interface{}:
 		if s.MinProperties != -1 && len(v) < s.MinProperties {
-			errors = append(errors, validationError("minProperties", "minimum %d properties allowed, but found %d properties", s.MinProperties, len(v)))
+			errs = append(errs, validationError("minProperties", "minimum %d properties allowed, but found %d properties", s.MinProperties, len(v)))
 		}
 		if s.MaxProperties != -1 && len(v) > s.MaxProperties {
-			errors = append(errors, validationError("maxProperties", "maximum %d properties allowed, but found %d properties", s.MaxProperties, len(v)))
+			errs = append(errs, validationError("maxProperties", "maximum %d properties allowed, but found %d properties", s.MaxProperties, len(v)))
 		}
 		if len(s.Required) > 0 {
 			var missing []string
@@ -303,23 +316,31 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				}
 			}
 			if len(missing) > 0 {
-				errors = append(errors, validationError("required", "missing properties: %s", strings.Join(missing, ", ")))
+				errs = append(errs, validationError("required", "missing properties: %s", strings.Join(missing, ", ")))
 			}
 		}
 
 		for pname, sch := range s.Properties {
 			if pvalue, ok := v[pname]; ok {
 				delete(result.unevalProps, pname)
-				if err := validate(sch, "properties/"+escape(pname), pvalue, escape(pname)); err != nil {
-					errors = append(errors, err)
+				if err = validate(sch, "properties/"+escape(pname), pvalue, escape(pname)); err != nil {
+					if IsValidationError(err) {
+						errs = append(errs, err)
+					} else {
+						return result, err
+					}
 				}
 			}
 		}
 
 		if s.PropertyNames != nil {
 			for pname := range v {
-				if err := validate(s.PropertyNames, "propertyNames", pname, escape(pname)); err != nil {
-					errors = append(errors, err)
+				if err = validate(s.PropertyNames, "propertyNames", pname, escape(pname)); err != nil {
+					if IsValidationError(err) {
+						errs = append(errs, err)
+					} else {
+						return result, err
+					}
 				}
 			}
 		}
@@ -327,16 +348,21 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if s.RegexProperties {
 			for pname := range v {
 				if !isRegex(pname) {
-					errors = append(errors, validationError("", "patternProperty %s is not valid regex", quote(pname)))
+					errs = append(errs, validationError("", "patternProperty %s is not valid regex", quote(pname)))
 				}
 			}
 		}
+
 		for pattern, sch := range s.PatternProperties {
 			for pname, pvalue := range v {
 				if pattern.MatchString(pname) {
 					delete(result.unevalProps, pname)
-					if err := validate(sch, "patternProperties/"+escape(pattern.String()), pvalue, escape(pname)); err != nil {
-						errors = append(errors, err)
+					if err = validate(sch, "patternProperties/"+escape(pattern.String()), pvalue, escape(pname)); err != nil {
+						if IsValidationError(err) {
+							errs = append(errs, err)
+						} else {
+							return result, err
+						}
 					}
 				}
 			}
@@ -344,14 +370,18 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if s.AdditionalProperties != nil {
 			if allowed, ok := s.AdditionalProperties.(bool); ok {
 				if !allowed && len(result.unevalProps) > 0 {
-					errors = append(errors, validationError("additionalProperties", "additionalProperties %s not allowed", result.unevalPnames()))
+					errs = append(errs, validationError("additionalProperties", "additionalProperties %s not allowed", result.unevalPnames()))
 				}
 			} else {
 				schema := s.AdditionalProperties.(*Schema)
 				for pname := range result.unevalProps {
 					if pvalue, ok := v[pname]; ok {
-						if err := validate(schema, "additionalProperties", pvalue, escape(pname)); err != nil {
-							errors = append(errors, err)
+						if err = validate(schema, "additionalProperties", pvalue, escape(pname)); err != nil {
+							if IsValidationError(err) {
+								errs = append(errs, err)
+							} else {
+								return result, err
+							}
 						}
 					}
 				}
@@ -363,12 +393,16 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				switch dvalue := dvalue.(type) {
 				case *Schema:
 					if err := validateInplace(dvalue, "dependencies/"+escape(dname)); err != nil {
-						errors = append(errors, err)
+						if IsValidationError(err) {
+							errs = append(errs, err)
+						} else {
+							return result, err
+						}
 					}
 				case []string:
 					for i, pname := range dvalue {
 						if _, ok := v[pname]; !ok {
-							errors = append(errors, validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", quote(pname), quote(dname)))
+							errs = append(errs, validationError("dependencies/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", quote(pname), quote(dname)))
 						}
 					}
 				}
@@ -378,7 +412,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			if _, ok := v[dname]; ok {
 				for i, pname := range dvalue {
 					if _, ok := v[pname]; !ok {
-						errors = append(errors, validationError("dependentRequired/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", quote(pname), quote(dname)))
+						errs = append(errs, validationError("dependentRequired/"+escape(dname)+"/"+strconv.Itoa(i), "property %s is required, if %s property exists", quote(pname), quote(dname)))
 					}
 				}
 			}
@@ -386,23 +420,31 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		for dname, sch := range s.DependentSchemas {
 			if _, ok := v[dname]; ok {
 				if err := validateInplace(sch, "dependentSchemas/"+escape(dname)); err != nil {
-					errors = append(errors, err)
+					if IsValidationError(err) {
+						errs = append(errs, err)
+					} else {
+						return result, err
+					}
 				}
 			}
 		}
 
 	case []interface{}:
 		if s.MinItems != -1 && len(v) < s.MinItems {
-			errors = append(errors, validationError("minItems", "minimum %d items required, but found %d items", s.MinItems, len(v)))
+			errs = append(errs, validationError("minItems", "minimum %d items required, but found %d items", s.MinItems, len(v)))
 		}
 		if s.MaxItems != -1 && len(v) > s.MaxItems {
-			errors = append(errors, validationError("maxItems", "maximum %d items required, but found %d items", s.MaxItems, len(v)))
+			errs = append(errs, validationError("maxItems", "maximum %d items required, but found %d items", s.MaxItems, len(v)))
 		}
 		if s.UniqueItems {
 			for i := 1; i < len(v); i++ {
 				for j := 0; j < i; j++ {
-					if equals(v[i], v[j]) {
-						errors = append(errors, validationError("uniqueItems", "items at index %d and %d are equal", j, i))
+					eq, err := equals(v[i], v[j])
+					if err != nil {
+						return result, err
+					}
+					if eq {
+						errs = append(errs, validationError("uniqueItems", "items at index %d and %d are equal", j, i))
 					}
 				}
 			}
@@ -412,8 +454,12 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		switch items := s.Items.(type) {
 		case *Schema:
 			for i, item := range v {
-				if err := validate(items, "items", item, strconv.Itoa(i)); err != nil {
-					errors = append(errors, err)
+				if err = validate(items, "items", item, strconv.Itoa(i)); err != nil {
+					if IsValidationError(err) {
+						errs = append(errs, err)
+					} else {
+						return result, err
+					}
 				}
 			}
 			result.unevalItems = nil
@@ -421,13 +467,21 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			for i, item := range v {
 				if i < len(items) {
 					delete(result.unevalItems, i)
-					if err := validate(items[i], "items/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
-						errors = append(errors, err)
+					if err = validate(items[i], "items/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
+						if IsValidationError(err) {
+							errs = append(errs, err)
+						} else {
+							return result, err
+						}
 					}
 				} else if sch, ok := s.AdditionalItems.(*Schema); ok {
 					delete(result.unevalItems, i)
-					if err := validate(sch, "additionalItems", item, strconv.Itoa(i)); err != nil {
-						errors = append(errors, err)
+					if err = validate(sch, "additionalItems", item, strconv.Itoa(i)); err != nil {
+						if IsValidationError(err) {
+							errs = append(errs, err)
+						} else {
+							return result, err
+						}
 					}
 				} else {
 					break
@@ -437,7 +491,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				if additionalItems {
 					result.unevalItems = nil
 				} else if len(v) > len(items) {
-					errors = append(errors, validationError("additionalItems", "only %d items are allowed, but found %d items", len(items), len(v)))
+					errs = append(errs, validationError("additionalItems", "only %d items are allowed, but found %d items", len(items), len(v)))
 				}
 			}
 		}
@@ -446,13 +500,21 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		for i, item := range v {
 			if i < len(s.PrefixItems) {
 				delete(result.unevalItems, i)
-				if err := validate(s.PrefixItems[i], "prefixItems/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
-					errors = append(errors, err)
+				if err = validate(s.PrefixItems[i], "prefixItems/"+strconv.Itoa(i), item, strconv.Itoa(i)); err != nil {
+					if IsValidationError(err) {
+						errs = append(errs, err)
+					} else {
+						return result, err
+					}
 				}
 			} else if s.Items2020 != nil {
 				delete(result.unevalItems, i)
-				if err := validate(s.Items2020, "items", item, strconv.Itoa(i)); err != nil {
-					errors = append(errors, err)
+				if err = validate(s.Items2020, "items", item, strconv.Itoa(i)); err != nil {
+					if IsValidationError(err) {
+						errs = append(errs, err)
+					} else {
+						return result, err
+					}
 				}
 			} else {
 				break
@@ -464,8 +526,12 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			matched := 0
 			var causes []error
 			for i, item := range v {
-				if err := validate(s.Contains, "contains", item, strconv.Itoa(i)); err != nil {
-					causes = append(causes, err)
+				if err = validate(s.Contains, "contains", item, strconv.Itoa(i)); err != nil {
+					if IsValidationError(err) {
+						causes = append(causes, err)
+					} else {
+						return result, err
+					}
 				} else {
 					matched++
 					if s.ContainsEval {
@@ -474,10 +540,10 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				}
 			}
 			if s.MinContains != -1 && matched < s.MinContains {
-				errors = append(errors, validationError("minContains", "valid must be >= %d, but got %d", s.MinContains, matched).add(causes...))
+				errs = append(errs, validationError("minContains", "valid must be >= %d, but got %d", s.MinContains, matched).add(causes...))
 			}
 			if s.MaxContains != -1 && matched > s.MaxContains {
-				errors = append(errors, validationError("maxContains", "valid must be <= %d, but got %d", s.MaxContains, matched))
+				errs = append(errs, validationError("maxContains", "valid must be <= %d, but got %d", s.MaxContains, matched))
 			}
 		}
 
@@ -486,15 +552,15 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if s.MinLength != -1 || s.MaxLength != -1 {
 			length := utf8.RuneCount([]byte(v))
 			if s.MinLength != -1 && length < s.MinLength {
-				errors = append(errors, validationError("minLength", "length must be >= %d, but got %d", s.MinLength, length))
+				errs = append(errs, validationError("minLength", "length must be >= %d, but got %d", s.MinLength, length))
 			}
 			if s.MaxLength != -1 && length > s.MaxLength {
-				errors = append(errors, validationError("maxLength", "length must be <= %d, but got %d", s.MaxLength, length))
+				errs = append(errs, validationError("maxLength", "length must be <= %d, but got %d", s.MaxLength, length))
 			}
 		}
 
 		if s.Pattern != nil && !s.Pattern.MatchString(v) {
-			errors = append(errors, validationError("pattern", "does not match pattern %s", quote(s.Pattern.String())))
+			errs = append(errs, validationError("pattern", "does not match pattern %s", quote(s.Pattern.String())))
 		}
 
 		// contentEncoding + contentMediaType
@@ -504,7 +570,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			if s.decoder != nil {
 				b, err := s.decoder(v)
 				if err != nil {
-					errors = append(errors, validationError("contentEncoding", "%s is not %s encoded", quote(v), s.ContentEncoding))
+					errs = append(errs, validationError("contentEncoding", "%s is not %s encoded", quote(v), s.ContentEncoding))
 				} else {
 					content, decoded = b, true
 				}
@@ -514,56 +580,49 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 					content = []byte(v)
 				}
 				if err := s.mediaType(content); err != nil {
-					errors = append(errors, validationError("contentMediaType", "value is not of mediatype %s", quote(s.ContentMediaType)))
+					errs = append(errs, validationError("contentMediaType", "value is not of mediatype %s", quote(s.ContentMediaType)))
 				}
 			}
 		}
 
 	case json.Number, float64, int, int32, int64:
 		// lazy convert to *big.Rat to avoid allocation
-		var numVal *big.Rat
-		num := func() (*big.Rat, error) {
-			if numVal == nil {
-				var ok bool
-				numVal, ok = new(big.Rat).SetString(fmt.Sprint(v))
-				if !ok {
-					return nil, validationError("", "malformed number: %v", fmt.Sprintf("%v", v))
-				}
-			}
-			return numVal, nil
+		val, ok := new(big.Rat).SetString(fmt.Sprint(v))
+		if !ok {
+			return result, invalidJSONTypeError(v)
 		}
 		f64 := func(r *big.Rat) float64 {
 			f, _ := r.Float64()
 			return f
 		}
-		if n, err := num(); err == nil {
-			if s.Minimum != nil && n.Cmp(s.Minimum) < 0 {
-				errors = append(errors, validationError("minimum", "must be >= %v but found %v", f64(s.Minimum), v))
-			}
-			if s.ExclusiveMinimum != nil && n.Cmp(s.ExclusiveMinimum) <= 0 {
-				errors = append(errors, validationError("exclusiveMinimum", "must be > %v but found %v", f64(s.ExclusiveMinimum), v))
-			}
-			if s.Maximum != nil && n.Cmp(s.Maximum) > 0 {
-				errors = append(errors, validationError("maximum", "must be <= %v but found %v", f64(s.Maximum), v))
-			}
-			if s.ExclusiveMaximum != nil && n.Cmp(s.ExclusiveMaximum) >= 0 {
-				errors = append(errors, validationError("exclusiveMaximum", "must be < %v but found %v", f64(s.ExclusiveMaximum), v))
-			}
-			if s.MultipleOf != nil {
-				if q := new(big.Rat).Quo(n, s.MultipleOf); !q.IsInt() {
-					errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, f64(s.MultipleOf)))
-				}
-			}
-		} else {
-			errors = append(errors, err)
+		if s.Minimum != nil && val.Cmp(s.Minimum) < 0 {
+			errs = append(errs, validationError("minimum", "must be >= %v but found %v", f64(s.Minimum), v))
 		}
-
+		if s.ExclusiveMinimum != nil && val.Cmp(s.ExclusiveMinimum) <= 0 {
+			errs = append(errs, validationError("exclusiveMinimum", "must be > %v but found %v", f64(s.ExclusiveMinimum), v))
+		}
+		if s.Maximum != nil && val.Cmp(s.Maximum) > 0 {
+			errs = append(errs, validationError("maximum", "must be <= %v but found %v", f64(s.Maximum), v))
+		}
+		if s.ExclusiveMaximum != nil && val.Cmp(s.ExclusiveMaximum) >= 0 {
+			errs = append(errs, validationError("exclusiveMaximum", "must be < %v but found %v", f64(s.ExclusiveMaximum), v))
+		}
+		if s.MultipleOf != nil {
+			if q := new(big.Rat).Quo(val, s.MultipleOf); !q.IsInt() {
+				errs = append(errs, validationError("multipleOf", "%v not multipleOf %v", v, f64(s.MultipleOf)))
+			}
+		}
 	}
 
 	// $ref + $recursiveRef + $dynamicRef
 	validateRef := func(sch *Schema, refPath string) error {
 		if sch != nil {
 			if err := validateInplace(sch, refPath); err != nil {
+				if IsValidationError(err) {
+					errs = append(errs, err)
+				} else {
+					return err
+				}
 				url := sch.Location
 				if s.url() == sch.url() {
 					url = sch.loc()
@@ -573,8 +632,12 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 		return nil
 	}
-	if err := validateRef(s.Ref, "$ref"); err != nil {
-		errors = append(errors, err)
+	if err = validateRef(s.Ref, "$ref"); err != nil {
+		if IsValidationError(err) {
+			errs = append(errs, err)
+		} else {
+			return result, err
+		}
 	}
 	if s.RecursiveRef != nil {
 		sch := s.RecursiveRef
@@ -588,7 +651,11 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 		if err := validateRef(sch, "$recursiveRef"); err != nil {
-			errors = append(errors, err)
+			if IsValidationError(err) {
+				errs = append(errs, err)
+			} else {
+				return result, err
+			}
 		}
 	}
 	if s.DynamicRef != nil {
@@ -609,18 +676,31 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 		if err := validateRef(sch, "$dynamicRef"); err != nil {
-			errors = append(errors, err)
+			if IsValidationError(err) {
+				errs = append(errs, err)
+			} else {
+				return result, err
+			}
 		}
 	}
-
-	if s.Not != nil && validateInplace(s.Not, "not") == nil {
-		errors = append(errors, validationError("not", "not failed"))
+	if s.Not != nil {
+		err = validateInplace(s.Not, "not")
+		if err == nil {
+			errs = append(errs, validationError("not", "not failed"))
+		}
+		if err != nil && !IsValidationError(err) {
+			return result, err
+		}
 	}
 
 	for i, sch := range s.AllOf {
 		schPath := "allOf/" + strconv.Itoa(i)
 		if err := validateInplace(sch, schPath); err != nil {
-			errors = append(errors, validationError(schPath, "allOf failed").add(err))
+			if IsValidationError(err) {
+				errs = append(errs, validationError(schPath, "allOf failed").add(err))
+			} else {
+				return result, err
+			}
 		}
 	}
 
@@ -631,11 +711,15 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			if err := validateInplace(sch, "anyOf/"+strconv.Itoa(i)); err == nil {
 				matched = true
 			} else {
-				causes = append(causes, err)
+				if IsValidationError(err) {
+					causes = append(causes, err)
+				} else {
+					return result, err
+				}
 			}
 		}
 		if !matched {
-			errors = append(errors, validationError("anyOf", "anyOf failed").add(causes...))
+			errs = append(errs, validationError("anyOf", "anyOf failed").add(causes...))
 		}
 	}
 
@@ -647,15 +731,19 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				if matched == -1 {
 					matched = i
 				} else {
-					errors = append(errors, validationError("oneOf", "valid against schemas at indexes %d and %d", matched, i))
+					errs = append(errs, validationError("oneOf", "valid against schemas at indexes %d and %d", matched, i))
 					break
 				}
 			} else {
-				causes = append(causes, err)
+				if IsValidationError(err) {
+					causes = append(causes, err)
+				} else {
+					return result, err
+				}
 			}
 		}
 		if matched == -1 {
-			errors = append(errors, validationError("oneOf", "oneOf failed").add(causes...))
+			errs = append(errs, validationError("oneOf", "oneOf failed").add(causes...))
 		}
 	}
 
@@ -667,13 +755,21 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if err == nil {
 			if s.Then != nil {
 				if err := validateInplace(s.Then, "then"); err != nil {
-					errors = append(errors, validationError("then", "if-then failed").add(err))
+					if IsValidationError(err) {
+						errs = append(errs, validationError("then", "if-then failed").add(err))
+					} else {
+						return result, err
+					}
 				}
 			}
 		} else {
 			if s.Else != nil {
 				if err := validateInplace(s.Else, "else"); err != nil {
-					errors = append(errors, validationError("else", "if-else failed").add(err))
+					if IsValidationError(err) {
+						errs = append(errs, validationError("else", "if-else failed").add(err))
+					} else {
+						return result, err
+					}
 				}
 			}
 		}
@@ -683,7 +779,11 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 
 	for _, ext := range s.Extensions {
 		if err := ext.Validate(ValidationContext{result, validate, validateInplace, validationError}, v); err != nil {
-			errors = append(errors, err)
+			if IsValidationError(err) {
+				errs = append(errs, err)
+			} else {
+				return result, err
+			}
 		}
 	}
 
@@ -694,7 +794,11 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			for pname := range result.unevalProps {
 				if pvalue, ok := v[pname]; ok {
 					if err := validate(s.UnevaluatedProperties, "UnevaluatedProperties", pvalue, escape(pname)); err != nil {
-						errors = append(errors, err)
+						if IsValidationError(err) {
+							errs = append(errs, err)
+						} else {
+							return result, err
+						}
 					}
 				}
 			}
@@ -704,20 +808,24 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		if s.UnevaluatedItems != nil {
 			for i := range result.unevalItems {
 				if err := validate(s.UnevaluatedItems, "UnevaluatedItems", v[i], strconv.Itoa(i)); err != nil {
-					errors = append(errors, err)
+					if IsValidationError(err) {
+						errs = append(errs, err)
+					} else {
+						return result, err
+					}
 				}
 			}
 			result.unevalItems = nil
 		}
 	}
 
-	switch len(errors) {
+	switch len(errs) {
 	case 0:
 		return result, nil
 	case 1:
-		return result, errors[0]
+		return result, errs[0]
 	default:
-		return result, validationError("", "").add(errors...) // empty message, used just for wrapping
+		return result, validationError("", "").add(errs...) // empty message, used just for wrapping
 	}
 }
 
@@ -737,66 +845,85 @@ func (vr validationResult) unevalPnames() string {
 // jsonType returns the json type of given value v.
 //
 // It panics if the given value is not valid json value
-func jsonType(v interface{}) string {
+func jsonType(v interface{}) (string, error) {
 	switch v.(type) {
 	case nil:
-		return "null"
+		return "null", nil
 	case bool:
-		return "boolean"
+		return "boolean", nil
 	case json.Number, float64, int, int32, int64:
-		return "number"
+		return "number", nil
 	case string:
-		return "string"
+		return "string", nil
 	case []interface{}:
-		return "array"
+		return "array", nil
 	case map[string]interface{}:
-		return "object"
+		return "object", nil
+	default:
+		return "", invalidJSONTypeError(v)
 	}
-	panic(InvalidJSONTypeError(fmt.Sprintf("%T", v)))
 }
 
 // equals tells if given two json values are equal or not.
-func equals(v1, v2 interface{}) bool {
-	v1Type := jsonType(v1)
-	if v1Type != jsonType(v2) {
-		return false
+func equals(v1, v2 interface{}) (bool, error) {
+	v1Type, err := jsonType(v1)
+	if err != nil {
+		return false, err
+	}
+	v2Type, err := jsonType(v2)
+	if err != nil {
+		return false, err
+	}
+	if v1Type != v2Type {
+		return false, nil
 	}
 	switch v1Type {
 	case "array":
 		arr1, arr2 := v1.([]interface{}), v2.([]interface{})
 		if len(arr1) != len(arr2) {
-			return false
+			return false, nil
 		}
 		for i := range arr1 {
-			if !equals(arr1[i], arr2[i]) {
-				return false
+			eq, err := equals(arr1[i], arr2[i])
+			if err != nil {
+				return false, err
+			}
+			if !eq {
+				return false, nil
 			}
 		}
-		return true
+		return true, nil
 	case "object":
 		obj1, obj2 := v1.(map[string]interface{}), v2.(map[string]interface{})
 		if len(obj1) != len(obj2) {
-			return false
+			return false, nil
 		}
 		for k, v1 := range obj1 {
 			if v2, ok := obj2[k]; ok {
-				if !equals(v1, v2) {
-					return false
+				eq, err := equals(v1, v2)
+				if err != nil {
+					return false, err
+				}
+				if !eq {
+					return false, nil
 				}
 			} else {
-				return false
+				return false, nil
 			}
 		}
-		return true
+		return true, nil
 	case "number":
 		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
 		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
-		if ok1 && ok2 {
-			return num1.Cmp(num2) == 0
+		if !ok1 {
+			return false, invalidJSONTypeError(v1)
 		}
-		return !ok1 && !ok2
+		if !ok2 {
+			return false, invalidJSONTypeError(v2)
+		}
+		return num1.Cmp(num2) == 0, nil
 	default:
-		return v1 == v2
+		return v1 == v2, nil
 	}
 }
 

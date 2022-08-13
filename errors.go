@@ -2,22 +2,138 @@ package jsonschema
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"unicode/utf8"
+)
+
+var (
+	ErrInvalidJSON           = errors.New("jsonschema: invalid jsonType")
+	ErrInfiniteLoop          = errors.New("jsonschema: infinite loop detected")
+	errorType                = reflect.TypeOf((*error)(nil)).Elem()
+	invalidJSONTypeErrorType = reflect.TypeOf((*InvalidJSONTypeError)(nil)).Elem()
+	infiniteLoopErrorType    = reflect.TypeOf((*InfiniteLoopError)(nil)).Elem()
 )
 
 // InvalidJSONTypeError is the error type returned by ValidateInterface.
 // this tells that specified go object is not valid jsonType.
 type InvalidJSONTypeError string
 
+func IsInvalidJSONTypeError(err error) bool {
+	for {
+		if _, ok := err.(InvalidJSONTypeError); ok {
+			return true
+		}
+		if _, ok := err.(*InvalidJSONTypeError); ok {
+			return true
+		}
+		if _ = errors.Unwrap(err); err == nil {
+			return false
+		}
+	}
+}
+
+func (e InvalidJSONTypeError) As(target interface{}) bool {
+	targetVal := reflect.ValueOf(target)
+	targetTyp := targetVal.Type()
+	if targetTyp.Kind() != reflect.Ptr || targetVal.IsNil() {
+		panic("errors: target must be a non-nil pointer")
+	}
+	targetType := targetTyp.Elem()
+	if targetType.Kind() != reflect.Interface && !targetType.Implements(errorType) {
+		panic("errors: *target must be interface or implement error")
+	}
+
+	if invalidJSONTypeErrorType.AssignableTo(targetType) {
+		targetVal.Elem().Set(reflect.ValueOf(e))
+		return true
+	}
+	val := reflect.ValueOf(e)
+	ptr := reflect.New(invalidJSONTypeErrorType)
+	ptr.Elem().Set(val)
+	if ptr.Type().AssignableTo(targetType) {
+		targetVal.Elem().Set(ptr)
+		return true
+	}
+	return false
+}
+
+func (e InvalidJSONTypeError) Is(err error) bool {
+	for {
+		if err, ok := err.(InvalidJSONTypeError); ok {
+			// todo: this check may not be needed
+			return string(e) == string(err)
+		}
+		if err, ok := err.(*InvalidJSONTypeError); ok {
+			// todo: this check may not be needed
+			return string(e) == string(*err)
+		}
+		if errors.Is(err, ErrInvalidJSON) {
+			return true
+		}
+		if err = errors.Unwrap(err); err == nil {
+			return false
+		}
+	}
+}
+
 func (e InvalidJSONTypeError) Error() string {
-	return fmt.Sprintf("jsonschema: invalid jsonType: %s", string(e))
+	return fmt.Sprintf("%v: %s", ErrInvalidJSON, string(e))
+}
+
+func invalidJSONTypeError(t interface{}) InvalidJSONTypeError {
+	return InvalidJSONTypeError(fmt.Sprintf("%T", t))
 }
 
 // InfiniteLoopError is returned by Compile/Validate.
 // this gives url#keywordLocation that lead to infinity loop.
 type InfiniteLoopError string
+
+func IsInfiniteLoopError(err error) bool {
+	var ok bool
+	for {
+		if _, ok = err.(InfiniteLoopError); ok {
+			return true
+		}
+		if _, ok = err.(*InfiniteLoopError); ok {
+			return true
+		}
+		if err = errors.Unwrap(err); err == nil {
+			return false
+		}
+	}
+}
+
+func (e InfiniteLoopError) Unwrap() error {
+	return ErrInfiniteLoop
+}
+
+func (e InfiniteLoopError) As(target interface{}) bool {
+	targetVal := reflect.ValueOf(target)
+	targetTyp := targetVal.Type()
+	if targetTyp.Kind() != reflect.Ptr || targetVal.IsNil() {
+		panic("errors: target must be a non-nil pointer")
+	}
+	targetType := targetTyp.Elem()
+	if targetType.Kind() != reflect.Interface && !targetType.Implements(errorType) {
+		panic("errors: *target must be interface or implement error")
+	}
+
+	if infiniteLoopErrorType.AssignableTo(targetType) {
+		targetVal.Elem().Set(reflect.ValueOf(e))
+		return true
+	}
+	val := reflect.ValueOf(e)
+	ptr := reflect.New(infiniteLoopErrorType)
+	ptr.Elem().Set(val)
+	if ptr.Type().AssignableTo(targetType) {
+		targetVal.Elem().Set(ptr)
+		return true
+	}
+	return false
+}
 
 func (e InfiniteLoopError) Error() string {
 	return "jsonschema: infinite loop " + string(e)
@@ -75,6 +191,19 @@ type ValidationError struct {
 	Causes                  []*ValidationError // nested validation errors
 }
 
+func (ve *ValidationError) Is(err error) bool {
+	var ok bool
+	var verr *ValidationError
+	for {
+		if verr, ok = err.(*ValidationError); ok {
+			return ve.KeywordLocation == verr.KeywordLocation && ve.InstanceLocation == verr.InstanceLocation && ve.Message == verr.Message
+		}
+		if err = errors.Unwrap(err); err == nil {
+			return false
+		}
+	}
+}
+
 func (ve *ValidationError) add(causes ...error) error {
 	for _, cause := range causes {
 		ve.Causes = append(ve.Causes, cause.(*ValidationError))
@@ -122,6 +251,26 @@ func (ve *ValidationError) GoString() string {
 	return msg
 }
 
+// IsValidationError returns true if err is a ValidationError.
+func IsValidationError(err error) bool {
+	for {
+		if _, ok := err.(*ValidationError); ok {
+			return true
+		}
+		if err = errors.Unwrap(err); err == nil {
+			return false
+		}
+	}
+}
+
+// AsValidationError returns err as a *ValidationError if possible and nil
+// otherwise
+func AsValidationError(err error) *ValidationError {
+	var ve *ValidationError
+	errors.As(err, &ve)
+	return ve
+}
+
 func joinPtr(ptr1, ptr2 string) string {
 	if len(ptr1) == 0 {
 		return ptr2
@@ -133,7 +282,7 @@ func joinPtr(ptr1, ptr2 string) string {
 }
 
 func quote(s string) string {
-	var w = bytes.NewBuffer(make([]byte, 0, len(s)+10))
+	w := bytes.NewBuffer(make([]byte, 0, len(s)+10))
 	w.WriteByte('\'')
 	start := 0
 	for i := 0; i < len(s); {

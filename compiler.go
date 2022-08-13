@@ -258,7 +258,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	}
 	stack = append(stack, sref)
 
-	var s = res.schema
+	s := res.schema
 	var err error
 
 	if ref, ok := m["$ref"]; ok {
@@ -301,11 +301,16 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	if e, ok := m["enum"]; ok {
 		s.Enum = e.([]interface{})
 		allPrimitives := true
+		var err error
+		var typ string
 		for _, item := range s.Enum {
-			switch jsonType(item) {
+			typ, err = jsonType(item)
+			if err != nil {
+				return err
+			}
+			switch typ {
 			case "object", "array":
 				allPrimitives = false
-				break
 			}
 		}
 		s.enumError = "enum failed"
