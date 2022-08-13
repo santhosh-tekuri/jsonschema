@@ -238,7 +238,10 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				matched = true
 				break
 			} else if t == "integer" && vType == "number" {
-				num, _ := new(big.Rat).SetString(fmt.Sprint(v))
+				num, ok := new(big.Rat).SetString(fmt.Sprint(v))
+				if !ok {
+					return result, validationError("", "malformed number: %s", fmt.Sprint(v))
+				}
 				if num.IsInt() {
 					matched = true
 					break
@@ -277,7 +280,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	}
 
 	if s.format != nil && !s.format(v) {
-		var val = v
+		val := v
 		if v, ok := v.(string); ok {
 			val = quote(v)
 		}
@@ -519,40 +522,49 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	case json.Number, float64, int, int32, int64:
 		// lazy convert to *big.Rat to avoid allocation
 		var numVal *big.Rat
-		num := func() *big.Rat {
+		num := func() (*big.Rat, error) {
 			if numVal == nil {
-				numVal, _ = new(big.Rat).SetString(fmt.Sprint(v))
+				var ok bool
+				numVal, ok = new(big.Rat).SetString(fmt.Sprint(v))
+				if !ok {
+					return nil, validationError("", "malformed number: %v", fmt.Sprintf("%v", v))
+				}
 			}
-			return numVal
+			return numVal, nil
 		}
 		f64 := func(r *big.Rat) float64 {
 			f, _ := r.Float64()
 			return f
 		}
-		if s.Minimum != nil && num().Cmp(s.Minimum) < 0 {
-			errors = append(errors, validationError("minimum", "must be >= %v but found %v", f64(s.Minimum), v))
-		}
-		if s.ExclusiveMinimum != nil && num().Cmp(s.ExclusiveMinimum) <= 0 {
-			errors = append(errors, validationError("exclusiveMinimum", "must be > %v but found %v", f64(s.ExclusiveMinimum), v))
-		}
-		if s.Maximum != nil && num().Cmp(s.Maximum) > 0 {
-			errors = append(errors, validationError("maximum", "must be <= %v but found %v", f64(s.Maximum), v))
-		}
-		if s.ExclusiveMaximum != nil && num().Cmp(s.ExclusiveMaximum) >= 0 {
-			errors = append(errors, validationError("exclusiveMaximum", "must be < %v but found %v", f64(s.ExclusiveMaximum), v))
-		}
-		if s.MultipleOf != nil {
-			if q := new(big.Rat).Quo(num(), s.MultipleOf); !q.IsInt() {
-				errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, f64(s.MultipleOf)))
+		if n, err := num(); err == nil {
+			if s.Minimum != nil && n.Cmp(s.Minimum) < 0 {
+				errors = append(errors, validationError("minimum", "must be >= %v but found %v", f64(s.Minimum), v))
 			}
+			if s.ExclusiveMinimum != nil && n.Cmp(s.ExclusiveMinimum) <= 0 {
+				errors = append(errors, validationError("exclusiveMinimum", "must be > %v but found %v", f64(s.ExclusiveMinimum), v))
+			}
+			if s.Maximum != nil && n.Cmp(s.Maximum) > 0 {
+				errors = append(errors, validationError("maximum", "must be <= %v but found %v", f64(s.Maximum), v))
+			}
+			if s.ExclusiveMaximum != nil && n.Cmp(s.ExclusiveMaximum) >= 0 {
+				errors = append(errors, validationError("exclusiveMaximum", "must be < %v but found %v", f64(s.ExclusiveMaximum), v))
+			}
+			if s.MultipleOf != nil {
+				if q := new(big.Rat).Quo(n, s.MultipleOf); !q.IsInt() {
+					errors = append(errors, validationError("multipleOf", "%v not multipleOf %v", v, f64(s.MultipleOf)))
+				}
+			}
+		} else {
+			errors = append(errors, err)
 		}
+
 	}
 
 	// $ref + $recursiveRef + $dynamicRef
 	validateRef := func(sch *Schema, refPath string) error {
 		if sch != nil {
 			if err := validateInplace(sch, refPath); err != nil {
-				var url = sch.Location
+				url := sch.Location
 				if s.url() == sch.url() {
 					url = sch.loc()
 				}
@@ -777,9 +789,12 @@ func equals(v1, v2 interface{}) bool {
 		}
 		return true
 	case "number":
-		num1, _ := new(big.Rat).SetString(fmt.Sprint(v1))
-		num2, _ := new(big.Rat).SetString(fmt.Sprint(v2))
-		return num1.Cmp(num2) == 0
+		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
+		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
+		if ok1 && ok2 {
+			return num1.Cmp(num2) == 0
+		}
+		return !ok1 && !ok2
 	default:
 		return v1 == v2
 	}
