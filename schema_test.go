@@ -675,6 +675,24 @@ func TestFilePathSpaces(t *testing.T) {
 	}
 }
 
+func TestIssue77(t *testing.T) {
+	schema := `{"type": "integer"}`
+	instance := json.Number("abc")
+
+	sch, err := jsonschema.CompileString("schema.json", schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = sch.Validate(instance); err == nil {
+		t.Fatal("error expected")
+	} else {
+		var verr *jsonschema.ValidationError
+		if !errors.As(err, &verr) {
+			t.Fail()
+		}
+	}
+}
+
 func runHTTPServers() (httpURL, httpsURL string, cleanup func()) {
 	tr := http.DefaultTransport.(*http.Transport)
 	if tr.TLSClientConfig == nil {
