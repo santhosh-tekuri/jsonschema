@@ -516,7 +516,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 
-	case json.Number, float64, int, int32, int64:
+	case json.Number, float32, float64, int, int8, int32, int64, uint, uint8, uint32, uint64:
 		// lazy convert to *big.Rat to avoid allocation
 		var numVal *big.Rat
 		num := func() *big.Rat {
@@ -731,7 +731,7 @@ func jsonType(v interface{}) string {
 		return "null"
 	case bool:
 		return "boolean"
-	case json.Number, float64, int, int32, int64:
+	case json.Number, float32, float64, int, int8, int32, int64, uint, uint8, uint32, uint64:
 		return "number"
 	case string:
 		return "string"

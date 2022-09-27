@@ -35,7 +35,7 @@ type powerOfSchema int64
 
 func (s powerOfSchema) Validate(ctx jsonschema.ValidationContext, v interface{}) error {
 	switch v.(type) {
-	case json.Number, float64, int, int32, int64:
+	case json.Number, float32, float64, int, int8, int32, int64, uint, uint8, uint32, uint64:
 		pow := int64(s)
 		n, _ := strconv.ParseInt(fmt.Sprint(v), 10, 64)
 		for n%pow == 0 {

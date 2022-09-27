@@ -86,7 +86,7 @@ func Example_fromStrings() {
 func Example_userDefinedFormat() {
 	jsonschema.Formats["odd-number"] = func(v interface{}) bool {
 		switch v := v.(type) {
-		case json.Number, float64, int, int32, int64:
+		case json.Number, float32, float64, int, int8, int32, int64, uint, uint8, uint32, uint64:
 			n, _ := strconv.ParseInt(fmt.Sprint(v), 10, 64)
 			return n%2 != 0
 		default:
