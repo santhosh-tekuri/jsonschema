@@ -183,6 +183,8 @@ Prints:
 
 ## CLI
 
+to install `go install github.com/santhosh-tekuri/jsonschema/v5/cmd/jv@latest`
+
 ```bash
 jv [-draft INT] [-output FORMAT] [-assertformat] <json-schema> [<json-doc>]...
   -assertformat
