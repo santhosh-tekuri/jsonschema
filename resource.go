@@ -163,6 +163,10 @@ func (r *resource) resolveFragment(c *Compiler, sr *resource, f string) (*resour
 		return nil, err
 	}
 	res := &resource{url: id, floc: floc, doc: doc}
+
+	if r.subresources == nil {
+		r.subresources = make(map[string]*resource)
+	}
 	r.subresources[floc] = res
 	if err := r.fillSubschemas(c, res); err != nil {
 		return nil, err
