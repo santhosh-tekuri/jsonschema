@@ -603,8 +603,10 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	}
 
 	if r.draft.version >= 2019 {
-		s.decoder = nil
-		s.mediaType = nil
+		if !c.AssertContent {
+			s.decoder = nil
+			s.mediaType = nil
+		}
 		if !c.AssertFormat {
 			s.format = nil
 		}
