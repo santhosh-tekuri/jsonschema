@@ -214,6 +214,16 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		// external resource
 		return c.compileURL(ref, stack, refPtr)
 	}
+
+	// ensure root resource is always compiled first.
+	// this is required to get schema.meta from root resource
+	if r.schema == nil {
+		r.schema = newSchema(r.url, r.floc, r.doc)
+		if _, err := c.compile(r, nil, schemaRef{"#", r.schema, false}, r); err != nil {
+			return nil, err
+		}
+	}
+
 	sr, err = r.resolveFragment(c, sr, f)
 	if err != nil {
 		return nil, err
@@ -331,35 +341,37 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	if t, ok := m["type"]; ok {
-		switch t := t.(type) {
-		case string:
-			s.Types = []string{t}
-		case []interface{}:
-			s.Types = toStrings(t)
-		}
-	}
-
-	if e, ok := m["enum"]; ok {
-		s.Enum = e.([]interface{})
-		allPrimitives := true
-		for _, item := range s.Enum {
-			switch jsonType(item) {
-			case "object", "array":
-				allPrimitives = false
-				break
+	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
+		if t, ok := m["type"]; ok {
+			switch t := t.(type) {
+			case string:
+				s.Types = []string{t}
+			case []interface{}:
+				s.Types = toStrings(t)
 			}
 		}
-		s.enumError = "enum failed"
-		if allPrimitives {
-			if len(s.Enum) == 1 {
-				s.enumError = fmt.Sprintf("value must be %#v", s.Enum[0])
-			} else {
-				strEnum := make([]string, len(s.Enum))
-				for i, item := range s.Enum {
-					strEnum[i] = fmt.Sprintf("%#v", item)
+
+		if e, ok := m["enum"]; ok {
+			s.Enum = e.([]interface{})
+			allPrimitives := true
+			for _, item := range s.Enum {
+				switch jsonType(item) {
+				case "object", "array":
+					allPrimitives = false
+					break
 				}
-				s.enumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
+			}
+			s.enumError = "enum failed"
+			if allPrimitives {
+				if len(s.Enum) == 1 {
+					s.enumError = fmt.Sprintf("value must be %#v", s.Enum[0])
+				} else {
+					strEnum := make([]string, len(s.Enum))
+					for i, item := range s.Enum {
+						strEnum[i] = fmt.Sprintf("%#v", item)
+					}
+					s.enumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
+				}
 			}
 		}
 	}
@@ -411,10 +423,13 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 		return -1
 	}
-	s.MinProperties, s.MaxProperties = loadInt("minProperties"), loadInt("maxProperties")
 
-	if req, ok := m["required"]; ok {
-		s.Required = toStrings(req.([]interface{}))
+	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
+		s.MinProperties, s.MaxProperties = loadInt("minProperties"), loadInt("maxProperties")
+
+		if req, ok := m["required"]; ok {
+			s.Required = toStrings(req.([]interface{}))
+		}
 	}
 
 	if props, ok := m["properties"]; ok {
@@ -472,11 +487,13 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	}
 
 	if r.draft.version >= 2019 {
-		if deps, ok := m["dependentRequired"]; ok {
-			deps := deps.(map[string]interface{})
-			s.DependentRequired = make(map[string][]string, len(deps))
-			for pname, pvalue := range deps {
-				s.DependentRequired[pname] = toStrings(pvalue.([]interface{}))
+		if r.schema.meta.hasVocab("validation") {
+			if deps, ok := m["dependentRequired"]; ok {
+				deps := deps.(map[string]interface{})
+				s.DependentRequired = make(map[string][]string, len(deps))
+				for pname, pvalue := range deps {
+					s.DependentRequired[pname] = toStrings(pvalue.([]interface{}))
+				}
 			}
 		}
 		if deps, ok := m["dependentSchemas"]; ok {
@@ -497,10 +514,12 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	s.MinItems, s.MaxItems = loadInt("minItems"), loadInt("maxItems")
+	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
+		s.MinItems, s.MaxItems = loadInt("minItems"), loadInt("maxItems")
 
-	if unique, ok := m["uniqueItems"]; ok {
-		s.UniqueItems = unique.(bool)
+		if unique, ok := m["uniqueItems"]; ok {
+			s.UniqueItems = unique.(bool)
+		}
 	}
 
 	if r.draft.version >= 2020 {
@@ -538,10 +557,12 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
+	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
+		s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
 
-	if pattern, ok := m["pattern"]; ok {
-		s.Pattern = regexp.MustCompile(pattern.(string))
+		if pattern, ok := m["pattern"]; ok {
+			s.Pattern = regexp.MustCompile(pattern.(string))
+		}
 	}
 
 	if format, ok := m["format"]; ok {
@@ -557,29 +578,31 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		return nil
 	}
 
-	s.Minimum = loadRat("minimum")
-	if exclusive, ok := m["exclusiveMinimum"]; ok {
-		if exclusive, ok := exclusive.(bool); ok {
-			if exclusive {
-				s.Minimum, s.ExclusiveMinimum = nil, s.Minimum
+	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
+		s.Minimum = loadRat("minimum")
+		if exclusive, ok := m["exclusiveMinimum"]; ok {
+			if exclusive, ok := exclusive.(bool); ok {
+				if exclusive {
+					s.Minimum, s.ExclusiveMinimum = nil, s.Minimum
+				}
+			} else {
+				s.ExclusiveMinimum = loadRat("exclusiveMinimum")
 			}
-		} else {
-			s.ExclusiveMinimum = loadRat("exclusiveMinimum")
 		}
-	}
 
-	s.Maximum = loadRat("maximum")
-	if exclusive, ok := m["exclusiveMaximum"]; ok {
-		if exclusive, ok := exclusive.(bool); ok {
-			if exclusive {
-				s.Maximum, s.ExclusiveMaximum = nil, s.Maximum
+		s.Maximum = loadRat("maximum")
+		if exclusive, ok := m["exclusiveMaximum"]; ok {
+			if exclusive, ok := exclusive.(bool); ok {
+				if exclusive {
+					s.Maximum, s.ExclusiveMaximum = nil, s.Maximum
+				}
+			} else {
+				s.ExclusiveMaximum = loadRat("exclusiveMaximum")
 			}
-		} else {
-			s.ExclusiveMaximum = loadRat("exclusiveMaximum")
 		}
-	}
 
-	s.MultipleOf = loadRat("multipleOf")
+		s.MultipleOf = loadRat("multipleOf")
+	}
 
 	if c.ExtractAnnotations {
 		if title, ok := m["title"]; ok {
@@ -656,6 +679,9 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		s.MinContains, s.MaxContains = loadInt("minContains"), loadInt("maxContains")
 		if s.MinContains == -1 {
 			s.MinContains = 1
+		}
+		if !r.schema.meta.hasVocab("validation") {
+			s.MinContains, s.MaxContains = 1, -1
 		}
 
 		if c.ExtractAnnotations {
