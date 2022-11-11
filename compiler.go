@@ -121,15 +121,21 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 func (c *Compiler) findResource(url string) (*resource, error) {
 	if _, ok := c.resources[url]; !ok {
 		// load resource
-		loadURL := LoadURL
-		if c.LoadURL != nil {
-			loadURL = c.LoadURL
+		var rdr io.Reader
+		if sch, ok := vocabSchemas[url]; ok {
+			rdr = strings.NewReader(sch)
+		} else {
+			loadURL := LoadURL
+			if c.LoadURL != nil {
+				loadURL = c.LoadURL
+			}
+			r, err := loadURL(url)
+			if err != nil {
+				return nil, err
+			}
+			defer r.Close()
+			rdr = r
 		}
-		rdr, err := loadURL(url)
-		if err != nil {
-			return nil, err
-		}
-		defer rdr.Close()
 		if err := c.AddResource(url, rdr); err != nil {
 			return nil, err
 		}
