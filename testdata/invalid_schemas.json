@@ -262,5 +262,13 @@
     "description": "schemaRef wrong jsonpointer",
     "schema": [{"$ref": "#/5"}],
     "fragment": "#/0"
+  },
+  {
+    "description": "unrecognized vocab",
+    "schema": {
+      "$vocabulary": {
+        "https://github.com/santhosh-tekuri": true
+      }
+    }
   }
 ]
