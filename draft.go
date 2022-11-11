@@ -9,8 +9,9 @@ import (
 type Draft struct {
 	version    int
 	meta       *Schema
-	id         string // property name used to represent schema id.
-	boolSchema bool   // is boolean valid schema
+	id         string   // property name used to represent schema id.
+	boolSchema bool     // is boolean valid schema
+	vocab      []string // built-in vocab
 	subschemas map[string]position
 }
 
@@ -141,6 +142,16 @@ func (d *Draft) listSubschemas(r *resource, base string, rr map[string]*resource
 	return nil
 }
 
+// isVocab tells whether url is built-in vocab.
+func (d *Draft) isVocab(url string) bool {
+	for _, v := range d.vocab {
+		if url == v {
+			return true
+		}
+	}
+	return false
+}
+
 type position uint
 
 const (
@@ -154,8 +165,34 @@ var (
 	Draft4    = &Draft{version: 4, id: "id", boolSchema: false}
 	Draft6    = &Draft{version: 6, id: "$id", boolSchema: true}
 	Draft7    = &Draft{version: 7, id: "$id", boolSchema: true}
-	Draft2019 = &Draft{version: 2019, id: "$id", boolSchema: true}
-	Draft2020 = &Draft{version: 2020, id: "$id", boolSchema: true}
+	Draft2019 = &Draft{
+		version:    2019,
+		id:         "$id",
+		boolSchema: true,
+		vocab: []string{
+			"https://json-schema.org/draft/2019-09/vocab/core",
+			"https://json-schema.org/draft/2019-09/vocab/applicator",
+			"https://json-schema.org/draft/2019-09/vocab/validation",
+			"https://json-schema.org/draft/2019-09/vocab/meta-data",
+			"https://json-schema.org/draft/2019-09/vocab/format",
+			"https://json-schema.org/draft/2019-09/vocab/content",
+		},
+	}
+	Draft2020 = &Draft{
+		version:    2020,
+		id:         "$id",
+		boolSchema: true,
+		vocab: []string{
+			"https://json-schema.org/draft/2020-12/vocab/core",
+			"https://json-schema.org/draft/2020-12/vocab/applicator",
+			"https://json-schema.org/draft/2020-12/vocab/unevaluated",
+			"https://json-schema.org/draft/2020-12/vocab/validation",
+			"https://json-schema.org/draft/2020-12/vocab/meta-data",
+			"https://json-schema.org/draft/2020-12/vocab/format-annotation",
+			"https://json-schema.org/draft/2020-12/vocab/format-assertion",
+			"https://json-schema.org/draft/2020-12/vocab/content",
+		},
+	}
 
 	latest = Draft2020
 )

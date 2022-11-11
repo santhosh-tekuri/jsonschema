@@ -285,6 +285,9 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if r == res { // root schema
 			if vocab, ok := m["$vocabulary"]; ok {
 				for url := range vocab.(map[string]interface{}) {
+					if !r.draft.isVocab(url) {
+						return fmt.Errorf("jsonschema: unsupported vocab %q in %s", url, res)
+					}
 					s.vocab = append(s.vocab, url)
 				}
 			}
