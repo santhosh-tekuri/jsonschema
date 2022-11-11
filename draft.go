@@ -24,6 +24,7 @@ func (d *Draft) loadMeta(base string, schemas map[string]string) {
 		}
 	}
 	d.meta = c.MustCompile(base + "/schema")
+	d.meta.meta = d.meta
 }
 
 func (d *Draft) getID(sch interface{}) string {

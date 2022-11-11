@@ -15,6 +15,7 @@ import (
 type Schema struct {
 	Location string // absolute location
 
+	meta           *Schema
 	vocab          []string
 	dynamicAnchors []*Schema
 

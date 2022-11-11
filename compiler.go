@@ -273,6 +273,19 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	var s = res.schema
 	var err error
 
+	if r == res { // root schema
+		if sch, ok := m["$schema"]; ok {
+			sch := sch.(string)
+			if d := findDraft(sch); d != nil {
+				s.meta = d.meta
+			} else {
+				if s.meta, err = c.compileRef(r, stack, "$schema", res, sch); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	if ref, ok := m["$ref"]; ok {
 		s.Ref, err = c.compileRef(r, stack, "$ref", res, ref.(string))
 		if err != nil {
