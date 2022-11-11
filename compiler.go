@@ -148,6 +148,9 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 			if !ok {
 				return nil, fmt.Errorf("jsonschema: invalid $schema in %s", url)
 			}
+			if !isURI(sch) {
+				return nil, fmt.Errorf("jsonschema: $schema must be uri in %s", url)
+			}
 			r.draft = findDraft(sch)
 			if r.draft == nil {
 				sch, _ := split(sch)
