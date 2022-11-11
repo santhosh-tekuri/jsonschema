@@ -270,5 +270,11 @@
         "https://github.com/santhosh-tekuri": true
       }
     }
+  },
+  {
+    "description": "$schema must be absolute uri",
+    "schema": {
+        "$schema": "meta.json"
+    }
   }
 ]
