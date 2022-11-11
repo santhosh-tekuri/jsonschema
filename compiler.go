@@ -434,6 +434,21 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if pattern, ok := m["pattern"]; ok {
 			s.Pattern = regexp.MustCompile(pattern.(string))
 		}
+
+		if r.draft.version >= 2019 {
+			s.MinContains, s.MaxContains = loadInt("minContains"), loadInt("maxContains")
+			if s.MinContains == -1 {
+				s.MinContains = 1
+			}
+
+			if deps, ok := m["dependentRequired"]; ok {
+				deps := deps.(map[string]interface{})
+				s.DependentRequired = make(map[string][]string, len(deps))
+				for pname, pvalue := range deps {
+					s.DependentRequired[pname] = toStrings(pvalue.([]interface{}))
+				}
+			}
+		}
 	}
 
 	compile := func(stack []schemaRef, ptr string) (*Schema, error) {
@@ -445,10 +460,6 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			return compile(stack, escape(pname))
 		}
 		return nil, nil
-	}
-
-	if s.Not, err = loadSchema("not", stack); err != nil {
-		return err
 	}
 
 	loadSchemas := func(pname string, stack []schemaRef) ([]*Schema, error) {
@@ -466,136 +477,166 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 		return nil, nil
 	}
-	if s.AllOf, err = loadSchemas("allOf", stack); err != nil {
-		return err
-	}
-	if s.AnyOf, err = loadSchemas("anyOf", stack); err != nil {
-		return err
-	}
-	if s.OneOf, err = loadSchemas("oneOf", stack); err != nil {
-		return err
-	}
 
-	if props, ok := m["properties"]; ok {
-		props := props.(map[string]interface{})
-		s.Properties = make(map[string]*Schema, len(props))
-		for pname := range props {
-			s.Properties[pname], err = compile(nil, "properties/"+escape(pname))
-			if err != nil {
-				return err
-			}
+	if r.draft.version < 2019 || r.schema.meta.hasVocab("applicator") {
+		if s.Not, err = loadSchema("not", stack); err != nil {
+			return err
 		}
-	}
-
-	if regexProps, ok := m["regexProperties"]; ok {
-		s.RegexProperties = regexProps.(bool)
-	}
-
-	if patternProps, ok := m["patternProperties"]; ok {
-		patternProps := patternProps.(map[string]interface{})
-		s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
-		for pattern := range patternProps {
-			s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
-			if err != nil {
-				return err
-			}
+		if s.AllOf, err = loadSchemas("allOf", stack); err != nil {
+			return err
 		}
-	}
-
-	if additionalProps, ok := m["additionalProperties"]; ok {
-		switch additionalProps := additionalProps.(type) {
-		case bool:
-			s.AdditionalProperties = additionalProps
-		case map[string]interface{}:
-			s.AdditionalProperties, err = compile(nil, "additionalProperties")
-			if err != nil {
-				return err
-			}
+		if s.AnyOf, err = loadSchemas("anyOf", stack); err != nil {
+			return err
 		}
-	}
+		if s.OneOf, err = loadSchemas("oneOf", stack); err != nil {
+			return err
+		}
 
-	if deps, ok := m["dependencies"]; ok {
-		deps := deps.(map[string]interface{})
-		s.Dependencies = make(map[string]interface{}, len(deps))
-		for pname, pvalue := range deps {
-			switch pvalue := pvalue.(type) {
-			case []interface{}:
-				s.Dependencies[pname] = toStrings(pvalue)
-			default:
-				s.Dependencies[pname], err = compile(stack, "dependencies/"+escape(pname))
+		if props, ok := m["properties"]; ok {
+			props := props.(map[string]interface{})
+			s.Properties = make(map[string]*Schema, len(props))
+			for pname := range props {
+				s.Properties[pname], err = compile(nil, "properties/"+escape(pname))
 				if err != nil {
 					return err
 				}
 			}
 		}
-	}
 
-	if r.draft.version >= 2019 {
-		if r.schema.meta.hasVocab("validation") {
-			if deps, ok := m["dependentRequired"]; ok {
-				deps := deps.(map[string]interface{})
-				s.DependentRequired = make(map[string][]string, len(deps))
-				for pname, pvalue := range deps {
-					s.DependentRequired[pname] = toStrings(pvalue.([]interface{}))
+		if regexProps, ok := m["regexProperties"]; ok {
+			s.RegexProperties = regexProps.(bool)
+		}
+
+		if patternProps, ok := m["patternProperties"]; ok {
+			patternProps := patternProps.(map[string]interface{})
+			s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
+			for pattern := range patternProps {
+				s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
+				if err != nil {
+					return err
 				}
 			}
 		}
-		if deps, ok := m["dependentSchemas"]; ok {
+
+		if additionalProps, ok := m["additionalProperties"]; ok {
+			switch additionalProps := additionalProps.(type) {
+			case bool:
+				s.AdditionalProperties = additionalProps
+			case map[string]interface{}:
+				s.AdditionalProperties, err = compile(nil, "additionalProperties")
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if deps, ok := m["dependencies"]; ok {
 			deps := deps.(map[string]interface{})
-			s.DependentSchemas = make(map[string]*Schema, len(deps))
-			for pname := range deps {
-				s.DependentSchemas[pname], err = compile(stack, "dependentSchemas/"+escape(pname))
-				if err != nil {
+			s.Dependencies = make(map[string]interface{}, len(deps))
+			for pname, pvalue := range deps {
+				switch pvalue := pvalue.(type) {
+				case []interface{}:
+					s.Dependencies[pname] = toStrings(pvalue)
+				default:
+					s.Dependencies[pname], err = compile(stack, "dependencies/"+escape(pname))
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		if r.draft.version >= 6 {
+			if s.PropertyNames, err = loadSchema("propertyNames", nil); err != nil {
+				return err
+			}
+			if s.Contains, err = loadSchema("contains", nil); err != nil {
+				return err
+			}
+		}
+
+		if r.draft.version >= 7 {
+			if m["if"] != nil {
+				if s.If, err = loadSchema("if", stack); err != nil {
+					return err
+				}
+				if s.Then, err = loadSchema("then", stack); err != nil {
+					return err
+				}
+				if s.Else, err = loadSchema("else", stack); err != nil {
 					return err
 				}
 			}
 		}
+		if r.draft.version >= 2019 {
+			if deps, ok := m["dependentSchemas"]; ok {
+				deps := deps.(map[string]interface{})
+				s.DependentSchemas = make(map[string]*Schema, len(deps))
+				for pname := range deps {
+					s.DependentSchemas[pname], err = compile(stack, "dependentSchemas/"+escape(pname))
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		if r.draft.version >= 2020 {
+			if s.PrefixItems, err = loadSchemas("prefixItems", nil); err != nil {
+				return err
+			}
+			if s.Items2020, err = loadSchema("items", nil); err != nil {
+				return err
+			}
+		} else {
+			if items, ok := m["items"]; ok {
+				switch items.(type) {
+				case []interface{}:
+					s.Items, err = loadSchemas("items", nil)
+					if err != nil {
+						return err
+					}
+					if additionalItems, ok := m["additionalItems"]; ok {
+						switch additionalItems := additionalItems.(type) {
+						case bool:
+							s.AdditionalItems = additionalItems
+						case map[string]interface{}:
+							s.AdditionalItems, err = compile(nil, "additionalItems")
+							if err != nil {
+								return err
+							}
+						}
+					}
+				default:
+					s.Items, err = compile(nil, "items")
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+	}
+
+	// unevaluatedXXX keywords were in "applicator" vocab in 2019, but moved to new vocab "unevaluated" in 2020
+	if (r.draft.version == 2019 && r.schema.meta.hasVocab("applicator")) || (r.draft.version >= 2020 && r.schema.meta.hasVocab("unevaluated")) {
 		if s.UnevaluatedProperties, err = loadSchema("unevaluatedProperties", nil); err != nil {
 			return err
 		}
 		if s.UnevaluatedItems, err = loadSchema("unevaluatedItems", nil); err != nil {
 			return err
 		}
-	}
-
-	if r.draft.version >= 2020 {
-		if s.PrefixItems, err = loadSchemas("prefixItems", nil); err != nil {
-			return err
-		}
-		if s.Items2020, err = loadSchema("items", nil); err != nil {
-			return err
-		}
-	} else {
-		if items, ok := m["items"]; ok {
-			switch items.(type) {
-			case []interface{}:
-				s.Items, err = loadSchemas("items", nil)
-				if err != nil {
-					return err
-				}
-				if additionalItems, ok := m["additionalItems"]; ok {
-					switch additionalItems := additionalItems.(type) {
-					case bool:
-						s.AdditionalItems = additionalItems
-					case map[string]interface{}:
-						s.AdditionalItems, err = compile(nil, "additionalItems")
-						if err != nil {
-							return err
-						}
-					}
-				}
-			default:
-				s.Items, err = compile(nil, "items")
-				if err != nil {
-					return err
-				}
-			}
+		if r.draft.version >= 2020 {
+			// any item in an array that passes validation of the contains schema is considered "evaluated"
+			s.ContainsEval = true
 		}
 	}
 
 	if format, ok := m["format"]; ok {
 		s.Format = format.(string)
-		s.format, _ = Formats[s.Format]
+		if c.AssertFormat || r.schema.meta.hasVocab("format-assertion") {
+			s.format, _ = Formats[s.Format]
+		}
 	}
 
 	if c.ExtractAnnotations {
@@ -612,31 +653,9 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if c, ok := m["const"]; ok {
 			s.Constant = []interface{}{c}
 		}
-		if s.PropertyNames, err = loadSchema("propertyNames", nil); err != nil {
-			return err
-		}
-		if s.Contains, err = loadSchema("contains", nil); err != nil {
-			return err
-		}
-		if r.draft.version >= 2020 {
-			// any item in an array that passes validation of the contains schema is considered "evaluated"
-			s.ContainsEval = true
-		}
-		s.MinContains, s.MaxContains = 1, -1
 	}
 
 	if r.draft.version >= 7 {
-		if m["if"] != nil {
-			if s.If, err = loadSchema("if", stack); err != nil {
-				return err
-			}
-			if s.Then, err = loadSchema("then", stack); err != nil {
-				return err
-			}
-			if s.Else, err = loadSchema("else", stack); err != nil {
-				return err
-			}
-		}
 		if encoding, ok := m["contentEncoding"]; ok {
 			s.ContentEncoding = encoding.(string)
 			s.decoder, _ = Decoders[s.ContentEncoding]
@@ -666,18 +685,6 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			s.decoder = nil
 			s.mediaType = nil
 		}
-		if !c.AssertFormat {
-			s.format = nil
-		}
-
-		s.MinContains, s.MaxContains = loadInt("minContains"), loadInt("maxContains")
-		if s.MinContains == -1 {
-			s.MinContains = 1
-		}
-		if !r.schema.meta.hasVocab("validation") {
-			s.MinContains, s.MaxContains = 1, -1
-		}
-
 		if c.ExtractAnnotations {
 			if deprecated, ok := m["deprecated"]; ok {
 				s.Deprecated = deprecated.(bool)
