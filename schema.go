@@ -131,6 +131,21 @@ func newSchema(url, floc string, doc interface{}) *Schema {
 	return s
 }
 
+func (s *Schema) hasVocab(name string) bool {
+	if s == nil { // during bootstrap
+		return true
+	}
+	for _, url := range s.vocab {
+		if url == "https://json-schema.org/draft/2019-09/vocab/"+name {
+			return true
+		}
+		if url == "https://json-schema.org/draft/2020-12/vocab/"+name {
+			return true
+		}
+	}
+	return false
+}
+
 // Validate validates given doc, against the json-schema s.
 //
 // the v must be the raw json value. for number precision
