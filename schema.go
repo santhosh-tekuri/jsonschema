@@ -135,6 +135,9 @@ func (s *Schema) hasVocab(name string) bool {
 	if s == nil { // during bootstrap
 		return true
 	}
+	if name == "core" {
+		return true
+	}
 	for _, url := range s.vocab {
 		if url == "https://json-schema.org/draft/2019-09/vocab/"+name {
 			return true
