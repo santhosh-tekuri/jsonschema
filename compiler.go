@@ -144,12 +144,21 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 	r.draft = c.Draft
 	if m, ok := r.doc.(map[string]interface{}); ok {
 		if sch, ok := m["$schema"]; ok {
-			if _, ok = sch.(string); !ok {
+			sch, ok := sch.(string)
+			if !ok {
 				return nil, fmt.Errorf("jsonschema: invalid $schema in %s", url)
 			}
-			r.draft = findDraft(sch.(string))
+			r.draft = findDraft(sch)
 			if r.draft == nil {
-				return nil, fmt.Errorf("jsonschema: invalid $schema in %s", url)
+				sch, _ := split(sch)
+				if sch == url {
+					return nil, fmt.Errorf("jsonschema: unsupported draft in %s", url)
+				}
+				mr, err := c.findResource(sch)
+				if err != nil {
+					return nil, err
+				}
+				r.draft = mr.draft
 			}
 		}
 	}
