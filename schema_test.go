@@ -98,7 +98,6 @@ var skipTests = map[string]map[string][]string{
 		"patterns always use unicode semantics with patternProperties":   {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
-	"TestDraft2019/vocabulary.json":                   {}, // custom metaschema is not implemented
 	"TestDraft2019/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
 	"TestDraft2019/optional/format/idn-email.json":    {}, // idn-email format is not implemented
 	"TestDraft2019/optional/ecmascript-regex.json": {
@@ -124,7 +123,6 @@ var skipTests = map[string]map[string][]string{
 		"patterns always use unicode semantics with patternProperties":   {}, // invalid regex "\\p{Letter}cole"
 	},
 	//
-	"TestDraft2020/vocabulary.json":                   {}, // custom metaschema is not implemented
 	"TestDraft2020/optional/format-assertion.json":    {}, // custom metaschema is not implemented
 	"TestDraft2020/optional/format/idn-hostname.json": {}, // idn-hostname format is not implemented
 	"TestDraft2020/optional/format/idn-email.json":    {}, // idn-email format is not implemented
