@@ -1,0 +1,16 @@
+[
+    {
+        "description": "metaschema without $vocabulary should consider validation vocab",
+        "schema": {
+            "$schema": "http://localhost:1235/metaschema-no-vocabulary.json",
+            "minimum": 10
+        },
+        "tests": [
+            {
+                "description": "minimum must be checked",
+                "data": 5,
+                "valid": false
+            }
+        ]
+    }
+]

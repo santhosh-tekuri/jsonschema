@@ -192,9 +192,15 @@ type testGroup struct {
 }
 
 func TestMain(m *testing.M) {
-	server := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir(testSuite + "/remotes"))}
+	server1 := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir(testSuite + "/remotes"))}
 	go func() {
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := server1.ListenAndServe(); err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+	server2 := &http.Server{Addr: "localhost:1235", Handler: http.FileServer(http.Dir("testdata/remotes"))}
+	go func() {
+		if err := server2.ListenAndServe(); err != http.ErrServerClosed {
 			panic(err)
 		}
 	}()
