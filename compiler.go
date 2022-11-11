@@ -343,6 +343,22 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
+	loadInt := func(pname string) int {
+		if num, ok := m[pname]; ok {
+			i, _ := num.(json.Number).Float64()
+			return int(i)
+		}
+		return -1
+	}
+
+	loadRat := func(pname string) *big.Rat {
+		if num, ok := m[pname]; ok {
+			r, _ := new(big.Rat).SetString(string(num.(json.Number)))
+			return r
+		}
+		return nil
+	}
+
 	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
 		if t, ok := m["type"]; ok {
 			switch t := t.(type) {
@@ -375,6 +391,48 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 					s.enumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
 				}
 			}
+		}
+
+		s.Minimum = loadRat("minimum")
+		if exclusive, ok := m["exclusiveMinimum"]; ok {
+			if exclusive, ok := exclusive.(bool); ok {
+				if exclusive {
+					s.Minimum, s.ExclusiveMinimum = nil, s.Minimum
+				}
+			} else {
+				s.ExclusiveMinimum = loadRat("exclusiveMinimum")
+			}
+		}
+
+		s.Maximum = loadRat("maximum")
+		if exclusive, ok := m["exclusiveMaximum"]; ok {
+			if exclusive, ok := exclusive.(bool); ok {
+				if exclusive {
+					s.Maximum, s.ExclusiveMaximum = nil, s.Maximum
+				}
+			} else {
+				s.ExclusiveMaximum = loadRat("exclusiveMaximum")
+			}
+		}
+
+		s.MultipleOf = loadRat("multipleOf")
+
+		s.MinProperties, s.MaxProperties = loadInt("minProperties"), loadInt("maxProperties")
+
+		if req, ok := m["required"]; ok {
+			s.Required = toStrings(req.([]interface{}))
+		}
+
+		s.MinItems, s.MaxItems = loadInt("minItems"), loadInt("maxItems")
+
+		if unique, ok := m["uniqueItems"]; ok {
+			s.UniqueItems = unique.(bool)
+		}
+
+		s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
+
+		if pattern, ok := m["pattern"]; ok {
+			s.Pattern = regexp.MustCompile(pattern.(string))
 		}
 	}
 
@@ -416,22 +474,6 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	}
 	if s.OneOf, err = loadSchemas("oneOf", stack); err != nil {
 		return err
-	}
-
-	loadInt := func(pname string) int {
-		if num, ok := m[pname]; ok {
-			i, _ := num.(json.Number).Float64()
-			return int(i)
-		}
-		return -1
-	}
-
-	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
-		s.MinProperties, s.MaxProperties = loadInt("minProperties"), loadInt("maxProperties")
-
-		if req, ok := m["required"]; ok {
-			s.Required = toStrings(req.([]interface{}))
-		}
 	}
 
 	if props, ok := m["properties"]; ok {
@@ -516,14 +558,6 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
-		s.MinItems, s.MaxItems = loadInt("minItems"), loadInt("maxItems")
-
-		if unique, ok := m["uniqueItems"]; ok {
-			s.UniqueItems = unique.(bool)
-		}
-	}
-
 	if r.draft.version >= 2020 {
 		if s.PrefixItems, err = loadSchemas("prefixItems", nil); err != nil {
 			return err
@@ -559,51 +593,9 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
-		s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
-
-		if pattern, ok := m["pattern"]; ok {
-			s.Pattern = regexp.MustCompile(pattern.(string))
-		}
-	}
-
 	if format, ok := m["format"]; ok {
 		s.Format = format.(string)
 		s.format, _ = Formats[s.Format]
-	}
-
-	loadRat := func(pname string) *big.Rat {
-		if num, ok := m[pname]; ok {
-			r, _ := new(big.Rat).SetString(string(num.(json.Number)))
-			return r
-		}
-		return nil
-	}
-
-	if r.draft.version < 2019 || r.schema.meta.hasVocab("validation") {
-		s.Minimum = loadRat("minimum")
-		if exclusive, ok := m["exclusiveMinimum"]; ok {
-			if exclusive, ok := exclusive.(bool); ok {
-				if exclusive {
-					s.Minimum, s.ExclusiveMinimum = nil, s.Minimum
-				}
-			} else {
-				s.ExclusiveMinimum = loadRat("exclusiveMinimum")
-			}
-		}
-
-		s.Maximum = loadRat("maximum")
-		if exclusive, ok := m["exclusiveMaximum"]; ok {
-			if exclusive, ok := exclusive.(bool); ok {
-				if exclusive {
-					s.Maximum, s.ExclusiveMaximum = nil, s.Maximum
-				}
-			} else {
-				s.ExclusiveMaximum = loadRat("exclusiveMaximum")
-			}
-		}
-
-		s.MultipleOf = loadRat("multipleOf")
 	}
 
 	if c.ExtractAnnotations {
