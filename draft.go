@@ -7,12 +7,13 @@ import (
 
 // A Draft represents json-schema draft
 type Draft struct {
-	version    int
-	meta       *Schema
-	id         string   // property name used to represent schema id.
-	boolSchema bool     // is boolean valid schema
-	vocab      []string // built-in vocab
-	subschemas map[string]position
+	version      int
+	meta         *Schema
+	id           string   // property name used to represent schema id.
+	boolSchema   bool     // is boolean valid schema
+	vocab        []string // built-in vocab
+	defaultVocab []string // vocabs when $vocabulary is not used
+	subschemas   map[string]position
 }
 
 func (d *Draft) loadMeta(base string, schemas map[string]string) {
@@ -153,6 +154,15 @@ func (d *Draft) isVocab(url string) bool {
 	return false
 }
 
+func (d *Draft) getVocab(name string) string {
+	for _, v := range d.vocab {
+		if strings.HasSuffix(v, "/"+name) {
+			return v
+		}
+	}
+	return ""
+}
+
 type position uint
 
 const (
@@ -178,6 +188,11 @@ var (
 			"https://json-schema.org/draft/2019-09/vocab/format",
 			"https://json-schema.org/draft/2019-09/vocab/content",
 		},
+		defaultVocab: []string{
+			"https://json-schema.org/draft/2019-09/vocab/core",
+			"https://json-schema.org/draft/2019-09/vocab/applicator",
+			"https://json-schema.org/draft/2019-09/vocab/validation",
+		},
 	}
 	Draft2020 = &Draft{
 		version:    2020,
@@ -192,6 +207,12 @@ var (
 			"https://json-schema.org/draft/2020-12/vocab/format-annotation",
 			"https://json-schema.org/draft/2020-12/vocab/format-assertion",
 			"https://json-schema.org/draft/2020-12/vocab/content",
+		},
+		defaultVocab: []string{
+			"https://json-schema.org/draft/2020-12/vocab/core",
+			"https://json-schema.org/draft/2020-12/vocab/applicator",
+			"https://json-schema.org/draft/2020-12/vocab/unevaluated",
+			"https://json-schema.org/draft/2020-12/vocab/validation",
 		},
 	}
 

@@ -322,6 +322,8 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 					}
 					s.vocab = append(s.vocab, url)
 				}
+			} else {
+				s.vocab = r.draft.defaultVocab
 			}
 		}
 
