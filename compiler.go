@@ -273,6 +273,14 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	}
 
 	if r.draft.version >= 2019 {
+		if r == res { // root schema
+			if vocab, ok := m["$vocabulary"]; ok {
+				for url := range vocab.(map[string]interface{}) {
+					s.vocab = append(s.vocab, url)
+				}
+			}
+		}
+
 		if ref, ok := m["$recursiveRef"]; ok {
 			s.RecursiveRef, err = c.compileRef(r, stack, "$recursiveRef", res, ref.(string))
 			if err != nil {

@@ -15,6 +15,7 @@ import (
 type Schema struct {
 	Location string // absolute location
 
+	vocab          []string
 	dynamicAnchors []*Schema
 
 	// type agnostic validations
