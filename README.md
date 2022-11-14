@@ -186,7 +186,9 @@ Prints:
 to install `go install github.com/santhosh-tekuri/jsonschema/v5/cmd/jv@latest`
 
 ```bash
-jv [-draft INT] [-output FORMAT] [-assertformat] <json-schema> [<json-doc>]...
+jv [-draft INT] [-output FORMAT] [-assertformat] [-assertcontent] <json-schema> [<json-doc>]...
+  -assertcontent
+    	enable content assertions with draft >= 2019
   -assertformat
     	enable format assertions with draft >= 2019
   -draft int
