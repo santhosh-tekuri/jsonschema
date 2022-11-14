@@ -276,5 +276,11 @@
     "schema": {
         "$schema": "meta.json"
     }
+  },
+  {
+      "description": "$schema must be string",
+      "schema": {
+          "$schema": 1
+      }
   }
 ]
