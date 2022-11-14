@@ -282,5 +282,11 @@
       "schema": {
           "$schema": 1
       }
+  },
+  {
+      "description": "$ref  with non existing anchor",
+      "schema": {
+          "$ref": "#abcd"
+      }
   }
 ]
