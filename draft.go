@@ -154,15 +154,6 @@ func (d *Draft) isVocab(url string) bool {
 	return false
 }
 
-func (d *Draft) getVocab(name string) string {
-	for _, v := range d.vocab {
-		if strings.HasSuffix(v, "/"+name) {
-			return v
-		}
-	}
-	return ""
-}
-
 type position uint
 
 const (
