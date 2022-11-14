@@ -10,6 +10,14 @@ type test struct {
 	valid bool
 }
 
+func TestFormatsNonString(t *testing.T) {
+	for name, check := range Formats {
+		if !check(1) {
+			t.Errorf("%s: want true, got false", name)
+		}
+	}
+}
+
 func TestIsDateTime(t *testing.T) {
 	tests := []test{
 		{"1963-06-19T08:30:06.283185Z", true},    // with second fraction
