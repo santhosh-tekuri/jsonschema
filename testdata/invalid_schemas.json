@@ -295,5 +295,18 @@
       "schema": {
           "$ref": "#abcd"
       }
+  },
+  {
+      "description": "repeating canonical url",
+      "schema": {
+          "$defs": {
+              "one": {
+                  "$id": "http://localhost/test.json"
+              },
+              "two": {
+                  "$id": "http://localhost/test.json"
+              }
+          }
+      }
   }
 ]
