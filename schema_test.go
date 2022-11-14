@@ -479,18 +479,20 @@ func TestInfiniteLoopError(t *testing.T) {
 }
 
 func TestExtractAnnotations(t *testing.T) {
+	str := `{
+		"title": "this is title",
+		"description": "this is description",
+		"$comment": "this is comment",
+		"format": "date-time",
+		"examples": ["2019-04-09T21:54:56.052Z"],
+		"readOnly": true,
+		"writeOnly": true,
+		"deprecated": true
+	}`
 	t.Run("false", func(t *testing.T) {
 		compiler := jsonschema.NewCompiler()
 
-		err := compiler.AddResource("test.json", strings.NewReader(`{
-			"title": "this is title",
-			"description": "this is description",
-			"$comment": "this is comment",
-			"format": "date-time",
-			"examples": ["2019-04-09T21:54:56.052Z"],
-			"readOnly": true,
-			"writeOnly": true
-		}`))
+		err := compiler.AddResource("test.json", strings.NewReader(str))
 		if err != nil {
 			t.Fatalf("addResource failed. reason: %v\n", err)
 		}
@@ -518,21 +520,16 @@ func TestExtractAnnotations(t *testing.T) {
 		if schema.WriteOnly {
 			t.Error("writeOnly should not be extracted")
 		}
+		if schema.Deprecated {
+			t.Error("Deprecated should not be extracted")
+		}
 	})
 
 	t.Run("true", func(t *testing.T) {
 		compiler := jsonschema.NewCompiler()
 		compiler.ExtractAnnotations = true
 
-		err := compiler.AddResource("test.json", strings.NewReader(`{
-			"title": "this is title",
-			"description": "this is description",
-			"$comment": "this is comment",
-			"format": "date-time",
-			"examples": ["2019-04-09T21:54:56.052Z"],
-			"readOnly": true,
-			"writeOnly": true
-		}`))
+		err := compiler.AddResource("test.json", strings.NewReader(str))
 		if err != nil {
 			t.Fatalf("addResource failed. reason: %v\n", err)
 		}
@@ -559,6 +556,9 @@ func TestExtractAnnotations(t *testing.T) {
 		}
 		if !schema.WriteOnly {
 			t.Error("writeOnly should be extracted")
+		}
+		if !schema.Deprecated {
+			t.Error("Deprecated should be extracted")
 		}
 	})
 }
