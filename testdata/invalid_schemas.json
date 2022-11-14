@@ -57,9 +57,16 @@
     }
   },
   {
-    "description": "invalid $ref ptr",
+    "description": "invalid $ref ptr-1",
     "schema": {
       "$ref": "#/definition/employee"
+    }
+  },
+  {
+    "description": "invalid $ref ptr-2",
+    "schema": {
+      "$ref": "#/abcd/employee",
+      "abcd": true
     }
   },
   {
