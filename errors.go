@@ -1,10 +1,8 @@
 package jsonschema
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
-	"unicode/utf8"
 )
 
 // InvalidJSONTypeError is the error type returned by ValidateInterface.
@@ -132,83 +130,10 @@ func joinPtr(ptr1, ptr2 string) string {
 	return ptr1 + "/" + ptr2
 }
 
+// quote returns single-quoted string
 func quote(s string) string {
-	var w = bytes.NewBuffer(make([]byte, 0, len(s)+10))
-	w.WriteByte('\'')
-	start := 0
-	for i := 0; i < len(s); {
-		b := s[i]
-		if b < 0x20 {
-			if start < i {
-				w.WriteString(s[start:i])
-			}
-			switch b {
-			case '\n':
-				w.WriteString(`\n`)
-			case '\r':
-				w.WriteString(`\r`)
-			case '\f':
-				w.WriteString(`\f`)
-			case '\t':
-				w.WriteString(`\t`)
-			default:
-				w.WriteString(`\u00`)
-				w.Write(hex(b >> 4))
-				w.Write(hex(b & 0xF))
-			}
-			i++
-			start = i
-			continue
-		}
-		if b < utf8.RuneSelf {
-			if b == '\\' || b == '"' {
-				if start < i {
-					w.WriteString(s[start:i])
-				}
-				switch b {
-				case '\\':
-					w.WriteString(`\\`)
-				case '\'':
-					w.WriteString(`\'`)
-				}
-				i++
-				start = i
-				continue
-			}
-			i++
-			continue
-		}
-		r, size := utf8.DecodeRuneInString(s[i:])
-		if r == utf8.RuneError && size == 1 {
-			if start < i {
-				w.WriteString(s[start:i])
-			}
-			w.WriteString(`\ufffd`)
-			i += size
-			start = i
-			continue
-		}
-		if r == '\u2028' || r == '\u2029' {
-			if start < i {
-				w.WriteString(s[start:i])
-			}
-			w.WriteString(`\u202`)
-			w.Write(hex(uint8(r & 0xF)))
-			i += size
-			start = i
-			continue
-		}
-		i += size
-	}
-	if start < len(s) {
-		w.WriteString(s[start:])
-	}
-	w.WriteByte('\'')
-	return w.String()
-}
-
-var hexBytes = []byte("0123456789abcdef")
-
-func hex(i uint8) []byte {
-	return hexBytes[i : i+1]
+	s = fmt.Sprintf("%q", s)
+	s = strings.ReplaceAll(s, `\"`, `"`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return "'" + s[1:len(s)-1] + "'"
 }
