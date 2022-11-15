@@ -807,7 +807,7 @@ func equals(v1, v2 interface{}) bool {
 
 // escape converts given token to valid json-pointer token
 func escape(token string) string {
-	token = strings.Replace(token, "~", "~0", -1)
-	token = strings.Replace(token, "/", "~1", -1)
+	token = strings.ReplaceAll(token, "~", "~0")
+	token = strings.ReplaceAll(token, "/", "~1")
 	return url.PathEscape(token)
 }
