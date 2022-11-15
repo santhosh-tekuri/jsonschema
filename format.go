@@ -556,12 +556,12 @@ func isUUID(v interface{}) bool {
 			return false
 		}
 		if i == len(groups)-1 {
-			return len(s) == 0
+			break
 		}
 		if len(s) == 0 || s[0] != '-' {
 			return false
 		}
 		s = s[1:]
 	}
-	return true
+	return len(s) == 0
 }
