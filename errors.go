@@ -89,23 +89,13 @@ func (ve *ValidationError) causes(err error) error {
 	return ve
 }
 
-func (ve *ValidationError) leaf() *ValidationError {
-	if strings.HasSuffix(ve.KeywordLocation, "/anyOf") || strings.HasSuffix(ve.KeywordLocation, "/oneOf") {
-		if len(ve.Causes) == 1 {
-			return ve.Causes[0].leaf()
-		}
-		return ve
-	}
-	if len(ve.Causes) > 0 {
-		return ve.Causes[0].leaf()
-	}
-	return ve
-}
-
 func (ve *ValidationError) Error() string {
-	err := ve.leaf()
+	leaf := ve
+	for len(leaf.Causes) > 0 {
+		leaf = leaf.Causes[0]
+	}
 	u, _ := split(ve.AbsoluteKeywordLocation)
-	return fmt.Sprintf("jsonschema: %s does not validate with %s: %s", quote(err.InstanceLocation), u+"#"+err.KeywordLocation, err.Message)
+	return fmt.Sprintf("jsonschema: %s does not validate with %s: %s", quote(leaf.InstanceLocation), u+"#"+leaf.KeywordLocation, leaf.Message)
 }
 
 func (ve *ValidationError) GoString() string {
