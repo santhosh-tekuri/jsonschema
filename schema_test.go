@@ -255,6 +255,7 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 					c.Draft = draft
 					if strings.Index(folder, "optional") != -1 {
 						c.AssertFormat = true
+						c.AssertContent = true
 					}
 					if err := c.AddResource("schema.json", bytes.NewReader(group.Schema)); err != nil {
 						t.Fatal(err)
