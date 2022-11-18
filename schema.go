@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -76,6 +77,7 @@ type Schema struct {
 	decoder          func(string) ([]byte, error)
 	ContentMediaType string
 	mediaType        func([]byte) error
+	ContentSchema    *Schema
 
 	// number validators
 	Minimum          *big.Rat
@@ -532,6 +534,17 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 				}
 				if err := s.mediaType(content); err != nil {
 					errors = append(errors, validationError("contentMediaType", "value is not of mediatype %s", quote(s.ContentMediaType)))
+				}
+			}
+			if decoded && s.ContentSchema != nil {
+				contentJSON, err := unmarshal(bytes.NewReader(content))
+				if err != nil {
+					errors = append(errors, validationError("contentSchema", "value is not valid json"))
+				} else {
+					err := validate(s.ContentSchema, "contentSchema", contentJSON, "")
+					if err != nil {
+						errors = append(errors, err)
+					}
 				}
 			}
 		}

@@ -663,6 +663,9 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if mediaType, ok := m["contentMediaType"]; ok {
 			s.ContentMediaType = mediaType.(string)
 			s.mediaType, _ = MediaTypes[s.ContentMediaType]
+			if s.ContentSchema, err = loadSchema("contentSchema", stack); err != nil {
+				return err
+			}
 		}
 		if c.ExtractAnnotations {
 			if comment, ok := m["$comment"]; ok {
@@ -684,6 +687,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if !c.AssertContent {
 			s.decoder = nil
 			s.mediaType = nil
+			s.ContentSchema = nil
 		}
 		if c.ExtractAnnotations {
 			if deprecated, ok := m["deprecated"]; ok {
