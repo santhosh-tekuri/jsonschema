@@ -523,7 +523,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			if s.decoder != nil {
 				b, err := s.decoder(v)
 				if err != nil {
-					errors = append(errors, validationError("contentEncoding", "%s is not %s encoded", quote(v), s.ContentEncoding))
+					errors = append(errors, validationError("contentEncoding", "value is not %s encoded", s.ContentEncoding))
 				} else {
 					content, decoded = b, true
 				}
