@@ -4,8 +4,8 @@
 // registering its Loaders.
 //
 // To use httploader, link this package into your program:
-//	import _ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 //
+//	import _ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 package httploader
 
 import (
