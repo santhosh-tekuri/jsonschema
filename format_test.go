@@ -107,6 +107,10 @@ func TestIsTime(t *testing.T) {
 		{"01:02:03+00:60", false},  // invalid time numoffset minute
 		{"01:02:03Z+00:30", false}, // invalid time with both Z and numoffset
 		{"01:29:60+01:30", true},   // leap second, positive time-offset
+		{"12:00:00.52", false},     // no time offset with second fraction
+		{"1২:00:00Z", false},       // invalid non-ASCII '২' (a Bengali 2)
+		{"08:30:06#00:20", false},  // offset not starting with plus or minus
+		{"ab:cd:ef", false},        // contains letters
 	}
 	for i, test := range tests {
 		if test.valid != isTime(test.str) {
@@ -134,6 +138,7 @@ func TestIsDuration(t *testing.T) {
 		{"P1DT12H", true}, // valid: one and a half days, in days and hours
 		{"P2W", true},     // valid: two weeks
 		{"P1Y2W", false},  // invalid: weeks cannot be combined with other units
+		{"P1", false},     // element without unit
 	}
 	for i, test := range tests {
 		if test.valid != isDuration(test.str) {
@@ -329,6 +334,7 @@ func TestRelativeJSONPointer(t *testing.T) {
 		{"0##", false},          // ## is not a valid json-pointer
 		{"01/a", false},         // zero cannot be followed by other digits, plus json-pointer
 		{"01#", false},          // zero cannot be followed by other digits, plus octothorpe
+		{"", false},             // empty string
 	}
 	for i, test := range tests {
 		if test.valid != isRelativeJSONPointer(test.str) {
