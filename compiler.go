@@ -634,7 +634,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 
 	if format, ok := m["format"]; ok {
 		s.Format = format.(string)
-		if c.AssertFormat || r.schema.meta.hasVocab("format-assertion") {
+		if r.draft.version < 2019 || c.AssertFormat || r.schema.meta.hasVocab("format-assertion") {
 			s.format, _ = Formats[s.Format]
 		}
 	}
