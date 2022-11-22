@@ -77,6 +77,11 @@
                 "description": "zero cannot be followed by other digits, plus octothorpe",
                 "data": "01#",
                 "valid": false
+            },
+            {
+                "description": "empty string",
+                "data": "",
+                "valid": false
             }
         ]
     }
