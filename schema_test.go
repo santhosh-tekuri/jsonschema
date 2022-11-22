@@ -21,8 +21,6 @@ import (
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
-var testSuite = "testdata/JSON-Schema-Test-Suite@9251ebf"
-
 var skipTests = map[string]map[string][]string{
 	"TestDraft4/optional/zeroTerminatedFloats.json": {
 		"some languages do not distinguish between different types of numeric value": {}, // this behavior is changed in new drafts
@@ -151,23 +149,23 @@ var skipTests = map[string]map[string][]string{
 }
 
 func TestDraft4(t *testing.T) {
-	testFolder(t, testSuite+"/tests/draft4", jsonschema.Draft4)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite/tests/draft4", jsonschema.Draft4)
 }
 
 func TestDraft6(t *testing.T) {
-	testFolder(t, testSuite+"/tests/draft6", jsonschema.Draft6)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite/tests/draft6", jsonschema.Draft6)
 }
 
 func TestDraft7(t *testing.T) {
-	testFolder(t, testSuite+"/tests/draft7", jsonschema.Draft7)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite/tests/draft7", jsonschema.Draft7)
 }
 
 func TestDraft2019(t *testing.T) {
-	testFolder(t, testSuite+"/tests/draft2019-09", jsonschema.Draft2019)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite/tests/draft2019-09", jsonschema.Draft2019)
 }
 
 func TestDraft2020(t *testing.T) {
-	testFolder(t, testSuite+"/tests/draft2020-12", jsonschema.Draft2020)
+	testFolder(t, "testdata/JSON-Schema-Test-Suite/tests/draft2020-12", jsonschema.Draft2020)
 }
 
 func TestExtra(t *testing.T) {
@@ -191,7 +189,7 @@ type testGroup struct {
 }
 
 func TestMain(m *testing.M) {
-	server1 := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir(testSuite + "/remotes"))}
+	server1 := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir("testdata/JSON-Schema-Test-Suite/remotes"))}
 	go func() {
 		if err := server1.ListenAndServe(); err != http.ErrServerClosed {
 			panic(err)
