@@ -493,7 +493,7 @@ func isJSONPointer(v interface{}) bool {
 					return false
 				}
 				switch item[i+1] {
-				case '~', '0', '1':
+				case '0', '1':
 					// valid
 				default:
 					return false
