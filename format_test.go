@@ -110,7 +110,7 @@ func TestIsTime(t *testing.T) {
 		{"12:00:00.52", false},     // no time offset with second fraction
 		{"1২:00:00Z", false},       // invalid non-ASCII '২' (a Bengali 2)
 		{"08:30:06#00:20", false},  // offset not starting with plus or minus
-		{"ab:cd:ef", false},        // contains letters
+		{"ab:cd:efz", false},       // contains letters
 	}
 	for i, test := range tests {
 		if test.valid != isTime(test.str) {
