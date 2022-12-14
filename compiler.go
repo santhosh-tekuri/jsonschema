@@ -683,19 +683,8 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
-	if r.draft.version == 4 {
-		if c.ExtractAnnotations {
-			if id, ok := m["id"]; ok {
-				s.Id = id.(string)
-			}
-		}
-	}
-	if r.draft.version > 4 {
-		if c.ExtractAnnotations {
-			if id, ok := m["$id"]; ok {
-				s.Id = id.(string)
-			}
-		}
+	if c.ExtractAnnotations {
+		s.Id = r.draft.getID(m)
 	}
 
 	if r.draft.version >= 2019 {
