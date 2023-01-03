@@ -13,7 +13,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "jv [-draft INT] [-output FORMAT] [-assertformat] [-assertcontent] <json-schema> [<json-doc>]...")
+	fmt.Fprintln(os.Stderr, "jv [-draft INT] [-output FORMAT] [-assertformat] [-assertcontent] <json-schema> [<json-or-yaml-doc>]...")
 	flag.PrintDefaults()
 }
 
