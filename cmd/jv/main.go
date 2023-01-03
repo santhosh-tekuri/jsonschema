@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
+	"gopkg.in/yaml.v2"
 )
 
 func usage() {
@@ -73,11 +75,9 @@ func main() {
 		}
 		defer file.Close()
 
-		var v interface{}
-		dec := json.NewDecoder(file)
-		dec.UseNumber()
-		if err := dec.Decode(&v); err != nil {
-			fmt.Fprintf(os.Stderr, "invalid json file %s: %v\n", f, err)
+		v, err := decodeFile(file)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
 
@@ -104,5 +104,60 @@ func main() {
 			}
 			os.Exit(1)
 		}
+	}
+}
+
+func decodeFile(file *os.File) (interface{}, error) {
+	ext := filepath.Ext(file.Name())
+	if ext == ".yaml" || ext == ".yml" {
+		var v interface{}
+		dec := yaml.NewDecoder(file)
+		if err := dec.Decode(&v); err != nil {
+			return nil, fmt.Errorf("invalid yaml file %s: %v", file.Name(), err)
+		}
+		v, err := toStringKeys(v)
+		if err != nil {
+			return nil, fmt.Errorf("error converting %s to json: %v", file.Name(), err)
+		}
+		return v, nil
+	}
+
+	// json file
+	var v interface{}
+	dec := json.NewDecoder(file)
+	dec.UseNumber()
+	if err := dec.Decode(&v); err != nil {
+		return nil, fmt.Errorf("invalid json file %s: %v", file.Name(), err)
+	}
+	return v, nil
+}
+
+func toStringKeys(val interface{}) (interface{}, error) {
+	var err error
+	switch val := val.(type) {
+	case map[interface{}]interface{}:
+		m := make(map[string]interface{})
+		for key, v := range val {
+			k, ok := key.(string)
+			if !ok {
+				return nil, fmt.Errorf("found non-string key: %v", key)
+			}
+			m[k], err = toStringKeys(v)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return m, nil
+	case []interface{}:
+		var l = make([]interface{}, len(val))
+		for i, v := range val {
+			l[i], err = toStringKeys(v)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return l, nil
+	default:
+		return val, nil
 	}
 }
