@@ -197,7 +197,7 @@ jv [-draft INT] [-output FORMAT] [-assertformat] [-assertcontent] <json-schema> 
     	output format. valid values flag, basic, detailed
 ```
 
-if no `<json-doc>` arguments are passed, it simply validates the `<json-schema>`.  
+if no `<json-or-yaml-doc>` arguments are passed, it simply validates the `<json-schema>`.  
 if `$schema` attribute is missing in schema, it uses latest version. this can be overridden by passing `-draft` flag
 
 exit-code is 1, if there are any validation errors
