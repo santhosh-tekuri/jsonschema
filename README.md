@@ -183,10 +183,10 @@ Prints:
 
 ## CLI
 
-to install `go install github.com/santhosh-tekuri/jsonschema/v5/cmd/jv@latest`
+to install `go install github.com/santhosh-tekuri/jsonschema/cmd/jv@latest`
 
 ```bash
-jv [-draft INT] [-output FORMAT] [-assertformat] [-assertcontent] <json-schema> [<json-doc>]...
+jv [-draft INT] [-output FORMAT] [-assertformat] [-assertcontent] <json-schema> [<json-or-yaml-doc>]...
   -assertcontent
     	enable content assertions with draft >= 2019
   -assertformat
