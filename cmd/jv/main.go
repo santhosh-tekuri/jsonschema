@@ -72,22 +72,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	exitCode := 0
 	for _, f := range flag.Args()[1:] {
 		file, err := os.Open(f)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
-			os.Exit(1)
+			exitCode = 1
+			continue
 		}
 		defer file.Close()
 
 		v, err := decodeFile(file)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(1)
+			exitCode = 1
+			continue
 		}
 
 		err = schema.Validate(v)
 		if err != nil {
+			exitCode = 1
 			if ve, ok := err.(*jsonschema.ValidationError); ok {
 				var out interface{}
 				switch *output {
@@ -107,9 +111,13 @@ func main() {
 			} else {
 				fmt.Fprintf(os.Stderr, "validation failed: %v\n", err)
 			}
-			os.Exit(1)
+		} else {
+			if *output != "" {
+				fmt.Println("{\n  \"valid\": true\n}")
+			}
 		}
 	}
+	os.Exit(exitCode)
 }
 
 func loadURL(s string) (io.ReadCloser, error) {
