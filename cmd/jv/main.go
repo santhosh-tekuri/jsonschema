@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
@@ -46,6 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	compiler.LoadURL = loadURL
 	compiler.AssertFormat = *assertFormat
 	compiler.AssertContent = *assertContent
 
@@ -107,19 +112,30 @@ func main() {
 	}
 }
 
+func loadURL(s string) (io.ReadCloser, error) {
+	r, err := jsonschema.LoadURL(s)
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasSuffix(s, ".yaml") || strings.HasSuffix(s, ".yml") {
+		defer r.Close()
+		v, err := decodeYAML(r, s)
+		if err != nil {
+			return nil, err
+		}
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		return ioutil.NopCloser(bytes.NewReader(b)), nil
+	}
+	return r, err
+}
+
 func decodeFile(file *os.File) (interface{}, error) {
 	ext := filepath.Ext(file.Name())
 	if ext == ".yaml" || ext == ".yml" {
-		var v interface{}
-		dec := yaml.NewDecoder(file)
-		if err := dec.Decode(&v); err != nil {
-			return nil, fmt.Errorf("invalid yaml file %s: %v", file.Name(), err)
-		}
-		v, err := toStringKeys(v)
-		if err != nil {
-			return nil, fmt.Errorf("error converting %s to json: %v", file.Name(), err)
-		}
-		return v, nil
+		return decodeYAML(file, file.Name())
 	}
 
 	// json file
@@ -128,6 +144,19 @@ func decodeFile(file *os.File) (interface{}, error) {
 	dec.UseNumber()
 	if err := dec.Decode(&v); err != nil {
 		return nil, fmt.Errorf("invalid json file %s: %v", file.Name(), err)
+	}
+	return v, nil
+}
+
+func decodeYAML(r io.Reader, name string) (interface{}, error) {
+	var v interface{}
+	dec := yaml.NewDecoder(r)
+	if err := dec.Decode(&v); err != nil {
+		return nil, fmt.Errorf("invalid yaml file %s: %v", name, err)
+	}
+	v, err := toStringKeys(v)
+	if err != nil {
+		return nil, fmt.Errorf("error converting %s to json: %v", name, err)
 	}
 	return v, nil
 }

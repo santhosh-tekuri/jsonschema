@@ -202,6 +202,8 @@ if `$schema` attribute is missing in schema, it uses latest version. this can be
 
 exit-code is 1, if there are any validation errors
 
+`jv` can also validate yaml files. It also accepts schema from yaml files.
+
 ## Validating YAML Documents
 
 since yaml supports non-string keys, such yaml documents are rendered as invalid json documents.  
