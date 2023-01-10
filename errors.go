@@ -3,6 +3,8 @@ package jsonschema
 import (
 	"fmt"
 	"strings"
+
+	"github.com/santhosh-tekuri/jsonschema/v5/msg"
 )
 
 // InvalidJSONTypeError is the error type returned by ValidateInterface.
@@ -69,7 +71,7 @@ type ValidationError struct {
 	KeywordLocation         string             // validation path of validating keyword or schema
 	AbsoluteKeywordLocation string             // absolute location of validating keyword or schema
 	InstanceLocation        string             // location of the json value within the instance being validated
-	Message                 string             // describes error
+	Message                 fmt.Stringer       // captures the message and data used in constructing it
 	Causes                  []*ValidationError // nested validation errors
 }
 
@@ -81,10 +83,11 @@ func (ve *ValidationError) add(causes ...error) error {
 }
 
 func (ve *ValidationError) causes(err error) error {
-	if err := err.(*ValidationError); err.Message == "" {
-		ve.Causes = err.Causes
+	var e = err.(*ValidationError)
+	if _, ok := e.Message.(msg.Empty); ok {
+		ve.Causes = e.Causes
 	} else {
-		ve.add(err)
+		ve.add(e)
 	}
 	return ve
 }

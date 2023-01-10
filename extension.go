@@ -1,5 +1,7 @@
 package jsonschema
 
+import "fmt"
+
 // ExtCompiler compiles custom keyword(s) into ExtSchema.
 type ExtCompiler interface {
 	// Compile compiles the custom keywords in schema m and returns its compiled representation.
@@ -75,7 +77,7 @@ type ValidationContext struct {
 	result          validationResult
 	validate        func(sch *Schema, schPath string, v interface{}, vpath string) error
 	validateInplace func(sch *Schema, schPath string) error
-	validationError func(keywordPath string, format string, a ...interface{}) *ValidationError
+	validationError func(keywordPath string, msg fmt.Stringer) *ValidationError
 }
 
 // EvaluatedProp marks given property of object as evaluated.
@@ -104,8 +106,8 @@ func (ctx ValidationContext) Validate(s *Schema, spath string, v interface{}, vp
 // Error used to construct validation error by extensions.
 //
 // keywordPath is relative-json-pointer to keyword.
-func (ctx ValidationContext) Error(keywordPath string, format string, a ...interface{}) *ValidationError {
-	return ctx.validationError(keywordPath, format, a...)
+func (ctx ValidationContext) Error(keywordPath string, msg fmt.Stringer) *ValidationError {
+	return ctx.validationError(keywordPath, msg)
 }
 
 // Group is used by extensions to group multiple errors as causes to parent error.

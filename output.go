@@ -35,7 +35,7 @@ func (ve *ValidationError) BasicOutput() Basic {
 			KeywordLocation:         ve.KeywordLocation,
 			AbsoluteKeywordLocation: ve.AbsoluteKeywordLocation,
 			InstanceLocation:        ve.InstanceLocation,
-			Error:                   ve.Message,
+			Error:                   ve.Message.String(),
 		})
 		for _, cause := range ve.Causes {
 			flatten(cause)
@@ -63,7 +63,7 @@ func (ve *ValidationError) DetailedOutput() Detailed {
 	for _, cause := range ve.Causes {
 		errors = append(errors, cause.DetailedOutput())
 	}
-	var message = ve.Message
+	var message = ve.Message.String()
 	if len(ve.Causes) > 0 {
 		message = ""
 	}
