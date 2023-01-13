@@ -13,7 +13,7 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func usage() {
@@ -162,39 +162,5 @@ func decodeYAML(r io.Reader, name string) (interface{}, error) {
 	if err := dec.Decode(&v); err != nil {
 		return nil, fmt.Errorf("invalid yaml file %s: %v", name, err)
 	}
-	v, err := toStringKeys(v)
-	if err != nil {
-		return nil, fmt.Errorf("error converting %s to json: %v", name, err)
-	}
 	return v, nil
-}
-
-func toStringKeys(val interface{}) (interface{}, error) {
-	var err error
-	switch val := val.(type) {
-	case map[interface{}]interface{}:
-		m := make(map[string]interface{})
-		for key, v := range val {
-			k, ok := key.(string)
-			if !ok {
-				return nil, fmt.Errorf("found non-string key: %v", key)
-			}
-			m[k], err = toStringKeys(v)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return m, nil
-	case []interface{}:
-		var l = make([]interface{}, len(val))
-		for i, v := range val {
-			l[i], err = toStringKeys(v)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return l, nil
-	default:
-		return val, nil
-	}
 }
