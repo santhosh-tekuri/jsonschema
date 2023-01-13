@@ -207,11 +207,14 @@ exit-code is 1, if there are any validation errors
 ## Validating YAML Documents
 
 since yaml supports non-string keys, such yaml documents are rendered as invalid json documents.  
-yaml parser returns `map[interface{}]interface{}` for object, whereas json parser returns `map[string]interface{}`.  
-this package accepts only `map[string]interface{}`, so we need to manually convert them to `map[string]interface{}`
+
+most yaml parser use `map[interface{}]interface{}` for object,  
+whereas json parser uses `map[string]interface{}`.  
+
+so we need to manually convert them to `map[string]interface{}`.   
+below code shows such conversion by `toStringKeys` function.
 
 https://play.golang.org/p/Hhax3MrtD8r
 
-the above example shows how to validate yaml document with jsonschema.  
-the conversion explained above is implemented by `toStringKeys` function
-
+NOTE: if you are using `gopkg.in/yaml.v3`, then you do not need such conversion. since this library
+returns `map[string]interface{}` if all keys are strings.
