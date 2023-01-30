@@ -218,7 +218,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 	// ensure root resource is always compiled first.
 	// this is required to get schema.meta from root resource
 	if r.schema == nil {
-		r.schema = newSchema(r.url, r.floc, r.doc)
+		r.schema = newSchema(r.url, r.floc, r.draft, r.doc)
 		if _, err := c.compile(r, nil, schemaRef{"#", r.schema, false}, r); err != nil {
 			return nil, err
 		}
@@ -239,7 +239,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		return sr.schema, nil
 	}
 
-	sr.schema = newSchema(r.url, sr.floc, sr.doc)
+	sr.schema = newSchema(r.url, sr.floc, r.draft, sr.doc)
 	return c.compile(r, stack, schemaRef{refPtr, sr.schema, false}, sr)
 }
 

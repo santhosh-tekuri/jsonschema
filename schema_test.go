@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -674,6 +675,31 @@ func TestCompiler_LoadURL(t *testing.T) {
 func TestFilePathSpaces(t *testing.T) {
 	if _, err := jsonschema.Compile("testdata/person schema.json"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSchemaDraftFeild(t *testing.T) {
+	var schemas = map[string]string{
+		"main.json": `{"$schema": "https://json-schema.org/draft/2020-12/schema", "$ref":"obj.json"}`,
+		"obj.json":  `{"$schema": "https://json-schema.org/draft/2019-09/schema", "type":"object"}`,
+	}
+	jsonschema.Loaders["map"] = func(url string) (io.ReadCloser, error) {
+		schema, ok := schemas[strings.TrimPrefix(url, "map:///")]
+		if !ok {
+			return nil, fmt.Errorf("%q not found", url)
+		}
+		return ioutil.NopCloser(strings.NewReader(schema)), nil
+	}
+
+	sch, err := jsonschema.Compile("map:///main.json")
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+	if sch.Draft != jsonschema.Draft2020 {
+		t.Errorf("got: %s, want: %s", sch.Draft, jsonschema.Draft2020)
+	}
+	if sch.Ref.Draft != jsonschema.Draft2019 {
+		t.Errorf("got: %s, want: %s", sch.Ref.Draft, jsonschema.Draft2019)
 	}
 }
 

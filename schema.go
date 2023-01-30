@@ -16,6 +16,7 @@ import (
 type Schema struct {
 	Location string // absolute location
 
+	Draft          *Draft // draft used by schema.
 	meta           *Schema
 	vocab          []string
 	dynamicAnchors []*Schema
@@ -104,10 +105,11 @@ func (s *Schema) String() string {
 	return s.Location
 }
 
-func newSchema(url, floc string, doc interface{}) *Schema {
+func newSchema(url, floc string, draft *Draft, doc interface{}) *Schema {
 	// fill with default values
 	s := &Schema{
 		Location:      url + floc,
+		Draft:         draft,
 		MinProperties: -1,
 		MaxProperties: -1,
 		MinItems:      -1,
