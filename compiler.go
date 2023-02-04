@@ -37,6 +37,14 @@ type Compiler struct {
 	// AssertFormat for specifications >= draft2019-09.
 	AssertFormat bool
 
+	// Decoders can be registered by adding to this map. Key is encoding name,
+	// value is function that knows how to decode string in that format.
+	Decoders map[string]func(string) ([]byte, error)
+
+	// MediaTypes can be registered by adding to this map. Key is mediaType name,
+	// value is function that knows how to validate that mediaType.
+	MediaTypes map[string]func([]byte) error
+
 	// AssertContent for specifications >= draft2019-09.
 	AssertContent bool
 }
@@ -82,6 +90,8 @@ func NewCompiler() *Compiler {
 		Draft:      latest,
 		resources:  make(map[string]*resource),
 		Formats:    make(map[string]func(interface{}) bool),
+		Decoders:   make(map[string]func(string) ([]byte, error)),
+		MediaTypes: make(map[string]func([]byte) error),
 		extensions: make(map[string]extension),
 	}
 }
@@ -671,11 +681,19 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	if r.draft.version >= 7 {
 		if encoding, ok := m["contentEncoding"]; ok {
 			s.ContentEncoding = encoding.(string)
-			s.decoder, _ = Decoders[s.ContentEncoding]
+			if decoder, ok := c.Decoders[s.ContentEncoding]; ok {
+				s.decoder = decoder
+			} else {
+				s.decoder, _ = Decoders[s.ContentEncoding]
+			}
 		}
 		if mediaType, ok := m["contentMediaType"]; ok {
 			s.ContentMediaType = mediaType.(string)
-			s.mediaType, _ = MediaTypes[s.ContentMediaType]
+			if mediaType, ok := c.MediaTypes[s.ContentMediaType]; ok {
+				s.mediaType = mediaType
+			} else {
+				s.mediaType, _ = MediaTypes[s.ContentMediaType]
+			}
 			if s.ContentSchema, err = loadSchema("contentSchema", stack); err != nil {
 				return err
 			}

@@ -120,13 +120,14 @@ func Example_userDefinedFormat() {
 // Example_userDefinedContent shows how to define
 // "hex" contentEncoding and "application/xml" contentMediaType
 func Example_userDefinedContent() {
-	jsonschema.Decoders["hex"] = hex.DecodeString
-	jsonschema.MediaTypes["application/xml"] = func(b []byte) error {
+	c := jsonschema.NewCompiler()
+	c.AssertContent = true
+	c.Decoders["hex"] = hex.DecodeString
+	c.MediaTypes["application/xml"] = func(b []byte) error {
 		return xml.Unmarshal(b, new(interface{}))
 	}
 
 	schema := `{
-		"$schema": "http://json-schema.org/draft-07/schema",
 		"type": "object",
 		"properties": {
 			"xml" : {
@@ -138,7 +139,11 @@ func Example_userDefinedContent() {
 	}`
 	instance := `{"xml": "3c726f6f742f3e"}`
 
-	sch, err := jsonschema.CompileString("schema.json", schema)
+	if err := c.AddResource("schema.json", strings.NewReader(schema)); err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	sch, err := c.Compile("schema.json")
 	if err != nil {
 		log.Fatalf("%#v", err)
 	}
