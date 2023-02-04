@@ -84,7 +84,9 @@ func Example_fromStrings() {
 
 // Example_userDefinedFormat shows how to define 'odd-number' format.
 func Example_userDefinedFormat() {
-	jsonschema.Formats["odd-number"] = func(v interface{}) bool {
+	c := jsonschema.NewCompiler()
+	c.AssertFormat = true
+	c.Formats["odd-number"] = func(v interface{}) bool {
 		switch v := v.(type) {
 		case json.Number, float32, float64, int, int8, int32, int64, uint, uint8, uint32, uint64:
 			n, _ := strconv.ParseInt(fmt.Sprint(v), 10, 64)
@@ -95,13 +97,16 @@ func Example_userDefinedFormat() {
 	}
 
 	schema := `{
-		"$schema": "http://json-schema.org/draft-07/schema",
 		"type": "integer",
 		"format": "odd-number"
 	}`
 	instance := 5
 
-	sch, err := jsonschema.CompileString("schema.json", schema)
+	if err := c.AddResource("schema.json", strings.NewReader(schema)); err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	sch, err := c.Compile("schema.json")
 	if err != nil {
 		log.Fatalf("%#v", err)
 	}

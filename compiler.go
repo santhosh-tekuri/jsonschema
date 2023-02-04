@@ -30,6 +30,10 @@ type Compiler struct {
 	// If nil, package global LoadURL is used.
 	LoadURL func(s string) (io.ReadCloser, error)
 
+	// Formats can be registered by adding to this map. Key is format name,
+	// value is function that knows how to validate that format.
+	Formats map[string]func(interface{}) bool
+
 	// AssertFormat for specifications >= draft2019-09.
 	AssertFormat bool
 
@@ -74,7 +78,12 @@ func MustCompileString(url, schema string) *Schema {
 // if '$schema' attribute is missing, it is treated as draft7. to change this
 // behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
-	return &Compiler{Draft: latest, resources: make(map[string]*resource), extensions: make(map[string]extension)}
+	return &Compiler{
+		Draft:      latest,
+		resources:  make(map[string]*resource),
+		Formats:    make(map[string]func(interface{}) bool),
+		extensions: make(map[string]extension),
+	}
 }
 
 // AddResource adds in-memory resource to the compiler.
@@ -635,7 +644,11 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	if format, ok := m["format"]; ok {
 		s.Format = format.(string)
 		if r.draft.version < 2019 || c.AssertFormat || r.schema.meta.hasVocab("format-assertion") {
-			s.format, _ = Formats[s.Format]
+			if format, ok := c.Formats[s.Format]; ok {
+				s.format = format
+			} else {
+				s.format, _ = Formats[s.Format]
+			}
 		}
 	}
 
