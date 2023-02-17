@@ -710,13 +710,13 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 	}
 
-	// UnevaluatedProperties + UnevaluatedItems
+	// unevaluatedProperties + unevaluatedItems
 	switch v := v.(type) {
 	case map[string]interface{}:
 		if s.UnevaluatedProperties != nil {
 			for pname := range result.unevalProps {
 				if pvalue, ok := v[pname]; ok {
-					if err := validate(s.UnevaluatedProperties, "UnevaluatedProperties", pvalue, escape(pname)); err != nil {
+					if err := validate(s.UnevaluatedProperties, "unevaluatedProperties", pvalue, escape(pname)); err != nil {
 						errors = append(errors, err)
 					}
 				}
@@ -726,7 +726,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	case []interface{}:
 		if s.UnevaluatedItems != nil {
 			for i := range result.unevalItems {
-				if err := validate(s.UnevaluatedItems, "UnevaluatedItems", v[i], strconv.Itoa(i)); err != nil {
+				if err := validate(s.UnevaluatedItems, "unevaluatedItems", v[i], strconv.Itoa(i)); err != nil {
 					errors = append(errors, err)
 				}
 			}
