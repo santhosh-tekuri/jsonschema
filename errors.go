@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -98,16 +99,22 @@ func (ve *ValidationError) Error() string {
 	return fmt.Sprintf("jsonschema: %s does not validate with %s: %s", quote(leaf.InstanceLocation), u+"#"+leaf.KeywordLocation, leaf.Message)
 }
 
-func (ve *ValidationError) GoString() string {
+func (ve *ValidationError) writeIntoBuffer(msgBuf *bytes.Buffer, indent int) {
 	sloc := ve.AbsoluteKeywordLocation
 	sloc = sloc[strings.IndexByte(sloc, '#')+1:]
-	msg := fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, sloc, ve.Message)
+	indentStr := strings.Repeat(" ", indent)
+	msgBuf.WriteString(indentStr)
+	msgBuf.WriteString(fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, sloc, ve.Message))
 	for _, c := range ve.Causes {
-		for _, line := range strings.Split(c.GoString(), "\n") {
-			msg += "\n  " + line
-		}
+		msgBuf.WriteRune('\n')
+		c.writeIntoBuffer(msgBuf, indent+2)
 	}
-	return msg
+}
+
+func (ve *ValidationError) GoString() string {
+	var msgBuf bytes.Buffer
+	ve.writeIntoBuffer(&msgBuf, 0)
+	return msgBuf.String()
 }
 
 func joinPtr(ptr1, ptr2 string) string {
