@@ -31,6 +31,15 @@ func (powerOfCompiler) Compile(ctx jsonschema.CompilerContext, m map[string]inte
 	return nil, nil
 }
 
+type powerOfSchemaMsg struct {
+	got  interface{}
+	want int64
+}
+
+func (m powerOfSchemaMsg) String() string {
+	return fmt.Sprintf("%v not powerOf %v", m.got, m.want)
+}
+
 type powerOfSchema int64
 
 func (s powerOfSchema) Validate(ctx jsonschema.ValidationContext, v interface{}) error {
@@ -42,7 +51,7 @@ func (s powerOfSchema) Validate(ctx jsonschema.ValidationContext, v interface{})
 			n = n / pow
 		}
 		if n != 1 {
-			return ctx.Error("powerOf", "%v not powerOf %v", v, pow)
+			return ctx.Error("powerOf", powerOfSchemaMsg{got: v, want: pow})
 		}
 		return nil
 	default:

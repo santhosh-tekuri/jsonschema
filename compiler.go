@@ -390,26 +390,6 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 
 		if e, ok := m["enum"]; ok {
 			s.Enum = e.([]interface{})
-			allPrimitives := true
-			for _, item := range s.Enum {
-				switch jsonType(item) {
-				case "object", "array":
-					allPrimitives = false
-					break
-				}
-			}
-			s.enumError = "enum failed"
-			if allPrimitives {
-				if len(s.Enum) == 1 {
-					s.enumError = fmt.Sprintf("value must be %#v", s.Enum[0])
-				} else {
-					strEnum := make([]string, len(s.Enum))
-					for i, item := range s.Enum {
-						strEnum[i] = fmt.Sprintf("%#v", item)
-					}
-					s.enumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
-				}
-			}
 		}
 
 		s.Minimum = loadRat("minimum")
