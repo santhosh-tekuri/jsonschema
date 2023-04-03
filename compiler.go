@@ -335,7 +335,10 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	if r.draft.version >= 2019 {
 		if r == res { // root schema
 			if vocab, ok := m["$vocabulary"]; ok {
-				for url := range vocab.(map[string]interface{}) {
+				for url, reqd := range vocab.(map[string]interface{}) {
+					if reqd, ok := reqd.(bool); ok && !reqd {
+						continue
+					}
 					if !r.draft.isVocab(url) {
 						return fmt.Errorf("jsonschema: unsupported vocab %q in %s", url, res)
 					}
