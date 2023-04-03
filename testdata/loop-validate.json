@@ -56,7 +56,7 @@
                         "$ref": "#"
                     }
                 },
-                "$dynamicRef": "#/$defs/else/else/$defs/xyz"
+                "$dynamicRef": "#/$defs/else/else/$defs/abc"
             }
         }
     }

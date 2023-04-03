@@ -362,6 +362,13 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			if err != nil {
 				return err
 			}
+			if dref, ok := dref.(string); ok {
+				_, frag := split(dref)
+				if frag != "#" && !strings.HasPrefix(frag, "#/") {
+					// frag is anchor
+					s.dynamicRefAnchor = frag[1:]
+				}
+			}
 		}
 	}
 

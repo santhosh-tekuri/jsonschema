@@ -22,25 +22,26 @@ type Schema struct {
 	dynamicAnchors []*Schema
 
 	// type agnostic validations
-	Format          string
-	format          func(interface{}) bool
-	Always          *bool // always pass/fail. used when booleans are used as schemas in draft-07.
-	Ref             *Schema
-	RecursiveAnchor bool
-	RecursiveRef    *Schema
-	DynamicAnchor   string
-	DynamicRef      *Schema
-	Types           []string      // allowed types.
-	Constant        []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
-	Enum            []interface{} // allowed values.
-	enumError       string        // error message for enum fail. captured here to avoid constructing error message every time.
-	Not             *Schema
-	AllOf           []*Schema
-	AnyOf           []*Schema
-	OneOf           []*Schema
-	If              *Schema
-	Then            *Schema // nil, when If is nil.
-	Else            *Schema // nil, when If is nil.
+	Format           string
+	format           func(interface{}) bool
+	Always           *bool // always pass/fail. used when booleans are used as schemas in draft-07.
+	Ref              *Schema
+	RecursiveAnchor  bool
+	RecursiveRef     *Schema
+	DynamicAnchor    string
+	DynamicRef       *Schema
+	dynamicRefAnchor string
+	Types            []string      // allowed types.
+	Constant         []interface{} // first element in slice is constant value. note: slice is used to capture nil constant.
+	Enum             []interface{} // allowed values.
+	enumError        string        // error message for enum fail. captured here to avoid constructing error message every time.
+	Not              *Schema
+	AllOf            []*Schema
+	AnyOf            []*Schema
+	OneOf            []*Schema
+	If               *Schema
+	Then             *Schema // nil, when If is nil.
+	Else             *Schema // nil, when If is nil.
 
 	// object validations
 	MinProperties         int      // -1 if not specified.
@@ -616,7 +617,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 	}
 	if s.DynamicRef != nil {
 		sch := s.DynamicRef
-		if sch.DynamicAnchor != "" {
+		if s.dynamicRefAnchor != "" && sch.DynamicAnchor == s.dynamicRefAnchor {
 			// dynamicRef based on scope
 			for i := len(scope) - 1; i >= 0; i-- {
 				sr := scope[i]
