@@ -297,7 +297,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 		if !matched {
-			errors = append(errors, validationError("enum", s.enumError))
+			errors = append(errors, validationError("enum", strings.ReplaceAll(s.enumError, "%", "%%")))
 		}
 	}
 
