@@ -761,15 +761,30 @@ func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error
 		return meta.validateValue(v, vloc)
 	}
 
+	errors := []error{}
+
 	if err := validate(r.draft.meta); err != nil {
-		return err
+		errors = append(errors, err)
 	}
 	for _, ext := range c.extensions {
 		if err := validate(ext.meta); err != nil {
-			return err
+			errors = append(errors, err)
 		}
 	}
-	return nil
+
+	switch len(errors) {
+	case 0:
+		return nil
+	case 1:
+		return errors[0]
+	default:
+		return (&ValidationError{
+			KeywordLocation:         "",
+			AbsoluteKeywordLocation: joinPtr(r.floc, ""),
+			InstanceLocation:        vloc,
+			Message:                 "Multiple schema errors occurred",
+		}).add(errors...) // empty message, used just for wrapping
+	}
 }
 
 func toStrings(arr []interface{}) []string {
