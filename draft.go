@@ -285,6 +285,7 @@ func init() {
 	subschemas["dependentSchemas"] = prop
 	subschemas["unevaluatedProperties"] = self
 	subschemas["unevaluatedItems"] = self
+	subschemas["contentSchema"] = self
 	Draft2019.subschemas = clone(subschemas)
 
 	subschemas["prefixItems"] = item
