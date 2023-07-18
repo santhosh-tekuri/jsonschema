@@ -421,10 +421,12 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			errors = append(errors, validationError("maxItems", "maximum %d items required, but found %d items", s.MaxItems, len(v)))
 		}
 		if s.UniqueItems {
+		outer:
 			for i := 1; i < len(v); i++ {
 				for j := 0; j < i; j++ {
 					if equals(v[i], v[j]) {
 						errors = append(errors, validationError("uniqueItems", "items at index %d and %d are equal", j, i))
+						break outer
 					}
 				}
 			}
