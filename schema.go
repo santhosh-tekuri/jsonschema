@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hash/maphash"
 	"math/big"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -421,13 +423,38 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			errors = append(errors, validationError("maxItems", "maximum %d items required, but found %d items", s.MaxItems, len(v)))
 		}
 		if s.UniqueItems {
-		outer:
-			for i := 1; i < len(v); i++ {
-				for j := 0; j < i; j++ {
-					if equals(v[i], v[j]) {
-						errors = append(errors, validationError("uniqueItems", "items at index %d and %d are equal", j, i))
-						break outer
+			if len(v) <= 20 {
+			outer1:
+				for i := 1; i < len(v); i++ {
+					for j := 0; j < i; j++ {
+						if equals(v[i], v[j]) {
+							errors = append(errors, validationError("uniqueItems", "items at index %d and %d are equal", j, i))
+							break outer1
+						}
 					}
+				}
+			} else {
+				m := make(map[uint64][]int)
+				var h maphash.Hash
+			outer2:
+				for i, item := range v {
+					h.Reset()
+					hash(item, &h)
+					k := h.Sum64()
+					if err != nil {
+						panic(err)
+					}
+					arr, ok := m[k]
+					if ok {
+						for _, j := range arr {
+							if equals(v[j], item) {
+								errors = append(errors, validationError("uniqueItems", "items at index %d and %d are equal", j, i))
+								break outer2
+							}
+						}
+					}
+					arr = append(arr, i)
+					m[k] = arr
 				}
 			}
 		}
@@ -820,6 +847,48 @@ func equals(v1, v2 interface{}) bool {
 		return num1.Cmp(num2) == 0
 	default:
 		return v1 == v2
+	}
+}
+
+func hash(v interface{}, h *maphash.Hash) {
+	switch v := v.(type) {
+	case nil:
+		h.WriteByte(0)
+	case bool:
+		h.WriteByte(1)
+		if v {
+			h.WriteByte(1)
+		} else {
+			h.WriteByte(0)
+		}
+	case json.Number, float32, float64, int, int8, int32, int64, uint, uint8, uint32, uint64:
+		h.WriteByte(2)
+		num, _ := new(big.Rat).SetString(fmt.Sprint(v))
+		h.Write(num.Num().Bytes())
+		h.Write(num.Denom().Bytes())
+	case string:
+		h.WriteByte(3)
+		h.WriteString(v)
+	case []interface{}:
+		h.WriteByte(4)
+		for _, item := range v {
+			hash(item, h)
+		}
+	case map[string]interface{}:
+		h.WriteByte(5)
+		props := make([]string, 0, len(v))
+		for prop := range v {
+			props = append(props, prop)
+		}
+		sort.Slice(props, func(i, j int) bool {
+			return props[i] < props[j]
+		})
+		for _, prop := range props {
+			hash(prop, h)
+			hash(v[prop], h)
+		}
+	default:
+		panic(InvalidJSONTypeError(fmt.Sprintf("%T", v)))
 	}
 }
 
