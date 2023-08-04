@@ -30,6 +30,12 @@ type Compiler struct {
 	// If nil, package global LoadURL is used.
 	LoadURL func(s string) (io.ReadCloser, error)
 
+	// CompileRegex comples given regular expression.
+	// Defaults to golang's regexp implementation.
+	//
+	// NOTE: If you are overriding this, also ensure to override "regex" Format.
+	CompileRegex func(s string) (Regexp, error)
+
 	// Formats can be registered by adding to this map. Key is format name,
 	// value is function that knows how to validate that format.
 	Formats map[string]func(interface{}) bool
@@ -87,9 +93,13 @@ func MustCompileString(url, schema string) *Schema {
 // behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
 	return &Compiler{
-		Draft:      latest,
-		resources:  make(map[string]*resource),
-		Formats:    make(map[string]func(interface{}) bool),
+		Draft:     latest,
+		resources: make(map[string]*resource),
+		Formats:   make(map[string]func(interface{}) bool),
+		CompileRegex: func(s string) (Regexp, error) {
+			re, err := regexp.Compile(s)
+			return (*goRegexp)(re), err
+		},
 		Decoders:   make(map[string]func(string) ([]byte, error)),
 		MediaTypes: make(map[string]func([]byte) error),
 		extensions: make(map[string]extension),
@@ -461,7 +471,11 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
 
 		if pattern, ok := m["pattern"]; ok {
-			s.Pattern = regexp.MustCompile(pattern.(string))
+			var err error
+			s.Pattern, err = c.CompileRegex(pattern.(string))
+			if err != nil {
+				panic("regex Format and compiler.CompileRegex are incompatible")
+			}
 		}
 
 		if r.draft.version >= 2019 {
@@ -538,7 +552,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 
 		if patternProps, ok := m["patternProperties"]; ok {
 			patternProps := patternProps.(map[string]interface{})
-			s.PatternProperties = make(map[*regexp.Regexp]*Schema, len(patternProps))
+			s.PatternProperties = make(map[Regexp]*Schema, len(patternProps))
 			for pattern := range patternProps {
 				s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
 				if err != nil {
@@ -809,4 +823,26 @@ func keywordLocation(stack []schemaRef, path string) string {
 		loc = loc + "/" + path
 	}
 	return loc
+}
+
+// Regexp --
+
+// Regexp is the representation of a compiled regular expression.
+// A Regexp is safe for concurrent use by multiple goroutines.
+type Regexp interface {
+	// MatchString reports whether the string s contains any match of the regular expression.
+	MatchString(s string) bool
+
+	// String returns the source text used to compile the regular expression.
+	String() string
+}
+
+type goRegexp regexp.Regexp
+
+func (re *goRegexp) MatchString(s string) bool {
+	return (*regexp.Regexp)(re).MatchString(s)
+}
+
+func (re *goRegexp) String() string {
+	return (*regexp.Regexp)(re).String()
 }
