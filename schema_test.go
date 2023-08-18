@@ -251,7 +251,7 @@ func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
 					}
 					c := jsonschema.NewCompiler()
 					c.Draft = draft
-					if strings.Index(folder, "optional") != -1 {
+					if strings.Contains(folder, "optional") {
 						c.AssertFormat = true
 						c.AssertContent = true
 					}
