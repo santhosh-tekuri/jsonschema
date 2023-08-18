@@ -177,17 +177,6 @@ func TestExtra(t *testing.T) {
 	})
 }
 
-type testGroup struct {
-	Description string
-	Schema      json.RawMessage
-	Tests       []struct {
-		Description string
-		Data        json.RawMessage
-		Valid       bool
-		Skip        *string
-	}
-}
-
 func TestMain(m *testing.M) {
 	server1 := &http.Server{Addr: "localhost:1234", Handler: http.FileServer(http.Dir("testdata/JSON-Schema-Test-Suite/remotes"))}
 	go func() {
