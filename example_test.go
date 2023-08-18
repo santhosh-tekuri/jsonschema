@@ -6,8 +6,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -20,7 +20,7 @@ func Example() {
 		log.Fatalf("%#v", err)
 	}
 
-	data, err := ioutil.ReadFile("testdata/person.json")
+	data, err := os.ReadFile("testdata/person.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func Example_userDefinedLoader() {
 		if !ok {
 			return nil, fmt.Errorf("%q not found", url)
 		}
-		return ioutil.NopCloser(strings.NewReader(schema)), nil
+		return io.NopCloser(strings.NewReader(schema)), nil
 	}
 
 	sch, err := jsonschema.Compile("map:///main.json")
