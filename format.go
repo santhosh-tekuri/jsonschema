@@ -220,7 +220,7 @@ func isDuration(v interface{}) bool {
 		return len(s) == 0 // P_W
 	}
 	if len(units) > 0 {
-		if strings.Index("YMD", units) == -1 {
+		if !strings.Contains("YMD", units) {
 			return false
 		}
 		if len(s) == 0 {
@@ -232,7 +232,7 @@ func isDuration(v interface{}) bool {
 	}
 	s = s[1:]
 	units, ok = parseUnits()
-	return ok && len(s) == 0 && len(units) > 0 && strings.Index("HMS", units) != -1
+	return ok && len(s) == 0 && len(units) > 0 && strings.Contains("HMS", units)
 }
 
 // isPeriod tells whether given string is a valid period format

@@ -415,7 +415,6 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 				switch jsonType(item) {
 				case "object", "array":
 					allPrimitives = false
-					break
 				}
 			}
 			s.enumError = "enum failed"
@@ -681,7 +680,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			if format, ok := c.Formats[s.Format]; ok {
 				s.format = format
 			} else {
-				s.format, _ = Formats[s.Format]
+				s.format = Formats[s.Format]
 			}
 		}
 	}
@@ -708,7 +707,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			if decoder, ok := c.Decoders[s.ContentEncoding]; ok {
 				s.decoder = decoder
 			} else {
-				s.decoder, _ = Decoders[s.ContentEncoding]
+				s.decoder = Decoders[s.ContentEncoding]
 			}
 		}
 		if mediaType, ok := m["contentMediaType"]; ok {
@@ -716,7 +715,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			if mediaType, ok := c.MediaTypes[s.ContentMediaType]; ok {
 				s.mediaType = mediaType
 			} else {
-				s.mediaType, _ = MediaTypes[s.ContentMediaType]
+				s.mediaType = MediaTypes[s.ContentMediaType]
 			}
 			if s.ContentSchema, err = loadSchema("contentSchema", stack); err != nil {
 				return err
