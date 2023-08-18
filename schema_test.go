@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -206,26 +205,26 @@ func TestMain(m *testing.M) {
 }
 
 func testFolder(t *testing.T, folder string, draft *jsonschema.Draft) {
-	fis, err := ioutil.ReadDir(folder)
+	des, err := os.ReadDir(folder)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, fi := range fis {
-		if fi.IsDir() {
-			t.Run(fi.Name(), func(t *testing.T) {
-				testFolder(t, path.Join(folder, fi.Name()), draft)
+	for _, de := range des {
+		if de.IsDir() {
+			t.Run(de.Name(), func(t *testing.T) {
+				testFolder(t, path.Join(folder, de.Name()), draft)
 			})
 			continue
 		}
-		if path.Ext(fi.Name()) != ".json" {
+		if path.Ext(de.Name()) != ".json" {
 			continue
 		}
-		t.Run(fi.Name(), func(t *testing.T) {
+		t.Run(de.Name(), func(t *testing.T) {
 			skip := skipTests[t.Name()]
 			if skip != nil && len(skip) == 0 {
 				t.Skip()
 			}
-			f, err := os.Open(path.Join(folder, fi.Name()))
+			f, err := os.Open(path.Join(folder, de.Name()))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -357,7 +356,7 @@ func TestInvalidSchema(t *testing.T) {
 		Schema      json.RawMessage
 		Fragment    string
 	}
-	data, err := ioutil.ReadFile("testdata/invalid_schemas.json")
+	data, err := os.ReadFile("testdata/invalid_schemas.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -653,9 +652,9 @@ func TestCompiler_LoadURL(t *testing.T) {
 	c.LoadURL = func(s string) (io.ReadCloser, error) {
 		switch s {
 		case "map:///base.json":
-			return ioutil.NopCloser(strings.NewReader(base)), nil
+			return io.NopCloser(strings.NewReader(base)), nil
 		case "map:///schema.json":
-			return ioutil.NopCloser(strings.NewReader(schema)), nil
+			return io.NopCloser(strings.NewReader(schema)), nil
 		default:
 			return nil, errors.New("unsupported schema")
 		}
@@ -688,7 +687,7 @@ func TestSchemaDraftFeild(t *testing.T) {
 		if !ok {
 			return nil, fmt.Errorf("%q not found", url)
 		}
-		return ioutil.NopCloser(strings.NewReader(schema)), nil
+		return io.NopCloser(strings.NewReader(schema)), nil
 	}
 
 	sch, err := jsonschema.Compile("map:///main.json")
