@@ -80,9 +80,9 @@ func main() {
 			exitCode = 1
 			continue
 		}
-		defer file.Close()
 
 		v, err := decodeFile(file)
+		_ = file.Close()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			exitCode = 1
