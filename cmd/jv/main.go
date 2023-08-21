@@ -57,14 +57,14 @@ func main() {
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		usage()
-		os.Exit(1)
+		os.Exit(2)
 	}
 
 	compiler := jsonschema.NewCompiler()
 	var ok bool
 	if compiler.Draft, ok = validDrafts[*draft]; !ok {
 		fmt.Fprintln(os.Stderr, "draft must be one of", drafts)
-		os.Exit(1)
+		os.Exit(2)
 	}
 
 	compiler.LoadURL = loadURL
@@ -80,7 +80,7 @@ func main() {
 	}
 	if !validOutput {
 		fmt.Fprintln(os.Stderr, "output must be one of", strings.Join(validOutputs, ", "))
-		os.Exit(1)
+		os.Exit(2)
 	}
 
 	schema, err := compiler.Compile(flag.Arg(0))
