@@ -71,16 +71,18 @@ func main() {
 	compiler.AssertFormat = *assertFormat
 	compiler.AssertContent = *assertContent
 
-	var validOutput bool
-	for _, out := range append(validOutputs, "") {
-		if *output == out {
-			validOutput = true
-			break
+	if *output != "" {
+		valid := false
+		for _, out := range validOutputs {
+			if *output == out {
+				valid = true
+				break
+			}
 		}
-	}
-	if !validOutput {
-		fmt.Fprintln(os.Stderr, "output must be one of", strings.Join(validOutputs, ", "))
-		os.Exit(2)
+		if !valid {
+			fmt.Fprintln(os.Stderr, "output must be one of", strings.Join(validOutputs, ", "))
+			os.Exit(2)
+		}
 	}
 
 	schema, err := compiler.Compile(flag.Arg(0))
