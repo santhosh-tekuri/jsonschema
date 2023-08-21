@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -21,9 +22,35 @@ func usage() {
 	flag.PrintDefaults()
 }
 
+var (
+	validDrafts = map[int]*jsonschema.Draft{
+		4:    jsonschema.Draft4,
+		6:    jsonschema.Draft6,
+		7:    jsonschema.Draft7,
+		2019: jsonschema.Draft2019,
+		2020: jsonschema.Draft2020,
+	}
+	validOutputs = []string{"flag", "basic", "detailed"}
+)
+
 func main() {
-	draft := flag.Int("draft", 2020, "draft used when '$schema' attribute is missing. valid values 4, 5, 7, 2019, 2020")
-	output := flag.String("output", "", "output format. valid values flag, basic, detailed")
+	drafts := func() string {
+		ds := make([]int, 0, len(validDrafts))
+		for d := range validDrafts {
+			ds = append(ds, d)
+		}
+		sort.Ints(ds)
+		var b strings.Builder
+		for i, d := range ds {
+			if i != 0 {
+				b.WriteString(", ")
+			}
+			fmt.Fprintf(&b, "%d", d)
+		}
+		return b.String()
+	}()
+	draft := flag.Int("draft", 2020, "draft used when '$schema' attribute is missing. valid values "+drafts)
+	output := flag.String("output", "", "output format. valid values "+strings.Join(validOutputs, ", "))
 	assertFormat := flag.Bool("assertformat", false, "enable format assertions with draft >= 2019")
 	assertContent := flag.Bool("assertcontent", false, "enable content assertions with draft >= 2019")
 	flag.Usage = usage
@@ -34,19 +61,9 @@ func main() {
 	}
 
 	compiler := jsonschema.NewCompiler()
-	switch *draft {
-	case 4:
-		compiler.Draft = jsonschema.Draft4
-	case 6:
-		compiler.Draft = jsonschema.Draft6
-	case 7:
-		compiler.Draft = jsonschema.Draft7
-	case 2019:
-		compiler.Draft = jsonschema.Draft2019
-	case 2020:
-		compiler.Draft = jsonschema.Draft2020
-	default:
-		fmt.Fprintln(os.Stderr, "draft must be 4, 5, 7, 2019 or 2020")
+	var ok bool
+	if compiler.Draft, ok = validDrafts[*draft]; !ok {
+		fmt.Fprintln(os.Stderr, "draft must be one of", drafts)
 		os.Exit(1)
 	}
 
@@ -55,14 +72,14 @@ func main() {
 	compiler.AssertContent = *assertContent
 
 	var validOutput bool
-	for _, out := range []string{"", "flag", "basic", "detailed"} {
+	for _, out := range append(validOutputs, "") {
 		if *output == out {
 			validOutput = true
 			break
 		}
 	}
 	if !validOutput {
-		fmt.Fprintln(os.Stderr, "output must be flag, basic or detailed")
+		fmt.Fprintln(os.Stderr, "output must be one of", strings.Join(validOutputs, ", "))
 		os.Exit(1)
 	}
 
