@@ -162,5 +162,8 @@ func decodeYAML(r io.Reader, name string) (interface{}, error) {
 	if err := dec.Decode(&v); err != nil {
 		return nil, fmt.Errorf("invalid yaml file %s: %v", name, err)
 	}
+	if v == nil {
+		return make(map[string]interface{}), nil
+	}
 	return v, nil
 }
