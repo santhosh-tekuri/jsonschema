@@ -783,6 +783,10 @@ func (vr validationResult) unevalPnames() string {
 	for pname := range vr.unevalProps {
 		pnames = append(pnames, quote(pname))
 	}
+
+	// Ensure deterministic order
+	sort.Strings(pnames)
+
 	return strings.Join(pnames, ", ")
 }
 
