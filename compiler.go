@@ -118,6 +118,16 @@ func (c *Compiler) AddResource(url string, r io.Reader) error {
 	return nil
 }
 
+// AddResourceFromMap adds a schema from an already loaded map to the compiler.
+func (c *Compiler) AddResourceFromMap(url string, doc map[string]any) error {
+	res, err := newResourceFromMap(url, doc)
+	if err != nil {
+		return err
+	}
+	c.resources[res.url] = res
+	return nil
+}
+
 // MustCompile is like Compile but panics if the url cannot be compiled to *Schema.
 // It simplifies safe initialization of global variables holding compiled Schemas.
 func (c *Compiler) MustCompile(url string) *Schema {

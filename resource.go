@@ -43,6 +43,22 @@ func newResource(url string, r io.Reader) (*resource, error) {
 	}, nil
 }
 
+func newResourceFromMap(url string, doc map[string]any) (*resource, error) {
+	var err error
+	if strings.IndexByte(url, '#') != -1 {
+		panic(fmt.Sprintf("BUG: newResourceFromMap(%q)", url))
+	}
+	url, err = toAbs(url)
+	if err != nil {
+		return nil, err
+	}
+	return &resource{
+		url:  url,
+		floc: "#",
+		doc:  doc,
+	}, nil
+}
+
 // fillSubschemas fills subschemas in res into r.subresources
 func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
 	if err := c.validateSchema(r, res.doc, res.floc[1:]); err != nil {
