@@ -40,6 +40,7 @@ func newResource(url string, r io.Reader) (*resource, error) {
 		url:  url,
 		floc: "#",
 		doc:  doc,
+		subresources: make(map[string]*resource),
 	}, nil
 }
 
@@ -49,9 +50,6 @@ func (r *resource) fillSubschemas(c *Compiler, res *resource) error {
 		return err
 	}
 
-	if r.subresources == nil {
-		r.subresources = make(map[string]*resource)
-	}
 	if err := r.draft.listSubschemas(res, r.baseURL(res.floc), r.subresources); err != nil {
 		return err
 	}
