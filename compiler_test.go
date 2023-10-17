@@ -19,4 +19,8 @@ func TestCompiler_AddResourceJSON(t *testing.T) {
 	if err := sch.Validate(map[string]any{"id": "00000000-0000-0000-0000-000000000000"}); err != nil {
 		t.Fatal(err)
 	}
+
+	if err := sch.Validate(map[string]any{"id": 1024}); err == nil {
+		t.Fatal("expected a validation error to be raised")
+	}
 }
