@@ -666,6 +666,48 @@ func TestFilePathSpaces(t *testing.T) {
 	}
 }
 
+func TestCompiler_ReusedDefinition(t *testing.T) {
+	c := jsonschema.NewCompiler()
+	c.Draft = jsonschema.Draft2019
+
+	def := `
+	{
+		"type": "object",
+		"required": [
+			"departure",
+			"departure"
+		],
+		"properties": {
+			"foo": {
+			"type": "string"
+			}
+		}
+	}`
+	schema := `
+	{
+		"type": "object",
+		"properties": {
+			"example-def": {
+				"$ref": "example-definition.json"
+			}
+		}
+	}`
+
+	if err := c.AddResource("response-post-example.json", strings.NewReader(schema)); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.AddResource("request-post-example.json", strings.NewReader(schema)); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.AddResource("example-definition.json", strings.NewReader(def)); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _ = c.Compile("response-post-example.json")
+	_, _ = c.Compile("request-post-example.json")
+
+}
+
 func TestSchemaDraftFeild(t *testing.T) {
 	var schemas = map[string]string{
 		"main.json": `{"$schema": "https://json-schema.org/draft/2020-12/schema", "$ref":"obj.json"}`,
