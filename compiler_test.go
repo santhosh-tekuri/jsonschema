@@ -8,8 +8,7 @@ func TestCompiler_AddResourceJSON(t *testing.T) {
 		"type": "object",
 		"properties": map[string]any{
 			"id": map[string]any{
-				"type":   "string",
-				"format": "uuid",
+				"type": "string",
 			},
 		},
 	})

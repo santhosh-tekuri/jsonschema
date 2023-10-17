@@ -24,26 +24,7 @@ func (r *resource) String() string {
 	return r.url + r.floc
 }
 
-func newResource(url string, r io.Reader) (*resource, error) {
-	if strings.IndexByte(url, '#') != -1 {
-		panic(fmt.Sprintf("BUG: newResource(%q)", url))
-	}
-	doc, err := unmarshal(r)
-	if err != nil {
-		return nil, fmt.Errorf("jsonschema: invalid json %s: %v", url, err)
-	}
-	url, err = toAbs(url)
-	if err != nil {
-		return nil, err
-	}
-	return &resource{
-		url:  url,
-		floc: "#",
-		doc:  doc,
-	}, nil
-}
-
-func newResourceJSON(url string, doc any) (*resource, error) {
+func newResource(url string, doc interface{}) (*resource, error) {
 	var err error
 	if strings.IndexByte(url, '#') != -1 {
 		panic(fmt.Sprintf("BUG: newResourceJSON(%q)", url))

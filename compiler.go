@@ -110,17 +110,16 @@ func NewCompiler() *Compiler {
 //
 // Note that url must not have fragment
 func (c *Compiler) AddResource(url string, r io.Reader) error {
-	res, err := newResource(url, r)
+	doc, err := unmarshal(r)
 	if err != nil {
-		return err
+		return fmt.Errorf("jsonschema: invalid json %s: %v", url, err)
 	}
-	c.resources[res.url] = res
-	return nil
+	return c.AddResourceJSON(url, doc)
 }
 
 // AddResourceJSON adds a schema from an already loaded map to the compiler.
-func (c *Compiler) AddResourceJSON(url string, doc any) error {
-	res, err := newResourceJSON(url, doc)
+func (c *Compiler) AddResourceJSON(url string, doc interface{}) error {
+	res, err := newResource(url, doc)
 	if err != nil {
 		return err
 	}
