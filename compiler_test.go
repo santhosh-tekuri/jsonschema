@@ -2,9 +2,9 @@ package jsonschema
 
 import "testing"
 
-func TestCompiler_AddResourceFromMap(t *testing.T) {
+func TestCompiler_AddResourceJSON(t *testing.T) {
 	c := NewCompiler()
-	err := c.AddResourceFromMap("main.json", map[string]any{
+	err := c.AddResourceJSON("main.json", map[string]any{
 		"type": "object",
 		"properties": map[string]any{
 			"id": map[string]any{

@@ -118,9 +118,9 @@ func (c *Compiler) AddResource(url string, r io.Reader) error {
 	return nil
 }
 
-// AddResourceFromMap adds a schema from an already loaded map to the compiler.
-func (c *Compiler) AddResourceFromMap(url string, doc map[string]any) error {
-	res, err := newResourceFromMap(url, doc)
+// AddResourceJSON adds a schema from an already loaded map to the compiler.
+func (c *Compiler) AddResourceJSON(url string, doc any) error {
+	res, err := newResourceJSON(url, doc)
 	if err != nil {
 		return err
 	}

@@ -43,10 +43,10 @@ func newResource(url string, r io.Reader) (*resource, error) {
 	}, nil
 }
 
-func newResourceFromMap(url string, doc map[string]any) (*resource, error) {
+func newResourceJSON(url string, doc any) (*resource, error) {
 	var err error
 	if strings.IndexByte(url, '#') != -1 {
-		panic(fmt.Sprintf("BUG: newResourceFromMap(%q)", url))
+		panic(fmt.Sprintf("BUG: newResourceJSON(%q)", url))
 	}
 	url, err = toAbs(url)
 	if err != nil {
