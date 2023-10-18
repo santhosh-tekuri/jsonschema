@@ -212,6 +212,7 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 
 	id, err := r.draft.resolveID(r.url, r.doc)
 	if err != nil {
+		r.draft = nil
 		return nil, err
 	}
 	if id != "" {
@@ -219,6 +220,8 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 	}
 
 	if err := r.fillSubschemas(c, r); err != nil {
+		r.draft = nil
+		r.subresources = nil
 		return nil, err
 	}
 
@@ -258,6 +261,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 	if r.schema == nil {
 		r.schema = newSchema(r.url, r.floc, r.draft, r.doc)
 		if _, err := c.compile(r, nil, schemaRef{"#", r.schema, false}, r); err != nil {
+			r.schema = nil
 			return nil, err
 		}
 	}
@@ -278,7 +282,11 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 	}
 
 	sr.schema = newSchema(r.url, sr.floc, r.draft, sr.doc)
-	return c.compile(r, stack, schemaRef{refPtr, sr.schema, false}, sr)
+	sch, err := c.compile(r, stack, schemaRef{refPtr, sr.schema, false}, sr)
+	if err != nil {
+		sr.schema = nil
+	}
+	return sch, err
 }
 
 func (c *Compiler) compileDynamicAnchors(r *resource, res *resource) error {

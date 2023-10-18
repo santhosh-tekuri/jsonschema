@@ -723,3 +723,62 @@ func decodeReader(t *testing.T, r io.Reader) interface{} {
 	}
 	return doc
 }
+
+func Test_CompileTwice_Direct(t *testing.T) {
+	c := jsonschema.NewCompiler()
+	invalidSchema := `{"type": "abcd"}`
+	if err := c.AddResource("schema.json", strings.NewReader(invalidSchema)); err != nil {
+		t.Fatal("failed to add resource: ", err)
+	}
+	_, err := c.Compile("schema.json")
+	if err == nil {
+		t.Fatal("schema compilation must fail")
+	}
+	_, err = c.Compile("schema.json")
+	if err == nil {
+		t.Fatal("schema compilation must fail second time")
+	}
+}
+
+func Test_CompileTwice_Indirect1(t *testing.T) {
+	c := jsonschema.NewCompiler()
+	schema := `{"$ref": "invalid.json"}`
+	invalidSchema := `{"type": "abcd"}`
+	if err := c.AddResource("invalid.json", strings.NewReader(invalidSchema)); err != nil {
+		t.Fatal("failed to add resource: ", err)
+	}
+	if err := c.AddResource("schema.json", strings.NewReader(schema)); err != nil {
+		t.Fatal("failed to add resource: ", err)
+	}
+	_, err := c.Compile("schema.json")
+	if err == nil {
+		t.Fatal("schema compilation must fail")
+	}
+	_, err = c.Compile("schema.json")
+	if err == nil {
+		t.Fatal("schema compilation must fail second time")
+	}
+}
+
+func Test_CompileTwice_Indirect2(t *testing.T) {
+	c := jsonschema.NewCompiler()
+	schema := `{"$ref": "invalid.json"}`
+	invalidSchema := `{"type": "abcd"}`
+	if err := c.AddResource("invalid.json", strings.NewReader(invalidSchema)); err != nil {
+		t.Fatal("failed to add resource: ", err)
+	}
+	if err := c.AddResource("schema1.json", strings.NewReader(schema)); err != nil {
+		t.Fatal("failed to add resource: ", err)
+	}
+	if err := c.AddResource("schema2.json", strings.NewReader(schema)); err != nil {
+		t.Fatal("failed to add resource: ", err)
+	}
+	_, err := c.Compile("schema1.json")
+	if err == nil {
+		t.Fatal("schema compilation must fail")
+	}
+	_, err = c.Compile("schema2.json")
+	if err == nil {
+		t.Fatal("schema compilation must fail second time")
+	}
+}
