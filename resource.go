@@ -27,7 +27,7 @@ func (r *resource) String() string {
 func newResource(url string, doc interface{}) (*resource, error) {
 	var err error
 	if strings.IndexByte(url, '#') != -1 {
-		panic(fmt.Sprintf("BUG: newResourceJSON(%q)", url))
+		panic(fmt.Sprintf("BUG: newResource(%q)", url))
 	}
 	url, err = toAbs(url)
 	if err != nil {

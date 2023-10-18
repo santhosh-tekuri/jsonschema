@@ -117,7 +117,7 @@ func (c *Compiler) AddResource(url string, r io.Reader) error {
 	return c.AddResourceJSON(url, doc)
 }
 
-// AddResourceJSON adds a schema from an already loaded map to the compiler.
+// AddResourceJSON adds in-memory resource from given json value.
 func (c *Compiler) AddResourceJSON(url string, doc interface{}) error {
 	res, err := newResource(url, doc)
 	if err != nil {
