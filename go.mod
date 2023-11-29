@@ -1,3 +1,3 @@
-module github.com/santhosh-tekuri/jsonschema/v5
+module github.com/bmeg/jsonschema/v5
 
 go 1.19
