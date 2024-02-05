@@ -89,8 +89,8 @@ func MustCompileString(url, schema string) *Schema {
 }
 
 // NewCompiler returns a json-schema Compiler object.
-// if '$schema' attribute is missing, it is treated as draft7. to change this
-// behavior change Compiler.Draft value
+// If '$schema' attribute is missing, it uses the latest draft currently implemented by this library. 
+// To change this behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
 	return &Compiler{
 		Draft:     latest,
