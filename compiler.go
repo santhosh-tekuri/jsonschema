@@ -3,9 +3,9 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dlclark/regexp2"
 	"io"
 	"math/big"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -89,7 +89,7 @@ func MustCompileString(url, schema string) *Schema {
 }
 
 // NewCompiler returns a json-schema Compiler object.
-// If '$schema' attribute is missing, it uses the latest draft currently implemented by this library. 
+// If '$schema' attribute is missing, it uses the latest draft currently implemented by this library.
 // To change this behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
 	return &Compiler{
@@ -97,7 +97,7 @@ func NewCompiler() *Compiler {
 		resources: make(map[string]*resource),
 		Formats:   make(map[string]func(interface{}) bool),
 		CompileRegex: func(s string) (Regexp, error) {
-			re, err := regexp.Compile(s)
+			re, err := regexp2.Compile(s, regexp2.ECMAScript)
 			return (*goRegexp)(re), err
 		},
 		Decoders:   make(map[string]func(string) ([]byte, error)),
@@ -570,7 +570,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			patternProps := patternProps.(map[string]interface{})
 			s.PatternProperties = make(map[Regexp]*Schema, len(patternProps))
 			for pattern := range patternProps {
-				s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
+				s.PatternProperties[regexp2.MustCompile(pattern, regexp2.ECMAScript)], err = compile(nil, "patternProperties/"+escape(pattern))
 				if err != nil {
 					return err
 				}
@@ -847,18 +847,18 @@ func keywordLocation(stack []schemaRef, path string) string {
 // A Regexp is safe for concurrent use by multiple goroutines.
 type Regexp interface {
 	// MatchString reports whether the string s contains any match of the regular expression.
-	MatchString(s string) bool
+	MatchString(s string) (bool, error)
 
 	// String returns the source text used to compile the regular expression.
 	String() string
 }
 
-type goRegexp regexp.Regexp
+type goRegexp regexp2.Regexp
 
-func (re *goRegexp) MatchString(s string) bool {
-	return (*regexp.Regexp)(re).MatchString(s)
+func (re *goRegexp) MatchString(s string) (bool, error) {
+	return (*regexp2.Regexp)(re).MatchString(s)
 }
 
 func (re *goRegexp) String() string {
-	return (*regexp.Regexp)(re).String()
+	return (*regexp2.Regexp)(re).String()
 }

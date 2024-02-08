@@ -349,14 +349,14 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 
 		if s.RegexProperties {
 			for pname := range v {
-				if !isRegex(pname) {
+				if !s.format(pname) {
 					errors = append(errors, validationError("", "patternProperty %s is not valid regex", quote(pname)))
 				}
 			}
 		}
 		for pattern, sch := range s.PatternProperties {
 			for pname, pvalue := range v {
-				if pattern.MatchString(pname) {
+				if ok, err := pattern.MatchString(pname); !ok || err != nil {
 					delete(result.unevalProps, pname)
 					if err := validate(sch, "patternProperties/"+escape(pattern.String()), pvalue, escape(pname)); err != nil {
 						errors = append(errors, err)
@@ -543,8 +543,10 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 			}
 		}
 
-		if s.Pattern != nil && !s.Pattern.MatchString(v) {
-			errors = append(errors, validationError("pattern", "does not match pattern %s", quote(s.Pattern.String())))
+		if s.Pattern != nil {
+			if ok, err := s.Pattern.MatchString(v); !ok || err != nil {
+				errors = append(errors, validationError("pattern", "does not match pattern %s", quote(s.Pattern.String())))
+			}
 		}
 
 		// contentEncoding + contentMediaType

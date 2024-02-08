@@ -2,10 +2,10 @@ package jsonschema
 
 import (
 	"errors"
+	"github.com/dlclark/regexp2"
 	"net"
 	"net/mail"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -471,7 +471,7 @@ func isRegex(v interface{}) bool {
 	if !ok {
 		return true
 	}
-	_, err := regexp.Compile(s)
+	_, err := regexp2.Compile(s, regexp2.ECMAScript)
 	return err == nil
 }
 
