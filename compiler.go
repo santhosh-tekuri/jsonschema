@@ -158,11 +158,21 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 
 func (c *Compiler) findResource(url string) (*resource, error) {
 	if _, ok := c.resources[url]; !ok {
-		// load resource
 		var rdr io.Reader
-		if sch, ok := vocabSchemas[url]; ok {
-			rdr = strings.NewReader(sch)
-		} else {
+
+		u, meta := strings.CutPrefix(url, "http://json-schema.org/")
+		if !meta {
+			u, meta = strings.CutPrefix(url, "https://json-schema.org/")
+		}
+		if meta {
+			f, err := metaFiles.Open("metaschemas/" + u)
+			if err == nil {
+				rdr = f
+			}
+		}
+
+		// load resource
+		if rdr == nil {
 			loadURL := LoadURL
 			if c.LoadURL != nil {
 				loadURL = c.LoadURL
