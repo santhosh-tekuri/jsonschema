@@ -51,6 +51,7 @@ type Schema struct {
 	Properties            map[string]*Schema
 	PropertyNames         *Schema
 	RegexProperties       bool // property names must be valid regex. used only in draft4 as workaround in metaschema.
+	regexPropertiesFormat func(interface{}) bool
 	PatternProperties     map[Regexp]*Schema
 	AdditionalProperties  interface{}            // nil or bool or *Schema.
 	Dependencies          map[string]interface{} // map value is *Schema or []string.
@@ -349,7 +350,7 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 
 		if s.RegexProperties {
 			for pname := range v {
-				if !isRegex(pname) {
+				if !s.regexPropertiesFormat(pname) {
 					errors = append(errors, validationError("", "patternProperty %s is not valid regex", quote(pname)))
 				}
 			}

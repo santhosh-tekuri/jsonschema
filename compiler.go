@@ -93,13 +93,9 @@ func MustCompileString(url, schema string) *Schema {
 // To change this behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
 	return &Compiler{
-		Draft:     latest,
-		resources: make(map[string]*resource),
-		Formats:   make(map[string]func(interface{}) bool),
-		CompileRegex: func(s string) (Regexp, error) {
-			re, err := regexp.Compile(s)
-			return (*goRegexp)(re), err
-		},
+		Draft:      latest,
+		resources:  make(map[string]*resource),
+		Formats:    make(map[string]func(interface{}) bool),
 		Decoders:   make(map[string]func(string) ([]byte, error)),
 		MediaTypes: make(map[string]func([]byte) error),
 		extensions: make(map[string]extension),
@@ -498,11 +494,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		s.MinLength, s.MaxLength = loadInt("minLength"), loadInt("maxLength")
 
 		if pattern, ok := m["pattern"]; ok {
-			var err error
-			s.Pattern, err = c.CompileRegex(pattern.(string))
-			if err != nil {
-				panic("regex Format and compiler.CompileRegex are incompatible")
-			}
+			s.Pattern = c.compileRegex(pattern.(string))
 		}
 
 		if r.draft.version >= 2019 {
@@ -575,13 +567,19 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 
 		if regexProps, ok := m["regexProperties"]; ok {
 			s.RegexProperties = regexProps.(bool)
+			if s.RegexProperties {
+				s.regexPropertiesFormat = isRegex
+				if fmt, ok := c.Formats["regex"]; ok {
+					s.regexPropertiesFormat = fmt
+				}
+			}
 		}
 
 		if patternProps, ok := m["patternProperties"]; ok {
 			patternProps := patternProps.(map[string]interface{})
 			s.PatternProperties = make(map[Regexp]*Schema, len(patternProps))
 			for pattern := range patternProps {
-				s.PatternProperties[regexp.MustCompile(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
+				s.PatternProperties[c.compileRegex(pattern)], err = compile(nil, "patternProperties/"+escape(pattern))
 				if err != nil {
 					return err
 				}
@@ -811,6 +809,18 @@ func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error
 		}
 	}
 	return nil
+}
+
+func (c *Compiler) compileRegex(s string) Regexp {
+	if c.CompileRegex != nil {
+		re, err := c.CompileRegex(s)
+		if err != nil {
+			panic("regex Format and compiler.CompileRegex are incompatible")
+		}
+		return re
+	}
+	re := regexp.MustCompile(s)
+	return (*goRegexp)(re)
 }
 
 func toStrings(arr []interface{}) []string {
