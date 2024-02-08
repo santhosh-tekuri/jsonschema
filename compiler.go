@@ -89,7 +89,7 @@ func MustCompileString(url, schema string) *Schema {
 }
 
 // NewCompiler returns a json-schema Compiler object.
-// If '$schema' attribute is missing, it uses the latest draft currently implemented by this library. 
+// If '$schema' attribute is missing, it uses the latest draft currently implemented by this library.
 // To change this behavior change Compiler.Draft value
 func NewCompiler() *Compiler {
 	return &Compiler{
@@ -156,34 +156,35 @@ func (c *Compiler) Compile(url string) (*Schema, error) {
 	return sch, err
 }
 
+func (c *Compiler) loadURL(url string) (io.ReadCloser, error) {
+	// check in metaschemas
+	u, meta := strings.CutPrefix(url, "http://json-schema.org/")
+	if !meta {
+		u, meta = strings.CutPrefix(url, "https://json-schema.org/")
+	}
+	if meta {
+		f, err := metaFiles.Open("metaschemas/" + u)
+		if err == nil {
+			return f, nil
+		}
+	}
+
+	// load resource
+	loadURL := LoadURL
+	if c.LoadURL != nil {
+		loadURL = c.LoadURL
+	}
+	return loadURL(url)
+
+}
+
 func (c *Compiler) findResource(url string) (*resource, error) {
 	if _, ok := c.resources[url]; !ok {
-		var rdr io.Reader
-
-		u, meta := strings.CutPrefix(url, "http://json-schema.org/")
-		if !meta {
-			u, meta = strings.CutPrefix(url, "https://json-schema.org/")
+		rdr, err := c.loadURL(url)
+		if err != nil {
+			return nil, err
 		}
-		if meta {
-			f, err := metaFiles.Open("metaschemas/" + u)
-			if err == nil {
-				rdr = f
-			}
-		}
-
-		// load resource
-		if rdr == nil {
-			loadURL := LoadURL
-			if c.LoadURL != nil {
-				loadURL = c.LoadURL
-			}
-			r, err := loadURL(url)
-			if err != nil {
-				return nil, err
-			}
-			defer r.Close()
-			rdr = r
-		}
+		defer rdr.Close()
 		if err := c.AddResource(url, rdr); err != nil {
 			return nil, err
 		}
