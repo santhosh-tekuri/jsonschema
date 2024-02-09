@@ -31,9 +31,7 @@ type Compiler struct {
 	LoadURL func(s string) (io.ReadCloser, error)
 
 	// CompileRegex comples given regular expression.
-	// Defaults to golang's regexp implementation.
-	//
-	// NOTE: If you are overriding this, also ensure to override "regex" Format.
+	// if nil, golang's regexp implementation is used.
 	CompileRegex RegexEngine
 
 	// Formats can be registered by adding to this map. Key is format name,
