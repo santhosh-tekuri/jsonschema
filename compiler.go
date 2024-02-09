@@ -832,8 +832,7 @@ func (c *Compiler) compileRegex(s string) Regexp {
 		}
 		return re
 	}
-	re := regexp.MustCompile(s)
-	return (*goRegexp)(re)
+	return regexp.MustCompile(s)
 }
 
 func toStrings(arr []interface{}) []string {
@@ -885,14 +884,4 @@ type Regexp interface {
 
 	// String returns the source text used to compile the regular expression.
 	String() string
-}
-
-type goRegexp regexp.Regexp
-
-func (re *goRegexp) MatchString(s string) bool {
-	return (*regexp.Regexp)(re).MatchString(s)
-}
-
-func (re *goRegexp) String() string {
-	return (*regexp.Regexp)(re).String()
 }
