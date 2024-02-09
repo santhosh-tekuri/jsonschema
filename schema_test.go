@@ -440,7 +440,7 @@ func TestInvalidJsonTypeError(t *testing.T) {
 	}
 }
 
-func TestInvalidEnumError(t *testing.T) {
+func TestPercentInEnumError(t *testing.T) {
 	compiler := jsonschema.NewCompiler()
 	err := compiler.AddResource("test.json", strings.NewReader(`{"type": "string", "enum": ["%"]}`))
 	if err != nil {
@@ -451,8 +451,8 @@ func TestInvalidEnumError(t *testing.T) {
 		t.Fatalf("schema compilation failed. reason: %v\n", err)
 	}
 	err = schema.Validate("hello world")
-	if strings.Contains(err.Error(), `%!"(MISSING)`) {
-		t.Fatalf("got %v. want error with %% char", err)
+	if strings.Contains(err.Error(), `"%!"(MISSING)`) {
+		t.Fatalf(`error contains "%%!"(MISSING)`)
 	}
 }
 
