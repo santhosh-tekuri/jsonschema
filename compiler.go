@@ -236,9 +236,11 @@ func (c *Compiler) findResource(url string) (*resource, error) {
 }
 
 func (c *Compiler) compileURL(url string, stack []schemaRef, ptr string) (*Schema, error) {
-	// if url points to a draft, return Draft.meta
-	if d := findDraft(url); d != nil && d.meta != nil {
-		return d.meta, nil
+	if c.CompileRegex == nil {
+		// if url points to a draft, return Draft.meta
+		if d := findDraft(url); d != nil && d.meta != nil {
+			return d.meta, nil
+		}
 	}
 
 	b, f := split(url)
@@ -793,14 +795,25 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 }
 
 func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error {
+	if strings.HasPrefix(r.url, "http://json-schema.org/") ||
+		strings.HasPrefix(r.url, "https://json-schema.org/") {
+		return nil
+	}
+
 	validate := func(meta *Schema) error {
-		if meta == nil {
-			return nil
-		}
 		return meta.validateValue(v, vloc)
 	}
 
-	if err := validate(r.draft.meta); err != nil {
+	meta := r.draft.meta
+	if c.CompileRegex != nil {
+		sch, err := c.Compile(r.draft.URL())
+		if err != nil {
+			return err
+		}
+		meta = sch
+	}
+
+	if err := validate(meta); err != nil {
 		return err
 	}
 	for _, ext := range c.extensions {
