@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/mail"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +32,6 @@ var Formats = map[string]func(interface{}) bool{
 	"uriref":                isURIReference,
 	"iri-reference":         isURIReference,
 	"uri-template":          isURITemplate,
-	"regex":                 isRegex,
 	"json-pointer":          isJSONPointer,
 	"relative-json-pointer": isRelativeJSONPointer,
 	"uuid":                  isUUID,
@@ -460,19 +458,6 @@ func isURITemplate(v interface{}) bool {
 		}
 	}
 	return true
-}
-
-// isRegex tells whether given string is a valid regular expression,
-// according to the ECMA 262 regular expression dialect.
-//
-// The implementation uses go-lang regexp package.
-func isRegex(v interface{}) bool {
-	s, ok := v.(string)
-	if !ok {
-		return true
-	}
-	_, err := regexp.Compile(s)
-	return err == nil
 }
 
 // isJSONPointer tells whether given string is a valid JSON Pointer.

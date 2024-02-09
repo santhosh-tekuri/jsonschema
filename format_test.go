@@ -264,18 +264,6 @@ func TestIsURITemplate(t *testing.T) {
 	}
 }
 
-func TestIsRegex(t *testing.T) {
-	tests := []test{
-		{"([abc])+\\s+$", true},
-		{"^(abc]", false}, // unclosed parenthesis
-	}
-	for i, test := range tests {
-		if test.valid != isRegex(test.str) {
-			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
-		}
-	}
-}
-
 func TestIsJSONPointer(t *testing.T) {
 	tests := []test{
 		{"/foo/bar~0/baz~1/%a", true},

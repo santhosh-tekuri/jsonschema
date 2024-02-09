@@ -34,7 +34,7 @@ type Compiler struct {
 	// Defaults to golang's regexp implementation.
 	//
 	// NOTE: If you are overriding this, also ensure to override "regex" Format.
-	CompileRegex func(s string) (Regexp, error)
+	CompileRegex RegexEngine
 
 	// Formats can be registered by adding to this map. Key is format name,
 	// value is function that knows how to validate that format.
@@ -570,10 +570,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		if regexProps, ok := m["regexProperties"]; ok {
 			s.RegexProperties = regexProps.(bool)
 			if s.RegexProperties {
-				s.regexPropertiesFormat = isRegex
-				if fmt, ok := c.Formats["regex"]; ok {
-					s.regexPropertiesFormat = fmt
-				}
+				s.regexPropertiesFormat = c.format("regex")
 			}
 		}
 
@@ -705,11 +702,7 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 	if format, ok := m["format"]; ok {
 		s.Format = format.(string)
 		if r.draft.version < 2019 || c.AssertFormat || r.schema.meta.hasVocab("format-assertion") {
-			if format, ok := c.Formats[s.Format]; ok {
-				s.format = format
-			} else {
-				s.format = Formats[s.Format]
-			}
+			s.format = c.format(s.Format)
 		}
 	}
 
@@ -825,14 +818,31 @@ func (c *Compiler) validateSchema(r *resource, v interface{}, vloc string) error
 }
 
 func (c *Compiler) compileRegex(s string) Regexp {
-	if c.CompileRegex != nil {
-		re, err := c.CompileRegex(s)
-		if err != nil {
-			panic("regex Format and compiler.CompileRegex are incompatible")
-		}
-		return re
+	compileRegex := c.CompileRegex
+	if compileRegex == nil {
+		compileRegex = compileGoRegex
 	}
-	return regexp.MustCompile(s)
+	re, err := compileRegex(s)
+	if err != nil {
+		panic("regex Format and compiler.CompileRegex are incompatible")
+	}
+	return re
+}
+
+func (c *Compiler) format(s string) func(interface{}) bool {
+	if s == "regex" {
+		compileRegex := c.CompileRegex
+		if compileRegex == nil {
+			compileRegex = compileGoRegex
+		}
+		return compileRegex.isValid
+	}
+
+	if format, ok := c.Formats[s]; ok {
+		return format
+	} else {
+		return Formats[s]
+	}
 }
 
 func toStrings(arr []interface{}) []string {
@@ -884,4 +894,19 @@ type Regexp interface {
 
 	// String returns the source text used to compile the regular expression.
 	String() string
+}
+
+type RegexEngine func(s string) (Regexp, error)
+
+func (re RegexEngine) isValid(v interface{}) bool {
+	s, ok := v.(string)
+	if !ok {
+		return true
+	}
+	_, err := re(s)
+	return err == nil
+}
+
+func compileGoRegex(s string) (Regexp, error) {
+	return regexp.Compile(s)
 }
