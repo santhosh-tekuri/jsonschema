@@ -68,6 +68,18 @@ func (ctx CompilerContext) CompileRef(ref string, refPath string, applicableOnSa
 	return ctx.c.compileRef(ctx.r, stack, refPath, ctx.res, ref)
 }
 
+// GetResourceSchema provides a pointer to the current resource's schema.
+//
+// Useful in cases where the extension needs to collect metadata about the current
+// target of the compilation, such as the absolute location of the resource's schema.
+func (ctx CompilerContext) GetResourceSchema() *Schema {
+	if ctx.r == nil {
+		return nil
+	}
+
+	return ctx.r.schema
+}
+
 // ValidationContext ---
 
 // ValidationContext provides additional context required in validating for extension.
