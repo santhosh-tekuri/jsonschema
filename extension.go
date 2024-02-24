@@ -73,11 +73,11 @@ func (ctx CompilerContext) CompileRef(ref string, refPath string, applicableOnSa
 // Useful in cases where the extension needs to collect metadata about the current
 // target of the compilation, such as the absolute location of the resource's schema.
 func (ctx CompilerContext) GetResourceSchema() *Schema {
-	if ctx.r == nil {
+	if ctx.res == nil {
 		return nil
 	}
 
-	return ctx.r.schema
+	return ctx.res.schema
 }
 
 // ValidationContext ---
