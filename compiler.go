@@ -756,6 +756,10 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 		}
 	}
 
+	if c.ExtractAnnotations {
+		s.Id = r.draft.getID(m)
+	}
+
 	if r.draft.version >= 2019 {
 		if !c.AssertContent {
 			s.decoder = nil

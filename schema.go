@@ -91,6 +91,7 @@ type Schema struct {
 	MultipleOf       *big.Rat
 
 	// annotations. captured only when Compiler.ExtractAnnotations is true.
+	Id          string
 	Title       string
 	Description string
 	Default     interface{}
