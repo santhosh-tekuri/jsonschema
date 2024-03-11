@@ -98,16 +98,23 @@ func (ve *ValidationError) Error() string {
 	return fmt.Sprintf("jsonschema: %s does not validate with %s: %s", quote(leaf.InstanceLocation), u+"#"+leaf.KeywordLocation, leaf.Message)
 }
 
-func (ve *ValidationError) GoString() string {
+func (ve *ValidationError) goStringTo(tgt *strings.Builder, indent int) {
 	sloc := ve.AbsoluteKeywordLocation
 	sloc = sloc[strings.IndexByte(sloc, '#')+1:]
-	msg := fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, sloc, ve.Message)
-	for _, c := range ve.Causes {
-		for _, line := range strings.Split(c.GoString(), "\n") {
-			msg += "\n  " + line
-		}
+	for i := 0; i < indent; i++ {
+		tgt.WriteByte(' ')
 	}
-	return msg
+	tgt.WriteString(fmt.Sprintf("[I#%s] [S#%s] %s", ve.InstanceLocation, sloc, ve.Message))
+	for _, c := range ve.Causes {
+		tgt.WriteByte('\n')
+		c.goStringTo(tgt, indent+2)
+	}
+}
+
+func (ve *ValidationError) GoString() string {
+	var msgBuf strings.Builder
+	ve.goStringTo(&msgBuf, 0)
+	return msgBuf.String()
 }
 
 func joinPtr(ptr1, ptr2 string) string {
