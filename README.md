@@ -37,6 +37,7 @@ Package jsonschema provides json-schema compilation and validation.
    - uri, uriref, uri-template(limited validation)
    - json-pointer, relative-json-pointer
    - regex, format
+   - int32, int64
  - implements following contentEncoding (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedContent))
    - base64
  - implements following contentMediaType (supports [user-defined](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v5/#example-package-UserDefinedContent))

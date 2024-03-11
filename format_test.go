@@ -1,6 +1,9 @@
 package jsonschema
 
 import (
+	"encoding/json"
+	"fmt"
+	"math"
 	"strings"
 	"testing"
 )
@@ -352,6 +355,62 @@ func TestIsUUID(t *testing.T) {
 	for i, test := range tests {
 		if test.valid != isUUID(test.str) {
 			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.str, test.valid, !test.valid)
+		}
+	}
+}
+
+func TestIsInt32(t *testing.T) {
+	tests := []struct {
+		val   interface{}
+		valid bool
+	}{
+		{1, true},
+		{1.0, true},
+		{1.2, false},
+		{-0, true},
+		{math.MinInt32, true},
+		{int32(math.MinInt32), true},
+		{int64(math.MinInt64), false},
+		{math.NaN(), false},
+		{math.Inf(1), false},
+		{json.Number("1"), true},
+		{json.Number("1.0"), true},
+		{json.Number("-1.01"), false},
+		{json.Number(fmt.Sprint(math.MaxInt32)), true},
+		{json.Number(fmt.Sprint(math.MaxInt64)), false},
+		{"string", true},
+	}
+	for i, test := range tests {
+		if test.valid != isInt32(test.val) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.val, test.valid, !test.valid)
+		}
+	}
+}
+
+func TestIsInt64(t *testing.T) {
+	tests := []struct {
+		val   interface{}
+		valid bool
+	}{
+		{1, true},
+		{1.0, true},
+		{1.2, false},
+		{0, true},
+		{int32(math.MinInt32), true},
+		{int64(math.MinInt64), true},
+		{math.NaN(), false},
+		{math.Inf(-1), false},
+		{json.Number("1"), true},
+		{json.Number("1.0"), true},
+		{json.Number("-1.01"), false},
+		{json.Number(fmt.Sprint(math.MaxInt32)), true},
+		{json.Number(fmt.Sprint(math.MaxInt64)), true},
+		{json.Number("9223372036854775808"), false},
+		{"string", true},
+	}
+	for i, test := range tests {
+		if test.valid != isInt64(test.val) {
+			t.Errorf("#%d: %q, valid %t, got valid %t", i, test.val, test.valid, !test.valid)
 		}
 	}
 }
