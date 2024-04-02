@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,12 @@ import (
 	"strconv"
 	"strings"
 )
+
+// GetFuncType is a function that gets a value from an external cache.
+type GetFuncType func(key string) ([]byte, error)
+
+// SetFuncType is a function that sets a value to an external cache.
+type SetFuncType func(key string, value []byte) error
 
 // A Compiler represents a json-schema compiler.
 type Compiler struct {
@@ -51,6 +58,12 @@ type Compiler struct {
 
 	// AssertContent for specifications >= draft2019-09.
 	AssertContent bool
+
+	// Get function that gets a value from an external cache. If nil, uses internal cache.
+	Get GetFuncType
+
+	// Set function that sets a value from an external cache. If nil, uses internal cache.
+	Set SetFuncType
 }
 
 // Compile parses json-schema at given url returns, if successful,
@@ -104,11 +117,21 @@ func NewCompiler() *Compiler {
 //
 // Note that url must not have fragment
 func (c *Compiler) AddResource(url string, r io.Reader) error {
-	doc, err := unmarshal(r)
-	if err != nil {
-		return fmt.Errorf("jsonschema: invalid json %s: %v", url, err)
+	// If Set is not nil, use that to write the schema into the external cache
+	if c.Set != nil {
+		str, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		return c.Set(url, str)
+	} else {
+		doc, err := unmarshal(r)
+		if err != nil {
+			return fmt.Errorf("jsonschema: invalid json %s: %v", url, err)
+		}
+
+		return c.AddResourceJSON(url, doc)
 	}
-	return c.AddResourceJSON(url, doc)
 }
 
 // AddResourceJSON adds in-memory resource from given json value.
@@ -173,18 +196,35 @@ func (c *Compiler) loadURL(url string) (io.ReadCloser, error) {
 }
 
 func (c *Compiler) findResource(url string) (*resource, error) {
-	if _, ok := c.resources[url]; !ok {
-		rdr, err := c.loadURL(url)
+	r := &resource{}
+
+	// If Get is not nil, use that to read the schema from the external cache
+	if c.Get != nil {
+		str, err := c.Get(url)
+		doc, err := unmarshal(bytes.NewReader(str))
 		if err != nil {
 			return nil, err
 		}
-		defer rdr.Close()
-		if err := c.AddResource(url, rdr); err != nil {
+
+		r, err = newResource(url, doc)
+		if err != nil {
 			return nil, err
 		}
+	} else {
+		if _, ok := c.resources[url]; !ok {
+			rdr, err := c.loadURL(url)
+			if err != nil {
+				return nil, err
+			}
+			defer rdr.Close()
+			if err := c.AddResource(url, rdr); err != nil {
+				return nil, err
+			}
+		}
+
+		r = c.resources[url]
 	}
 
-	r := c.resources[url]
 	if r.draft != nil {
 		return r, nil
 	}
@@ -278,6 +318,7 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		return nil, err
 	}
 	if sr == nil {
+		Ï
 		return nil, fmt.Errorf("jsonschema: %s not found", ref)
 	}
 
