@@ -24,6 +24,7 @@ func usage() {
 func main() {
 	draft := flag.Int("draft", 2020, "draft used when '$schema' attribute is missing. valid values 4, 5, 7, 2019, 2020")
 	output := flag.String("output", "", "output format. valid values flag, basic, detailed")
+	extractAnnotations := flag.Bool("annotations", false, "extract annotations")
 	assertFormat := flag.Bool("assertformat", false, "enable format assertions with draft >= 2019")
 	assertContent := flag.Bool("assertcontent", false, "enable content assertions with draft >= 2019")
 	flag.Usage = usage
@@ -51,6 +52,7 @@ func main() {
 	}
 
 	compiler.LoadURL = loadURL
+	compiler.ExtractAnnotations = *extractAnnotations
 	compiler.AssertFormat = *assertFormat
 	compiler.AssertContent = *assertContent
 
