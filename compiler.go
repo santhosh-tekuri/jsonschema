@@ -680,6 +680,25 @@ func (c *Compiler) compileMap(r *resource, stack []schemaRef, sref schemaRef, re
 			s.Description = description.(string)
 		}
 		s.Default = m["default"]
+
+		if deprecated, ok := m["deprecated"]; ok {
+			s.Deprecated = deprecated.(bool)
+		}
+		if deprecatedVersion, ok := m["deprecated_version"]; ok {
+			s.DeprecatedVersion = deprecatedVersion.(string)
+		}
+		if deprecatedDescription, ok := m["deprecated_description"]; ok {
+			s.DeprecatedDescription = deprecatedDescription.(string)
+		}
+		if changed, ok := m["changed"]; ok {
+			s.Changed = changed.(bool)
+		}
+		if changedVersion, ok := m["changed_version"]; ok {
+			s.DeprecatedVersion = changedVersion.(string)
+		}
+		if changedDescription, ok := m["changed_description"]; ok {
+			s.DeprecatedDescription = changedDescription.(string)
+		}
 	}
 
 	if r.draft.version >= 6 {

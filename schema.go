@@ -99,6 +99,11 @@ type Schema struct {
 	WriteOnly   bool
 	Examples    []interface{}
 	Deprecated  bool
+	Changed     bool
+
+	// deprecation warnings
+	DeprecatedVersion     string
+	DeprecatedDescription string
 
 	// user defined extensions
 	Extensions map[string]ExtSchema
@@ -732,6 +737,14 @@ func (s *Schema) validate(scope []schemaRef, vscope int, spath string, v interfa
 		}
 		// restore dynamic scope
 		scope[len(scope)-1].discard = false
+	}
+
+	if s.Deprecated || s.Changed {
+		deprecated := s.DeprecatedDescription
+		if s.DeprecatedVersion != "" {
+			deprecated += fmt.Sprintf(" (since v%s)", s.DeprecatedVersion)
+		}
+		errors = append(errors, validationError("deprecated", deprecated))
 	}
 
 	for _, ext := range s.Extensions {
