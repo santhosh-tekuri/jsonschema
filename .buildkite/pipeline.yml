@@ -1,0 +1,18 @@
+retry: &retry_spot_instance
+  automatic:
+    - exit_status: -1
+      limit: 3
+    - exit_status: '*'
+      limit: 3
+
+steps:
+  - label: ":golang: release"
+    key: "release"
+    agents:
+      queue: dedicated
+    retry: *retry_spot_instance
+    command: ".buildkite/steps/release"
+    plugins:
+      - fanduel/gcr#v0.1.2:
+          login: true
+    if: build.tag =~ /v[0-9]+(\.[0-9]+)*(-.*)*/

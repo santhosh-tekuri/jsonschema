@@ -1,0 +1,6 @@
+project_name: jsonschema
+builds:
+  - skip: true
+release:
+  github:
+  prerelease: auto

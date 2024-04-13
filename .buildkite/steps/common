@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+config_git() {
+      echo "configuring git..."
+      git config --global url."git@github.com:".insteadOf "https://github.com/"
+}
+
+
+shout() { echo "$0: $*" >&2; }
+barf() { shout "$*"; exit 111; }
+try() { "$@" || barf "cannot $*"; }
+
+
+
+# vi: ft=sh

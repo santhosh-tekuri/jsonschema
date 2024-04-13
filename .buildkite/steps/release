@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+. .buildkite/steps/common
+
+git fetch --tags
+
+try curl -sL https://git.io/goreleaser | bash
+# vi: ft=sh

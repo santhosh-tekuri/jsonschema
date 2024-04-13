@@ -214,3 +214,13 @@ https://play.golang.org/p/Hhax3MrtD8r
 
 NOTE: if you are using `gopkg.in/yaml.v3`, then you do not need such conversion. since this library
 returns `map[string]interface{}` if all keys are strings.
+
+# Releasing a new version
+
+Tag the commit you would like to cut a release for with a string that represents the semantic version for the release
+and push that tag to the repository. 
+
+For example, to cut a release at the head of the master branch for v5.3.2 run
+
+```
+git tag v5.3.2 && git push origin v5.3.2

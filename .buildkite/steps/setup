@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+. .buildkite/steps/common
+
+echo "running: config_git"
+try config_git
+
+echo "running: tidy up"
+try go mod tidy -compat=1.22
+
+echo "running: go vendor"
+try go mod vendor
+
+echo "running: go generate"
+try go generate ./...
+
+#vi: ft=sh

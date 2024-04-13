@@ -318,7 +318,6 @@ func (c *Compiler) compileRef(r *resource, stack []schemaRef, refPtr string, res
 		return nil, err
 	}
 	if sr == nil {
-		Ï
 		return nil, fmt.Errorf("jsonschema: %s not found", ref)
 	}
 
