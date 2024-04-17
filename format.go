@@ -399,7 +399,7 @@ func validateDate(v any) error {
 }
 
 // see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
-// NOTE: golang time package does not support leap seconds
+// NOTE: golang time package does not support leap seconds.
 func validateTime(v any) error {
 	str, ok := v.(string)
 	if !ok {

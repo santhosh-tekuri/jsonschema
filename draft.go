@@ -133,23 +133,6 @@ func init() {
 	}
 }
 
-func draftFromVersion(version int) *Draft {
-	switch version {
-	case 4:
-		return Draft4
-	case 6:
-		return Draft6
-	case 7:
-		return Draft7
-	case 2019:
-		return Draft2019
-	case 2020:
-		return Draft2020
-	default:
-		return nil
-	}
-}
-
 func draftFromURL(url string) *Draft {
 	u, frag := split(url)
 	if frag != "" {

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-// Decoder specifies how to decode specific contentEncoding
+// Decoder specifies how to decode specific contentEncoding.
 type Decoder struct {
 	Name   string
 	Decode func(string) ([]byte, error)
@@ -21,7 +21,7 @@ var decoders = map[string]*Decoder{
 	},
 }
 
-// MediaType specified how to validate bytes against specific contentMediaType
+// MediaType specified how to validate bytes against specific contentMediaType.
 type MediaType struct {
 	Name string
 

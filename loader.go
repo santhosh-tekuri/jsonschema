@@ -121,7 +121,7 @@ func (e *UnsupportedURLSchemeError) Error() string {
 // --
 
 // UnmarshalJSON unmarshals into [any] without losing
-// number precision using [json.Number]
+// number precision using [json.Number].
 func UnmarshalJSON(r io.Reader) (any, error) {
 	decoder := json.NewDecoder(r)
 	decoder.UseNumber()

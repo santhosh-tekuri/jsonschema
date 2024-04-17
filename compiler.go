@@ -45,9 +45,9 @@ func (c *Compiler) DefaultDraft(d *Draft) {
 // AssertFormat always enables format assertions.
 //
 // Default Behavior:
-// for draft-07: enabled
-// for draft/2019-09: disabled unless metaschema says `format` vocabulary is required
-// for draft/2020-12: disabled unless metaschema says `format-assertion` vocabulary is required
+// for draft-07: enabled.
+// for draft/2019-09: disabled unless metaschema says `format` vocabulary is required.
+// for draft/2020-12: disabled unless metaschema says `format-assertion` vocabulary is required.
 func (c *Compiler) AssertFormat() {
 	c.assertFormat = true
 }
@@ -59,7 +59,7 @@ func (c *Compiler) AssertFormat() {
 // - contentMediaType
 // - contentSchema
 //
-// Default Behavior is always disabled.
+// Default behavior is always disabled.
 func (c *Compiler) AssertContent() {
 	c.assertContent = true
 }
@@ -69,7 +69,7 @@ func (c *Compiler) AssertContent() {
 // NOTE:
 //   - `regex` format can not be overridden
 //   - format assertions are disabled for draft >= 2019-09
-//     see Compiler.AssertFormat
+//     see [Compiler.AssertFormat]
 func (c *Compiler) RegisterFormat(f *Format) {
 	if f.Name != "regex" {
 		c.formats[f.Name] = f
@@ -79,7 +79,7 @@ func (c *Compiler) RegisterFormat(f *Format) {
 // RegisterContentEncoding registers custom contentEncoding.
 //
 // NOTE: content assertions are disabled by default.
-// see Compiler.AssertContent
+// see [Compiler.AssertContent].
 func (c *Compiler) RegisterContentEncoding(d *Decoder) {
 	c.decoders[d.Name] = d
 }
@@ -87,7 +87,7 @@ func (c *Compiler) RegisterContentEncoding(d *Decoder) {
 // RegisterContentMediaType registers custom contentMediaType.
 //
 // NOTE: content assertions are disabled by default.
-// see Compiler.AssertContent
+// see [Compiler.AssertContent].
 func (c *Compiler) RegisterContentMediaType(mt *MediaType) {
 	c.mediaTypes[mt.Name] = mt
 }

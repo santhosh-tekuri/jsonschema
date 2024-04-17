@@ -614,7 +614,7 @@ func joinQuoted(arr []string, sep string) string {
 	return sb.String()
 }
 
-// to be used only for primitive
+// to be used only for primitive.
 func display(v any) string {
 	switch v := v.(type) {
 	case string:

@@ -172,7 +172,7 @@ func Example_customFormat() {
 }
 
 // Example_customContentEncoding shows how to define
-// "hex" contentEncoding
+// "hex" contentEncoding.
 func Example_customContentEndocing() {
 	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{"type": "string", "contentEncoding": "hex"}`))
 	if err != nil {
@@ -200,7 +200,7 @@ func Example_customContentEndocing() {
 }
 
 // Example_customContentMediaType shows how to define
-// "application/xml" contentMediaType
+// "application/xml" contentMediaType.
 func Example_customContentMediaType() {
 	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{"type": "string", "contentMediaType": "application/xml"}`))
 	if err != nil {

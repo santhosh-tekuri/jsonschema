@@ -144,10 +144,6 @@ func typeFromString(s string) jsonType {
 	return invalidType
 }
 
-func (jt jsonType) primitive() bool {
-	return jt != arrayType && jt != objectType
-}
-
 func (jt jsonType) String() string {
 	switch jt {
 	case nullType:

@@ -109,13 +109,14 @@ func (ptr jsonPointer) append2(tok1, tok2 string) jsonPointer {
 type anchor string
 
 // --
+
 type fragment string
 
 func decode(frag string) (string, error) {
 	return gourl.PathUnescape(frag)
 }
 
-// avoids escaping /
+// avoids escaping /.
 func encode(frag string) string {
 	var sb strings.Builder
 	for i, tok := range strings.Split(frag, "/") {
@@ -273,7 +274,7 @@ func isInteger(v any) bool {
 	return ok && num.IsInt()
 }
 
-// quote returns single-quoted string
+// quote returns single-quoted string.
 func quote(s string) string {
 	s = fmt.Sprintf("%q", s)
 	s = strings.ReplaceAll(s, `\"`, `"`)
@@ -443,6 +444,7 @@ func (e *SchemaValidationError) Error() string {
 
 // --
 
+//nolint:errname
 type Bug struct {
 	Msg string
 }

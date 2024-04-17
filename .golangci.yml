@@ -1,3 +1,7 @@
 linters:
-  disable:
-    - unused
+  enable:
+    - nakedret
+    - goimports
+    - errname
+    - godot
+    - gofmt
