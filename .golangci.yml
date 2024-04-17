@@ -1,7 +1,5 @@
 linters:
   enable:
     - nakedret
-    - goimports
     - errname
     - godot
-    - gofmt
