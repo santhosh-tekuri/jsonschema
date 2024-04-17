@@ -198,7 +198,7 @@ func absolute(input string) (*urlFrag, error) {
 	if !strings.HasPrefix(u, "/") {
 		u = "/" + u
 	}
-	u = "file://" + u
+	u = "file://" + filepath.ToSlash(u)
 
 	_, err = gourl.Parse(u)
 	if err != nil {
