@@ -110,7 +110,6 @@
 		},
 		"patternProperties": {
 			"type": "object",
-			"regexProperties": true,
 			"additionalProperties": { "$ref": "#" },
 			"default": {}
 		},
