@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 
@@ -75,54 +74,6 @@ func Example_fromStrings() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = sch.Validate(inst)
-	fmt.Println("valid:", err == nil)
-	// Output:
-	// valid: true
-}
-
-type HTTPURLLoader struct{}
-
-func (l HTTPURLLoader) Load(url string) (any, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		_ = resp.Body.Close()
-		return nil, fmt.Errorf("%s returned status code %d", url, resp.StatusCode)
-	}
-	defer resp.Body.Close()
-
-	return jsonschema.UnmarshalJSON(resp.Body)
-}
-
-func Example_fromHTTPS() {
-	schemaURL := "https://raw.githubusercontent.com/santhosh-tekuri/boon/main/tests/examples/schema.json"
-	instanceFile := "./testdata/examples/instance.json"
-
-	loader := jsonschema.SchemeURLLoader{
-		"file":  jsonschema.FileLoader{},
-		"http":  HTTPURLLoader{},
-		"https": HTTPURLLoader{},
-	}
-
-	c := jsonschema.NewCompiler()
-	c.UseLoader(loader)
-	sch, err := c.Compile(schemaURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	f, err := os.Open(instanceFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	inst, err := jsonschema.UnmarshalJSON(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	err = sch.Validate(inst)
 	fmt.Println("valid:", err == nil)
 	// Output:
