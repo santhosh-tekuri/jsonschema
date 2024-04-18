@@ -21,14 +21,14 @@ jobs:
     - name: disable MallocNanoZone for macos-latest
       run: echo "MallocNanoZone=0" >> $GITHUB_ENV
       if: runner.os == 'macOS'
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v4
-      with:
-        version: v1.57.2
-        args: --timeout=5m
     - name: test
       run: go test -race -coverprofile coverage.txt -covermode atomic
     - name: upload coverage
       uses: codecov/codecov-action@v3
       with:
         files: coverage.txt
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: v1.57.2
+        args: --timeout=5m
