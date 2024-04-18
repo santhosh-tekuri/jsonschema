@@ -370,8 +370,8 @@ func (d *Draft) isSubschema(ptr string) bool {
 	return false
 }
 
-func (d *Draft) validate(up urlPtr, v any) error {
-	err := d.sch.Validate(v)
+func (d *Draft) validate(up urlPtr, v any, regexpEngine RegexpEngine) error {
+	err := d.sch.validate(v, regexpEngine)
 	if err != nil {
 		return &SchemaValidationError{URL: up.String(), Err: err}
 	}

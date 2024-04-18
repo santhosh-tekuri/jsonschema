@@ -2,6 +2,7 @@ package jsonschema
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 )
 
@@ -111,6 +112,18 @@ func (c *Compiler) UseLoader(loader URLLoader) {
 	c.roots.loader = loader
 }
 
+// UseRegexpEngine changes the regexp-engine used.
+// By default it uses regexp package from go standard
+// library.
+//
+// NOTE: must be called before compiling any schemas.
+func (c *Compiler) UseRegexpEngine(engine RegexpEngine) {
+	if engine == nil {
+		engine = goRegexpCompile
+	}
+	c.roots.regexpEngine = engine
+}
+
 func (c *Compiler) enqueue(q *queue, up urlPtr) *Schema {
 	if sch, ok := c.schemas[up]; ok {
 		// already got compiled
@@ -135,6 +148,7 @@ func (c *Compiler) MustCompile(loc string) *Schema {
 	return sch
 }
 
+// Compile compiles json-schema at gven loc.
 func (c *Compiler) Compile(loc string) (*Schema, error) {
 	uf, err := absolute(loc)
 	if err != nil {
@@ -261,4 +275,26 @@ func (q *queue) get(up urlPtr) *Schema {
 		return (*q)[i]
 	}
 	return nil
+}
+
+// regexp --
+
+type Regexp interface {
+	fmt.Stringer
+	MatchString(string) bool
+}
+
+type RegexpEngine func(string) (Regexp, error)
+
+func (re RegexpEngine) validate(v any) error {
+	s, ok := v.(string)
+	if !ok {
+		return nil
+	}
+	_, err := re(s)
+	return err
+}
+
+func goRegexpCompile(s string) (Regexp, error) {
+	return regexp.Compile(s)
 }

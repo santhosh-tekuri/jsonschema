@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"regexp"
 )
 
 type Schema struct {
@@ -45,7 +44,7 @@ type Schema struct {
 	Required              []string
 	PropertyNames         *Schema
 	Properties            map[string]*Schema
-	PatternProperties     map[*regexp.Regexp]*Schema
+	PatternProperties     map[Regexp]*Schema
 	AdditionalProperties  any            // nil or bool or *Schema
 	Dependencies          map[string]any // value is []string or *Schema
 	DependentRequired     map[string][]string
@@ -68,7 +67,7 @@ type Schema struct {
 	// string --
 	MinLength        *int
 	MaxLength        *int
-	Pattern          *regexp.Regexp
+	Pattern          Regexp
 	ContentEncoding  *Decoder
 	ContentMediaType *MediaType
 	ContentSchema    *Schema

@@ -12,14 +12,19 @@ import (
 )
 
 func (sch *Schema) Validate(v any) error {
+	return sch.validate(v, nil)
+}
+
+func (sch *Schema) validate(v any, regexpEngine RegexpEngine) error {
 	vd := validator{
-		v:          v,
-		vloc:       make([]string, 0, 8),
-		sch:        sch,
-		scp:        &scope{sch, "", 0, nil},
-		uneval:     unevalFrom(v, sch, false),
-		errors:     nil,
-		boolResult: false,
+		v:            v,
+		vloc:         make([]string, 0, 8),
+		sch:          sch,
+		scp:          &scope{sch, "", 0, nil},
+		uneval:       unevalFrom(v, sch, false),
+		errors:       nil,
+		boolResult:   false,
+		regexpEngine: regexpEngine,
 	}
 	if _, err := vd.validate(); err != nil {
 		verr := err.(*ValidationError)
@@ -41,13 +46,14 @@ func (sch *Schema) Validate(v any) error {
 }
 
 type validator struct {
-	v          any
-	vloc       []string
-	sch        *Schema
-	scp        *scope
-	uneval     *uneval
-	errors     []*ValidationError
-	boolResult bool // is interested to know valid or not (but not actuall error)
+	v            any
+	vloc         []string
+	sch          *Schema
+	scp          *scope
+	uneval       *uneval
+	errors       []*ValidationError
+	boolResult   bool // is interested to know valid or not (but not actuall error)
+	regexpEngine RegexpEngine
 }
 
 func (vd *validator) validate() (*uneval, error) {
@@ -117,7 +123,13 @@ func (vd *validator) validate() (*uneval, error) {
 
 	// format --
 	if s.Format != nil {
-		if err := s.Format.Validate(v); err != nil {
+		var err error
+		if s.Format.Name == "regex" && vd.regexpEngine != nil {
+			err = vd.regexpEngine.validate(v)
+		} else {
+			err = s.Format.Validate(v)
+		}
+		if err != nil {
 			return nil, vd.error(&kind.Format{Got: v, Want: s.Format.Name, Err: err})
 		}
 	}
@@ -257,7 +269,7 @@ func (vd *validator) objValidate(obj map[string]any) {
 	// propertyNames --
 	if s.PropertyNames != nil {
 		for pname := range obj {
-			if err := s.PropertyNames.Validate(pname); err != nil {
+			if err := s.PropertyNames.validate(pname, vd.regexpEngine); err != nil {
 				verr := err.(*ValidationError)
 				verr.SchemaURL = s.PropertyNames.Location
 				verr.ErrorKind = kind.PropertyNames(pname)
@@ -465,7 +477,7 @@ func (vd *validator) strValidate(str string) {
 	}
 
 	if deserialized != nil && s.ContentSchema != nil {
-		if err = s.ContentSchema.Validate(*deserialized); err != nil {
+		if err = s.ContentSchema.validate(*deserialized, vd.regexpEngine); err != nil {
 			verr := err.(*ValidationError)
 			verr.SchemaURL = s.Location
 			verr.ErrorKind = kind.ContentSchema{}
@@ -622,13 +634,14 @@ func (vd *validator) validateSelf(sch *Schema, refKw string, boolResult bool) er
 	scp := vd.scp.child(sch, refKw, vd.scp.vid)
 	uneval := unevalFrom(vd.v, sch, !vd.uneval.isEmpty())
 	subvd := validator{
-		v:          vd.v,
-		vloc:       vd.vloc,
-		sch:        sch,
-		scp:        scp,
-		uneval:     uneval,
-		errors:     nil,
-		boolResult: vd.boolResult || boolResult,
+		v:            vd.v,
+		vloc:         vd.vloc,
+		sch:          sch,
+		scp:          scp,
+		uneval:       uneval,
+		errors:       nil,
+		boolResult:   vd.boolResult || boolResult,
+		regexpEngine: vd.regexpEngine,
 	}
 	uneval, err := subvd.validate()
 	if err == nil {
@@ -642,13 +655,14 @@ func (vd *validator) validateVal(sch *Schema, v any, vtok string) error {
 	scp := vd.scp.child(sch, "", vd.scp.vid+1)
 	uneval := unevalFrom(v, sch, false)
 	subvd := validator{
-		v:          v,
-		vloc:       vloc,
-		sch:        sch,
-		scp:        scp,
-		uneval:     uneval,
-		errors:     nil,
-		boolResult: vd.boolResult,
+		v:            v,
+		vloc:         vloc,
+		sch:          sch,
+		scp:          scp,
+		uneval:       uneval,
+		errors:       nil,
+		boolResult:   vd.boolResult,
+		regexpEngine: vd.regexpEngine,
 	}
 	_, err := subvd.validate()
 	return err

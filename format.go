@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/netip"
 	gourl "net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +19,6 @@ type Format struct {
 }
 
 var formats = map[string]*Format{
-	"regex":                 {"regex", validateRegex},
 	"json-pointer":          {"json-pointer", validateJSONPointer},
 	"relative-json-pointer": {"relative-json-pointer", validateRelativeJSONPointer},
 	"uuid":                  {"uuid", validateUUID},
@@ -38,15 +36,6 @@ var formats = map[string]*Format{
 	"uri-reference":         {"uri-reference", validateURIReference},
 	"iri-reference":         {"iri-reference", validateURIReference},
 	"uri-template":          {"uri-template", validateURITemplate},
-}
-
-func validateRegex(v any) error {
-	s, ok := v.(string)
-	if !ok {
-		return nil
-	}
-	_, err := regexp.Compile(s)
-	return err
 }
 
 // see https://www.rfc-editor.org/rfc/rfc6901#section-3

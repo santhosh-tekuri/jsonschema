@@ -11,6 +11,7 @@ type roots struct {
 	roots         map[url]*root
 	userResources map[url]any
 	loader        URLLoader
+	regexpEngine  RegexpEngine
 }
 
 func newRoots() *roots {
@@ -19,6 +20,7 @@ func newRoots() *roots {
 		roots:         map[url]*root{},
 		userResources: map[url]any{},
 		loader:        FileLoader{},
+		regexpEngine:  goRegexpCompile,
 	}
 }
 
@@ -102,7 +104,7 @@ func (rr *roots) addRoot(u url, doc any, cycle map[url]struct{}) (*root, error) 
 
 	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
 		!strings.HasPrefix(u.String(), "https://json-schema.org/") {
-		if err := draft.validate(urlPtr{u, ""}, doc); err != nil {
+		if err := draft.validate(urlPtr{u, ""}, doc, rr.regexpEngine); err != nil {
 			return nil, err
 		}
 	}
@@ -138,7 +140,7 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 	if err != nil {
 		return err
 	}
-	if err := r.draft.validate(up, v); err != nil {
+	if err := r.draft.validate(up, v, rr.regexpEngine); err != nil {
 		return err
 	}
 	return r.addSubschema(up.ptr)

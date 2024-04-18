@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"regexp"
 	"strconv"
 )
 
@@ -97,9 +96,9 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 
 		s.Properties = c.enqueueMap("properties")
 		if m := c.enqueueMap("patternProperties"); m != nil {
-			s.PatternProperties = map[*regexp.Regexp]*Schema{}
+			s.PatternProperties = map[Regexp]*Schema{}
 			for pname, sch := range m {
-				re, err := regexp.Compile(pname)
+				re, err := c.c.roots.regexpEngine(pname)
 				if err != nil {
 					return &InvalidRegexError{c.up.format("patternProperties"), pname, err}
 				}
@@ -151,7 +150,7 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 		s.MinLength = c.intVal("minLength")
 		s.MaxLength = c.intVal("maxLength")
 		if pat := c.strVal("pattern"); pat != nil {
-			s.Pattern, err = regexp.Compile(*pat)
+			s.Pattern, err = c.c.roots.regexpEngine(*pat)
 			if err != nil {
 				return &InvalidRegexError{c.up.format("pattern"), *pat, err}
 			}
@@ -181,9 +180,16 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 	}
 	if assertFormat {
 		if f := c.strVal("format"); f != nil {
-			s.Format = c.c.formats[*f]
-			if s.Format == nil {
-				s.Format = formats[*f]
+			if *f == "regex" {
+				s.Format = &Format{
+					Name:     "regex",
+					Validate: c.c.roots.regexpEngine.validate,
+				}
+			} else {
+				s.Format = c.c.formats[*f]
+				if s.Format == nil {
+					s.Format = formats[*f]
+				}
 			}
 		}
 	}
