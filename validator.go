@@ -392,14 +392,10 @@ func (vd *validator) arrValidate(arr []any) {
 		// minContains --
 		if s.MinContains != nil {
 			if len(matched) < *s.MinContains {
-				err := vd.error(&kind.MinContains{Got: matched, Want: *s.MinContains})
-				err.Causes = errors
-				vd.addErr(err)
+				vd.addErrors(errors, &kind.MinContains{Got: matched, Want: *s.MinContains})
 			}
 		} else if len(matched) == 0 {
-			err := vd.error(kind.Contains{})
-			err.Causes = errors
-			vd.addErr(err)
+			vd.addErrors(errors, kind.Contains{})
 		}
 
 		// maxContains --
@@ -761,13 +757,9 @@ func (vd *validator) addError(kind ErrorKind) {
 }
 
 func (vd *validator) addErrors(errors []*ValidationError, kind ErrorKind) {
-	if len(errors) == 1 {
-		vd.errors = append(vd.errors, errors[0])
-	} else {
-		err := vd.error(kind)
-		err.Causes = errors
-		vd.errors = append(vd.errors, err)
-	}
+	err := vd.error(kind)
+	err.Causes = errors
+	vd.errors = append(vd.errors, err)
 }
 
 func (vd *validator) findMissing(obj map[string]any, reqd []string) []string {
