@@ -29,7 +29,7 @@ func (Schema) KeywordPath() []string {
 }
 
 func (k Schema) String() string {
-	return fmt.Sprintf("validation failed with %s", quote(string(k)))
+	return fmt.Sprintf("jsonschema validation failed with %s", quote(string(k)))
 }
 
 // --

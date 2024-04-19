@@ -54,7 +54,7 @@ func (e *ValidationError) display(sb *strings.Builder, verbose bool, indent int,
 		absKwLoc = e.absoluteKeywordLocation()
 
 		if _, ok := e.ErrorKind.(kind.Schema); ok {
-			sb.WriteString(fmt.Sprintf("jsonschema %s", e.ErrorKind))
+			sb.WriteString(e.ErrorKind.String())
 		} else {
 			sb.WriteString(fmt.Sprintf("at %s", quote(jsonPtr(e.InstanceLocation))))
 			if verbose {
