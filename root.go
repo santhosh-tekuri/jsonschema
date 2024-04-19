@@ -147,6 +147,21 @@ func (r *root) addSubschema(ptr jsonPointer) error {
 	return nil
 }
 
+func (r *root) validate(ptr jsonPointer, v any, regexpEngine RegexpEngine) error {
+	up := urlPtr{r.url, ptr}
+	if r.metaVocabs == nil {
+		return r.draft.validate(up, v, regexpEngine)
+	}
+
+	// validate only with the vocabs listed in metaschema
+	for _, vocab := range r.metaVocabs {
+		if err := r.draft.allVocabs[vocab].validate(v, regexpEngine); err != nil {
+			return &SchemaValidationError{URL: up.String(), Err: err}
+		}
+	}
+	return nil
+}
+
 // --
 
 type resource struct {

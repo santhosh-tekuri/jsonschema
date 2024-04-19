@@ -102,13 +102,6 @@ func (rr *roots) addRoot(u url, doc any, cycle map[url]struct{}) (*root, error) 
 		return nil, err
 	}
 
-	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
-		!strings.HasPrefix(u.String(), "https://json-schema.org/") {
-		if err := draft.validate(urlPtr{u, ""}, doc, rr.regexpEngine); err != nil {
-			return nil, err
-		}
-	}
-
 	r := &root{
 		url:        u,
 		doc:        doc,
@@ -116,6 +109,13 @@ func (rr *roots) addRoot(u url, doc any, cycle map[url]struct{}) (*root, error) 
 		resources:  resources,
 		metaVocabs: vocabs,
 	}
+	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
+		!strings.HasPrefix(u.String(), "https://json-schema.org/") {
+		if err := r.validate("", doc, rr.regexpEngine); err != nil {
+			return nil, err
+		}
+	}
+
 	rr.roots[u] = r
 	return r, nil
 }
@@ -140,7 +140,7 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 	if err != nil {
 		return err
 	}
-	if err := r.draft.validate(up, v, rr.regexpEngine); err != nil {
+	if err := r.validate(up.ptr, v, rr.regexpEngine); err != nil {
 		return err
 	}
 	return r.addSubschema(up.ptr)

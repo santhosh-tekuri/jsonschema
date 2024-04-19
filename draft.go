@@ -21,7 +21,7 @@ type Draft struct {
 	id            string              // property name used to represent id
 	subschemas    map[string]position // locations of subschemas
 	vocabPrefix   string              // prefix used for vocabulary
-	allVocabs     []string            // names of supported vocabs
+	allVocabs     map[string]*Schema  // names of supported vocabs with its schemas
 	defaultVocabs []string            // names of default vocabs
 }
 
@@ -47,7 +47,7 @@ var (
 			"dependencies":    posProp,
 		},
 		vocabPrefix:   "",
-		allVocabs:     []string{},
+		allVocabs:     map[string]*Schema{},
 		defaultVocabs: []string{},
 	}
 
@@ -60,7 +60,7 @@ var (
 			"contains":      posSelf,
 		}),
 		vocabPrefix:   "",
-		allVocabs:     []string{},
+		allVocabs:     map[string]*Schema{},
 		defaultVocabs: []string{},
 	}
 
@@ -74,7 +74,7 @@ var (
 			"else": posSelf,
 		}),
 		vocabPrefix:   "",
-		allVocabs:     []string{},
+		allVocabs:     map[string]*Schema{},
 		defaultVocabs: []string{},
 	}
 
@@ -90,13 +90,13 @@ var (
 			"contentSchema":         posSelf,
 		}),
 		vocabPrefix: "https://json-schema.org/draft/2019-09/vocab/",
-		allVocabs: []string{
-			"core",
-			"applicator",
-			"validation",
-			"meta-data",
-			"format",
-			"content",
+		allVocabs: map[string]*Schema{
+			"core":       nil,
+			"applicator": nil,
+			"validation": nil,
+			"meta-data":  nil,
+			"format":     nil,
+			"content":    nil,
 		},
 		defaultVocabs: []string{"core", "applicator", "validation"},
 	}
@@ -109,15 +109,15 @@ var (
 			"prefixItems": posItem,
 		}),
 		vocabPrefix: "https://json-schema.org/draft/2020-12/vocab/",
-		allVocabs: []string{
-			"core",
-			"applicator",
-			"unevaluated",
-			"validation",
-			"meta-data",
-			"format-annotation",
-			"format-assertion",
-			"content",
+		allVocabs: map[string]*Schema{
+			"core":              nil,
+			"applicator":        nil,
+			"unevaluated":       nil,
+			"validation":        nil,
+			"meta-data":         nil,
+			"format-annotation": nil,
+			"format-assertion":  nil,
+			"content":           nil,
 		},
 		defaultVocabs: []string{"core", "applicator", "unevaluated", "validation"},
 	}
@@ -126,10 +126,13 @@ var (
 )
 
 func init() {
+	c := NewCompiler()
+	c.AssertFormat()
 	for _, d := range []*Draft{Draft4, Draft6, Draft7, Draft2019, Draft2020} {
-		c := NewCompiler()
-		c.AssertFormat()
 		d.sch = c.MustCompile(d.url)
+		for name := range d.allVocabs {
+			d.allVocabs[name] = c.MustCompile(strings.TrimSuffix(d.url, "schema") + "meta/" + name)
+		}
 	}
 }
 
