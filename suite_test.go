@@ -130,6 +130,12 @@ func testDir(t *testing.T, suite, dpath string, draft *jsonschema.Draft) {
 }
 
 func testSuite(t *testing.T, suite string) {
+	if _, err := os.Stat(suite); err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+		t.Fatal(err)
+	}
 	testDir(t, suite, "draft4", jsonschema.Draft4)
 	testDir(t, suite, "draft6", jsonschema.Draft6)
 	testDir(t, suite, "draft7", jsonschema.Draft7)
