@@ -23,6 +23,7 @@ func (c *objCompiler) compile(s *Schema) error {
 
 	// anchor --
 	if s.DraftVersion < 2019 {
+		// anchor is specified in id
 		id := c.string(c.r.draft.id)
 		if id != "" {
 			_, f := split(id)
@@ -33,11 +34,11 @@ func (c *objCompiler) compile(s *Schema) error {
 					return &ParseAnchorError{URL: s.Location}
 				}
 			}
-
 		}
 	} else {
 		s.Anchor = c.string("$anchor")
 	}
+
 	if err := c.compileDraft4(s); err != nil {
 		return err
 	}
@@ -129,20 +130,16 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 		}
 		s.MultipleOf = c.numVal("multipleOf")
 		s.Maximum = c.numVal("maximum")
-		if b := c.boolVal("exclusiveMaximum"); b != nil {
-			if *b {
-				s.ExclusiveMaximum = s.Maximum
-				s.Maximum = nil
-			}
+		if c.boolean("exclusiveMaximum") {
+			s.ExclusiveMaximum = s.Maximum
+			s.Maximum = nil
 		} else {
 			s.ExclusiveMaximum = c.numVal("exclusiveMaximum")
 		}
 		s.Minimum = c.numVal("minimum")
-		if b := c.boolVal("exclusiveMinimum"); b != nil {
-			if *b {
-				s.ExclusiveMinimum = s.Minimum
-				s.Minimum = nil
-			}
+		if c.boolean("exclusiveMinimum") {
+			s.ExclusiveMinimum = s.Minimum
+			s.Minimum = nil
 		} else {
 			s.ExclusiveMinimum = c.numVal("exclusiveMinimum")
 		}
@@ -168,17 +165,7 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 	}
 
 	// format --
-	assertFormat := c.c.assertFormat
-	if !assertFormat {
-		if c.draftVersion() < 2019 {
-			assertFormat = true
-		} else if c.draftVersion() == 2019 {
-			assertFormat = c.hasVocab("format")
-		} else {
-			assertFormat = c.hasVocab("format-assertion")
-		}
-	}
-	if assertFormat {
+	if c.assertFormat() {
 		if f := c.strVal("format"); f != nil {
 			if *f == "regex" {
 				s.Format = &Format{
@@ -423,6 +410,19 @@ func (c *objCompiler) draftVersion() int {
 func (c *objCompiler) hasVocab(name string) bool {
 	return c.r.hasVocab(name)
 }
+
+func (c *objCompiler) assertFormat() bool {
+	if c.c.assertFormat || c.draftVersion() < 2019 {
+		return true
+	}
+	if c.draftVersion() == 2019 {
+		return c.hasVocab("format")
+	} else {
+		return c.hasVocab("format-assertion")
+	}
+}
+
+// value helpers --
 
 func (c *objCompiler) boolVal(pname string) *bool {
 	v, ok := c.obj[pname]
