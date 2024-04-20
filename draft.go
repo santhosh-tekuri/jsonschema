@@ -14,6 +14,9 @@ const (
 	posItem
 )
 
+// TODO: subschemas for propertyDependencies keyword
+// 		 cannot be captured using current implementation
+
 type Draft struct {
 	version       int
 	url           string
