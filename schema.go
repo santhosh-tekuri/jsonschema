@@ -79,6 +79,8 @@ type Schema struct {
 	ExclusiveMinimum *big.Rat
 	MultipleOf       *big.Rat
 
+	Extensions []SchemaExt
+
 	// annotations --
 	Title       string
 	Description string

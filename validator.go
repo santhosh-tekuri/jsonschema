@@ -162,6 +162,11 @@ func (vd *validator) validate() (*uneval, error) {
 			vd.validateRefs()
 		}
 		vd.condValidate()
+
+		for _, ext := range s.Extensions {
+			ext.Validate(&ValidatorContext{vd}, v)
+		}
+
 		if s.DraftVersion >= 2019 {
 			vd.unevalValidate()
 		}

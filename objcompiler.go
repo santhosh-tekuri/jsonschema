@@ -62,6 +62,16 @@ func (c *objCompiler) compile(s *Schema) error {
 			return err
 		}
 	}
+
+	// vocabularies
+	for _, vocab := range c.c.roots.vocabularies {
+		ext, err := vocab.Compile(&CompilerContext{}, c.obj)
+		if err != nil {
+			return err
+		}
+		s.Extensions = append(s.Extensions, ext)
+	}
+
 	return nil
 }
 

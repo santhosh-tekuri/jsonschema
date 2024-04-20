@@ -12,6 +12,7 @@ type roots struct {
 	userResources map[url]any
 	loader        URLLoader
 	regexpEngine  RegexpEngine
+	vocabularies  map[string]*Vocabulary
 }
 
 func newRoots() *roots {
@@ -21,6 +22,7 @@ func newRoots() *roots {
 		userResources: map[url]any{},
 		loader:        FileLoader{},
 		regexpEngine:  goRegexpCompile,
+		vocabularies:  map[string]*Vocabulary{},
 	}
 }
 

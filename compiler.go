@@ -93,6 +93,11 @@ func (c *Compiler) RegisterContentMediaType(mt *MediaType) {
 	c.mediaTypes[mt.Name] = mt
 }
 
+// RegisterVocabulary registers custom vocabulary.
+func (c *Compiler) RegisterVocabulary(vocab *Vocabulary) {
+	c.roots.vocabularies[vocab.URL] = vocab
+}
+
 // AddResource adds schema resource which gets used later in reference
 // resolution.
 //
