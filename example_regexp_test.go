@@ -9,14 +9,14 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
-type dclarkRegexp regexp2.Regexp
+type dlclarkRegexp regexp2.Regexp
 
-func (re *dclarkRegexp) MatchString(s string) bool {
+func (re *dlclarkRegexp) MatchString(s string) bool {
 	matched, err := (*regexp2.Regexp)(re).MatchString(s)
 	return err == nil && matched
 }
 
-func (re *dclarkRegexp) String() string {
+func (re *dlclarkRegexp) String() string {
 	return (*regexp2.Regexp)(re).String()
 }
 
@@ -25,10 +25,12 @@ func dlclarkCompile(s string) (jsonschema.Regexp, error) {
 	if err != nil {
 		return nil, err
 	}
-	return (*dclarkRegexp)(re), nil
+	return (*dlclarkRegexp)(re), nil
 }
 
-func Example_customRegexEngine() {
+// Example_customRegexpEngine shows how to use dlclark/regexp2
+// instead of regexp from standard library.
+func Example_customRegexpEngine() {
 	// golang regexp does not support escape sequence: `\c`
 	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{
 		"type": "string",
