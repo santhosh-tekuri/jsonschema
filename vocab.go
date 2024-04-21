@@ -24,7 +24,6 @@ type Vocabulary struct {
 
 // SchemaExt is compled form of vocabulary.
 type SchemaExt interface {
-
 	// Validate validates v against and errors if any are reported
 	// to ctx.
 	Validate(ctx *ValidatorContext, v any)

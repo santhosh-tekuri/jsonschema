@@ -154,6 +154,9 @@ func (r *root) validate(ptr jsonPointer, v any, regexpEngine RegexpEngine) error
 	}
 
 	// validate only with the vocabs listed in metaschema
+	if err := r.draft.allVocabs["core"].validate(v, regexpEngine); err != nil {
+		return &SchemaValidationError{URL: up.String(), Err: err}
+	}
 	for _, vocab := range r.metaVocabs {
 		if err := r.draft.allVocabs[vocab].validate(v, regexpEngine); err != nil {
 			return &SchemaValidationError{URL: up.String(), Err: err}
