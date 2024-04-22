@@ -252,6 +252,7 @@
 			"$schema": "https://json-schema.org/draft/2020-12/schema#",
 			"$defs": {
 				"one": {
+					"$id": "temp",
 					"$schema": "https://json-schema.org/draft/2019-09/schema#"
 				}
 			}
@@ -266,6 +267,7 @@
 			"$schema": "https://json-schema.org/draft/2020-12/schema#",
 			"$defs": {
 				"one": {
+					"$id": "temp",
 					"$schema": "https://json-schema.org/draft/2020-12/schema"
 				}
 			}

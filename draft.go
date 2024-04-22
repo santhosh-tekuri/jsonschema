@@ -64,6 +64,10 @@ type Draft struct {
 	defaultVocabs []string           // names of default vocabs
 }
 
+func (d *Draft) String() string {
+	return d.url
+}
+
 var (
 	Draft4 = &Draft{
 		version: 4,

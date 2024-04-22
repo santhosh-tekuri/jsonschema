@@ -153,15 +153,6 @@ func (r *root) _collectResources(sch any, base url, schPtr jsonPointer) error {
 		return nil
 	}
 
-	if sch, ok := obj["$schema"]; ok {
-		if sch, ok := sch.(string); ok && sch != "" {
-			if got := draftFromURL(sch); got != nil && got != r.draft {
-				loc := urlPtr{r.url, schPtr}
-				return &MetaSchemaMismatchError{loc.String()}
-			}
-		}
-	}
-
 	var res *resource
 	if id := r.draft.getID(obj); id != "" {
 		uf, err := base.join(id)
@@ -177,6 +168,16 @@ func (r *root) _collectResources(sch any, base url, schPtr jsonPointer) error {
 	}
 
 	if res != nil {
+		// note: only schema resources can have "$schema"
+		if sch, ok := obj["$schema"]; ok {
+			if sch, ok := sch.(string); ok && sch != "" {
+				if got := draftFromURL(sch); got != nil && got != r.draft {
+					loc := urlPtr{r.url, schPtr}
+					return &MetaSchemaMismatchError{loc.String()}
+				}
+			}
+		}
+
 		found := false
 		for _, res := range r.resources {
 			if res.id == base {
