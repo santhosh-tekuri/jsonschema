@@ -55,61 +55,63 @@ func (rr *roots) orLoad(u url) (*root, error) {
 	return rr.addRoot(u, doc, make(map[url]struct{}))
 }
 
-func (rr *roots) addRoot(u url, doc any, cycle map[url]struct{}) (*root, error) {
-	draft, vocabs, err := func() (*Draft, []string, error) {
-		obj, ok := doc.(map[string]any)
-		if !ok {
-			return rr.defaultDraft, nil, nil
-		}
-		sch, ok := strVal(obj, "$schema")
-		if !ok {
-			return rr.defaultDraft, nil, nil
-		}
-		if draft := draftFromURL(sch); draft != nil {
-			return draft, nil, nil
-		}
-		sch, _ = split(sch)
-		if _, err := gourl.Parse(sch); err != nil {
-			return nil, nil, &InvalidMetaSchemaURLError{u.String(), err}
-		}
-		schUrl := url(sch)
-		if r, ok := rr.roots[schUrl]; ok {
-			vocabs, err := r.getReqdVocabs()
-			return r.draft, vocabs, err
-		}
-		if schUrl == u {
-			return nil, nil, &UnsupportedDraftError{schUrl.String()}
-		}
-		if _, ok := cycle[schUrl]; ok {
-			return nil, nil, &MetaSchemaCycleError{u.String()}
-		}
-		cycle[schUrl] = struct{}{}
-		doc, err := rr.loadURL(schUrl)
-		if err != nil {
-			return nil, nil, err
-		}
-		r, err := rr.addRoot(schUrl, doc, cycle)
-		if err != nil {
-			return nil, nil, err
-		}
+func (rr *roots) getMeta(up urlPtr, doc any, cycle map[url]struct{}) (meta, error) {
+	obj, ok := doc.(map[string]any)
+	if !ok {
+		return meta{rr.defaultDraft, nil}, nil
+	}
+	sch, ok := strVal(obj, "$schema")
+	if !ok {
+		return meta{rr.defaultDraft, nil}, nil
+	}
+	if draft := draftFromURL(sch); draft != nil {
+		return meta{draft, nil}, nil
+	}
+	sch, _ = split(sch)
+	if _, err := gourl.Parse(sch); err != nil {
+		return meta{}, &InvalidMetaSchemaURLError{up.String(), err}
+	}
+	schUrl := url(sch)
+	if r, ok := rr.roots[schUrl]; ok {
 		vocabs, err := r.getReqdVocabs()
-		return r.draft, vocabs, err
-	}()
+		return meta{r.draft, vocabs}, err
+	}
+	if schUrl == up.url {
+		return meta{}, &UnsupportedDraftError{schUrl.String()}
+	}
+	if _, ok := cycle[schUrl]; ok {
+		return meta{}, &MetaSchemaCycleError{schUrl.String()}
+	}
+	cycle[schUrl] = struct{}{}
+	doc, err := rr.loadURL(schUrl)
+	if err != nil {
+		return meta{}, err
+	}
+	r, err := rr.addRoot(schUrl, doc, cycle)
+	if err != nil {
+		return meta{}, err
+	}
+	vocabs, err := r.getReqdVocabs()
+	return meta{r.draft, vocabs}, err
+}
+
+func (rr *roots) addRoot(u url, doc any, cycle map[url]struct{}) (*root, error) {
+	meta, err := rr.getMeta(urlPtr{u, ""}, doc, cycle)
 	if err != nil {
 		return nil, err
 	}
 
 	resources := map[jsonPointer]*resource{}
-	if err := draft.collectResources(doc, u, "", u, resources); err != nil {
+	if err := meta.draft.collectResources(doc, u, "", u, resources); err != nil {
 		return nil, err
 	}
 
 	r := &root{
 		url:        u,
 		doc:        doc,
-		draft:      draft,
+		draft:      meta.draft,
 		resources:  resources,
-		metaVocabs: vocabs,
+		metaVocabs: meta.vocabs,
 	}
 	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
 		!strings.HasPrefix(u.String(), "https://json-schema.org/") {

@@ -186,7 +186,7 @@
 			"$schema": "http://remotes/a.json"
 		},
 		"errors": [
-			"MetaSchemaCycleError{URL:\"http://remotes/b.json\"}"
+			"MetaSchemaCycleError{URL:\"http://remotes/a.json\"}"
 		]
 	},
 	{

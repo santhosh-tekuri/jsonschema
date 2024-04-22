@@ -178,6 +178,13 @@ func newResource(ptr jsonPointer, id url) *resource {
 	return &resource{ptr: ptr, id: id, anchors: make(map[anchor]jsonPointer)}
 }
 
+//--
+
+type meta struct {
+	draft  *Draft
+	vocabs []string
+}
+
 // --
 
 type UnsupportedVocabularyError struct {
