@@ -100,18 +100,16 @@ func (rr *roots) addRoot(u url, doc any, cycle map[url]struct{}) (*root, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	resources := map[jsonPointer]*resource{}
-	if err := meta.draft.collectResources(doc, u, "", u, resources); err != nil {
-		return nil, err
-	}
-
 	r := &root{
-		url:        u,
-		doc:        doc,
-		draft:      meta.draft,
-		resources:  resources,
-		metaVocabs: meta.vocabs,
+		url:                 u,
+		doc:                 doc,
+		draft:               meta.draft,
+		resources:           map[jsonPointer]*resource{},
+		metaVocabs:          meta.vocabs,
+		subschemasProcessed: map[jsonPointer]struct{}{},
+	}
+	if err := r.collectResources(doc, u, ""); err != nil {
+		return nil, err
 	}
 	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
 		!strings.HasPrefix(u.String(), "https://json-schema.org/") {
@@ -137,7 +135,7 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 	if err != nil {
 		return err
 	}
-	if r.draft.isSubschema(string(up.ptr)) {
+	if _, ok := r.subschemasProcessed[up.ptr]; ok {
 		return nil
 	}
 	v, err := up.lookup(r.doc)

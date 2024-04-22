@@ -12,6 +12,8 @@ type root struct {
 	draft      *Draft
 	resources  map[jsonPointer]*resource
 	metaVocabs []string // nil means use draft
+
+	subschemasProcessed map[jsonPointer]struct{}
 }
 
 func (r *root) hasVocab(name string) bool {
@@ -127,23 +129,167 @@ func (r *root) resolve(uf urlFrag) (*urlPtr, error) {
 	return &up, err
 }
 
+func (r *root) collectResources(sch any, base url, schPtr jsonPointer) error {
+	if _, ok := r.subschemasProcessed[schPtr]; ok {
+		return nil
+	}
+	if err := r._collectResources(sch, base, schPtr); err != nil {
+		return err
+	}
+	r.subschemasProcessed[schPtr] = struct{}{}
+	return nil
+}
+
+func (r *root) _collectResources(sch any, base url, schPtr jsonPointer) error {
+	if _, ok := sch.(bool); ok {
+		if schPtr.isEmpty() {
+			// root resource
+			r.resources[schPtr] = newResource(schPtr, base)
+		}
+		return nil
+	}
+	obj, ok := sch.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	if sch, ok := obj["$schema"]; ok {
+		if sch, ok := sch.(string); ok && sch != "" {
+			if got := draftFromURL(sch); got != nil && got != r.draft {
+				loc := urlPtr{r.url, schPtr}
+				return &MetaSchemaMismatchError{loc.String()}
+			}
+		}
+	}
+
+	var res *resource
+	if id := r.draft.getID(obj); id != "" {
+		uf, err := base.join(id)
+		if err != nil {
+			loc := urlPtr{r.url, schPtr}
+			return &ParseIDError{loc.String()}
+		}
+		base = uf.url
+		res = newResource(schPtr, base)
+	} else if schPtr.isEmpty() {
+		// root resource
+		res = newResource(schPtr, base)
+	}
+
+	if res != nil {
+		found := false
+		for _, res := range r.resources {
+			if res.id == base {
+				found = true
+				if res.ptr != schPtr {
+					return &DuplicateIDError{base.String(), r.url.String(), string(schPtr), string(res.ptr)}
+				}
+			}
+		}
+		if !found {
+			r.resources[schPtr] = res
+		}
+	}
+
+	// collect anchors into base resource
+	for _, res := range r.resources {
+		if res.id == base {
+			// found base resource
+			if err := r.collectAnchors(sch, schPtr, res); err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	// process subschemas
+	subschemas := map[jsonPointer]any{}
+	r.draft.subschemas.collect(obj, schPtr, subschemas)
+	for ptr, v := range subschemas {
+		if err := r.collectResources(v, base, ptr); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (r *root) addSubschema(ptr jsonPointer) error {
 	v, err := (&urlPtr{r.url, ptr}).lookup(r.doc)
 	if err != nil {
 		return err
 	}
 	baseURL := r.baseURL(ptr)
-	if err := r.draft.collectResources(v, baseURL, ptr, r.url, r.resources); err != nil {
+	if err := r.collectResources(v, baseURL, ptr); err != nil {
 		return err
 	}
 
 	// collect anchors
 	if _, ok := r.resources[ptr]; !ok {
 		res := r.resource(ptr)
-		if err := r.draft.collectAnchors(v, ptr, res, r.url); err != nil {
+		if err := r.collectAnchors(v, ptr, res); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+func (r *root) collectAnchors(sch any, schPtr jsonPointer, res *resource) error {
+	obj, ok := sch.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	addAnchor := func(anchor anchor) error {
+		ptr1, ok := res.anchors[anchor]
+		if ok {
+			if ptr1 == schPtr {
+				// anchor with same root_ptr already exists
+				return nil
+			}
+			return &DuplicateAnchorError{
+				string(anchor), r.url.String(), string(ptr1), string(schPtr),
+			}
+		}
+		res.anchors[anchor] = schPtr
+		return nil
+	}
+
+	if r.draft.version < 2019 {
+		if _, ok := obj["$ref"]; ok {
+			// All other properties in a "$ref" object MUST be ignored
+			return nil
+		}
+		// anchor is specified in id
+		if id, ok := strVal(obj, r.draft.id); ok {
+			_, frag, err := splitFragment(id)
+			if err != nil {
+				loc := urlPtr{r.url, schPtr}
+				return &ParseAnchorError{loc.String()}
+			}
+			if anchor, ok := frag.convert().(anchor); ok {
+				if err := addAnchor(anchor); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if r.draft.version >= 2019 {
+		if s, ok := strVal(obj, "$anchor"); ok {
+			if err := addAnchor(anchor(s)); err != nil {
+				return err
+			}
+		}
+	}
+	if r.draft.version >= 2020 {
+		if s, ok := strVal(obj, "$dynamicAnchor"); ok {
+			if err := addAnchor(anchor(s)); err != nil {
+				return err
+			}
+			res.dynamicAnchors = append(res.dynamicAnchors, anchor(s))
+		}
+	}
+
 	return nil
 }
 

@@ -2,30 +2,66 @@ package jsonschema
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
-type position uint
+type Position uint
 
 const (
-	posSelf position = 1 << iota
-	posProp
-	posItem
+	PosProp Position = 0
+	PosItem Position = 1
 )
 
-// TODO: subschemas for propertyDependencies keyword
-// 		 cannot be captured using current implementation
+type SchemaPosition []Position
+
+func (sp SchemaPosition) collect(v any, ptr jsonPointer, target map[jsonPointer]any) {
+	if len(sp) == 0 {
+		target[ptr] = v
+		return
+	}
+	p, sp := sp[0], sp[1:]
+	switch p {
+	case PosProp:
+		if obj, ok := v.(map[string]any); ok {
+			for pname, pvalue := range obj {
+				ptr := ptr.append(pname)
+				sp.collect(pvalue, ptr, target)
+			}
+		}
+	case PosItem:
+		if arr, ok := v.([]any); ok {
+			for i, item := range arr {
+				ptr := ptr.append(fmt.Sprint(i))
+				sp.collect(item, ptr, target)
+			}
+		}
+	}
+}
+
+type SubSchemas map[string][]SchemaPosition
+
+func (ss SubSchemas) collect(obj map[string]any, ptr jsonPointer, target map[jsonPointer]any) {
+	for kw, spp := range ss {
+		v, ok := obj[kw]
+		if !ok {
+			continue
+		}
+		ptr := ptr.append(kw)
+		for _, sp := range spp {
+			sp.collect(v, ptr, target)
+		}
+	}
+}
 
 type Draft struct {
 	version       int
 	url           string
 	sch           *Schema
-	id            string              // property name used to represent id
-	subschemas    map[string]position // locations of subschemas
-	vocabPrefix   string              // prefix used for vocabulary
-	allVocabs     map[string]*Schema  // names of supported vocabs with its schemas
-	defaultVocabs []string            // names of default vocabs
+	id            string             // property name used to represent id
+	subschemas    SubSchemas         // locations of subschemas
+	vocabPrefix   string             // prefix used for vocabulary
+	allVocabs     map[string]*Schema // names of supported vocabs with its schemas
+	defaultVocabs []string           // names of default vocabs
 }
 
 var (
@@ -33,21 +69,21 @@ var (
 		version: 4,
 		url:     "http://json-schema.org/draft-04/schema",
 		id:      "id",
-		subschemas: map[string]position{
+		subschemas: map[string][]SchemaPosition{
 			// type agonistic
-			"definitions": posProp,
-			"not":         posSelf,
-			"allOf":       posItem,
-			"anyOf":       posItem,
-			"oneOf":       posItem,
+			"definitions": {{PosProp}},
+			"not":         {{}},
+			"allOf":       {{PosItem}},
+			"anyOf":       {{PosItem}},
+			"oneOf":       {{PosItem}},
 			// object
-			"properties":           posProp,
-			"additionalProperties": posSelf,
-			"patternProperties":    posProp,
+			"properties":           {{PosProp}},
+			"additionalProperties": {{}},
+			"patternProperties":    {{PosProp}},
 			// array
-			"items":           posSelf | posItem,
-			"additionalItems": posSelf,
-			"dependencies":    posProp,
+			"items":           {{}, {PosItem}},
+			"additionalItems": {{}},
+			"dependencies":    {{PosProp}},
 		},
 		vocabPrefix:   "",
 		allVocabs:     map[string]*Schema{},
@@ -58,9 +94,9 @@ var (
 		version: 6,
 		url:     "http://json-schema.org/draft-06/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft4.subschemas, map[string]position{
-			"propertyNames": posSelf,
-			"contains":      posSelf,
+		subschemas: joinMaps(Draft4.subschemas, map[string][]SchemaPosition{
+			"propertyNames": {{}},
+			"contains":      {{}},
 		}),
 		vocabPrefix:   "",
 		allVocabs:     map[string]*Schema{},
@@ -71,10 +107,10 @@ var (
 		version: 7,
 		url:     "http://json-schema.org/draft-07/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft6.subschemas, map[string]position{
-			"if":   posSelf,
-			"then": posSelf,
-			"else": posSelf,
+		subschemas: joinMaps(Draft6.subschemas, map[string][]SchemaPosition{
+			"if":   {{}},
+			"then": {{}},
+			"else": {{}},
 		}),
 		vocabPrefix:   "",
 		allVocabs:     map[string]*Schema{},
@@ -85,12 +121,12 @@ var (
 		version: 2019,
 		url:     "https://json-schema.org/draft/2019-09/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft7.subschemas, map[string]position{
-			"$defs":                 posProp,
-			"dependentSchemas":      posProp,
-			"unevaluatedProperties": posSelf,
-			"unevaluatedItems":      posSelf,
-			"contentSchema":         posSelf,
+		subschemas: joinMaps(Draft7.subschemas, map[string][]SchemaPosition{
+			"$defs":                 {{PosProp}},
+			"dependentSchemas":      {{PosProp}},
+			"unevaluatedProperties": {{}},
+			"unevaluatedItems":      {{}},
+			"contentSchema":         {{}},
 		}),
 		vocabPrefix: "https://json-schema.org/draft/2019-09/vocab/",
 		allVocabs: map[string]*Schema{
@@ -108,8 +144,8 @@ var (
 		version: 2020,
 		url:     "https://json-schema.org/draft/2020-12/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft2019.subschemas, map[string]position{
-			"prefixItems": posItem,
+		subschemas: joinMaps(Draft2019.subschemas, map[string][]SchemaPosition{
+			"prefixItems": {{PosItem}},
 		}),
 		vocabPrefix: "https://json-schema.org/draft/2020-12/vocab/",
 		allVocabs: map[string]*Schema{
@@ -182,200 +218,6 @@ func (d *Draft) getID(obj map[string]any) string {
 	return id
 }
 
-func (d *Draft) collectAnchors(sch any, schPtr jsonPointer, res *resource, url url) error {
-	obj, ok := sch.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	addAnchor := func(anchor anchor) error {
-		ptr1, ok := res.anchors[anchor]
-		if ok {
-			if ptr1 == schPtr {
-				// anchor with same root_ptr already exists
-				return nil
-			}
-			return &DuplicateAnchorError{
-				string(anchor), url.String(), string(ptr1), string(schPtr),
-			}
-		}
-		res.anchors[anchor] = schPtr
-		return nil
-	}
-
-	if d.version < 2019 {
-		if _, ok := obj["$ref"]; ok {
-			// All other properties in a "$ref" object MUST be ignored
-			return nil
-		}
-		// anchor is specified in id
-		if id, ok := strVal(obj, d.id); ok {
-			_, frag, err := splitFragment(id)
-			if err != nil {
-				loc := urlPtr{url, schPtr}
-				return &ParseAnchorError{loc.String()}
-			}
-			if anchor, ok := frag.convert().(anchor); ok {
-				if err := addAnchor(anchor); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	if d.version >= 2019 {
-		if s, ok := strVal(obj, "$anchor"); ok {
-			if err := addAnchor(anchor(s)); err != nil {
-				return err
-			}
-		}
-	}
-	if d.version >= 2020 {
-		if s, ok := strVal(obj, "$dynamicAnchor"); ok {
-			if err := addAnchor(anchor(s)); err != nil {
-				return err
-			}
-			res.dynamicAnchors = append(res.dynamicAnchors, anchor(s))
-		}
-	}
-
-	return nil
-}
-
-func (d *Draft) collectResources(sch any, base url, schPtr jsonPointer, url url, resources map[jsonPointer]*resource) error {
-	if _, ok := resources[schPtr]; ok {
-		// resources are already collected
-		return nil
-	}
-	if _, ok := sch.(bool); ok {
-		if schPtr.isEmpty() {
-			// root resource
-			resources[schPtr] = newResource(schPtr, base)
-		}
-		return nil
-	}
-	obj, ok := sch.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	if sch, ok := obj["$schema"]; ok {
-		if sch, ok := sch.(string); ok && sch != "" {
-			if got := draftFromURL(sch); got != nil && got != d {
-				loc := urlPtr{url, schPtr}
-				return &MetaSchemaMismatchError{loc.String()}
-			}
-		}
-	}
-
-	var res *resource
-	if id := d.getID(obj); id != "" {
-		uf, err := base.join(id)
-		if err != nil {
-			loc := urlPtr{url, schPtr}
-			return &ParseIDError{loc.String()}
-		}
-		base = uf.url
-		res = newResource(schPtr, base)
-	} else if schPtr.isEmpty() {
-		// root resource
-		res = newResource(schPtr, base)
-	}
-
-	if res != nil {
-		for _, res := range resources {
-			if res.id == base {
-				return &DuplicateIDError{base.String(), url.String(), string(schPtr), string(res.ptr)}
-			}
-		}
-		resources[schPtr] = res
-	}
-
-	// collect anchors into base resource
-	for _, res := range resources {
-		if res.id == base {
-			// found base resource
-			if err := d.collectAnchors(sch, schPtr, res, url); err != nil {
-				return err
-			}
-			break
-		}
-	}
-
-	for kw, pos := range d.subschemas {
-		v, ok := obj[kw]
-		if !ok {
-			continue
-		}
-		if pos&posSelf != 0 {
-			ptr := schPtr.append(kw)
-			if err := d.collectResources(v, base, ptr, url, resources); err != nil {
-				return err
-			}
-		}
-		if pos&posItem != 0 {
-			if arr, ok := v.([]any); ok {
-				for i, item := range arr {
-					ptr := schPtr.append2(kw, fmt.Sprint(i))
-					if err := d.collectResources(item, base, ptr, url, resources); err != nil {
-						return err
-					}
-				}
-			}
-		}
-		if pos&posProp != 0 {
-			if obj, ok := v.(map[string]any); ok {
-				for pname, pvalue := range obj {
-					ptr := schPtr.append2(kw, pname)
-					if err := d.collectResources(pvalue, base, ptr, url, resources); err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (d *Draft) isSubschema(ptr string) bool {
-	if ptr == "" {
-		return true
-	}
-
-	split := func(ptr string) (string, string) {
-		ptr = ptr[1:] // rm `/` prefix
-		if slash := strings.IndexByte(ptr, '/'); slash != -1 {
-			return ptr[:slash], ptr[slash:]
-		} else {
-			return ptr, ""
-		}
-	}
-
-	tok, ptr := split(ptr)
-	if pos, ok := d.subschemas[tok]; ok {
-		if pos&posSelf != 0 && d.isSubschema(ptr) {
-			return true
-		}
-		if ptr != "" {
-			if pos&posProp != 0 {
-				_, ptr := split(ptr)
-				if d.isSubschema(ptr) {
-					return true
-				}
-			}
-			if pos&posItem != 0 {
-				tok, ptr := split(ptr)
-				_, err := strconv.Atoi(tok)
-				if err == nil && d.isSubschema(ptr) {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
-}
-
 func (d *Draft) validate(up urlPtr, v any, regexpEngine RegexpEngine) error {
 	err := d.sch.validate(v, regexpEngine)
 	if err != nil {
@@ -432,8 +274,8 @@ func (e *DuplicateAnchorError) Error() string {
 
 // --
 
-func joinMaps(m1 map[string]position, m2 map[string]position) map[string]position {
-	m := make(map[string]position)
+func joinMaps(m1 map[string][]SchemaPosition, m2 map[string][]SchemaPosition) map[string][]SchemaPosition {
+	m := make(map[string][]SchemaPosition)
 	for k, v := range m1 {
 		m[k] = v
 	}

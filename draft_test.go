@@ -70,11 +70,19 @@ func TestDraft_collectIds(t *testing.T) {
 		"/definitions/s4":                      "http://e.com/def", // id with fragments
 	}
 
-	resources := make(map[jsonPointer]*resource)
-	if err := Draft4.collectResources(doc, u, jsonPointer(""), u, resources); err != nil {
+	r := root{
+		url:                 url(u),
+		doc:                 doc,
+		draft:               Draft4,
+		resources:           map[jsonPointer]*resource{},
+		metaVocabs:          nil,
+		subschemasProcessed: map[jsonPointer]struct{}{},
+	}
+	if err := r.collectResources(doc, u, jsonPointer("")); err != nil {
 		t.Fatal(err)
 	}
 
+	resources := r.resources
 	got := make(map[string]string)
 	for ptr, res := range resources {
 		got[string(ptr)] = res.id.String()
@@ -110,11 +118,19 @@ func TestDraft_collectAnchors(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resources := make(map[jsonPointer]*resource)
-	if err := Draft2020.collectResources(doc, u, jsonPointer(""), u, resources); err != nil {
+	r := root{
+		url:                 url(u),
+		doc:                 doc,
+		draft:               Draft2020,
+		resources:           map[jsonPointer]*resource{},
+		metaVocabs:          nil,
+		subschemasProcessed: map[jsonPointer]struct{}{},
+	}
+	if err := r.collectResources(doc, u, jsonPointer("")); err != nil {
 		t.Fatal(err)
 	}
 
+	resources := r.resources
 	res, ok := resources[""]
 	if !ok {
 		t.Fatal("root resource is not collected")
@@ -146,21 +162,5 @@ func TestDraft_collectAnchors(t *testing.T) {
 	}
 	if !reflect.DeepEqual(res.anchors, want) {
 		t.Fatalf("anchors for /$defs/s2/items/1:\n got: %v\nwant: %v", res.anchors, want)
-	}
-}
-
-func TestDraft_isSubschema(t *testing.T) {
-	tests := []struct {
-		input string
-		want  bool
-	}{
-		{"/allOf/0", true},
-		{"/allOf/$defs", false},
-	}
-	for _, test := range tests {
-		got := Draft2020.isSubschema(test.input)
-		if got != test.want {
-			t.Fatalf("Draft2020.isSubschema(%q): got %v, want %v", test.input, got, test.want)
-		}
 	}
 }
