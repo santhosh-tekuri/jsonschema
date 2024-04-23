@@ -310,6 +310,14 @@ func TestInvalidSchema(t *testing.T) {
 		}
 	})
 
+	t.Run("invalid-second json", func(t *testing.T) {
+		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{}A")); err == nil {
+			t.Error("error expected")
+		} else {
+			t.Logf("%v", err)
+		}
+	})
+
 	t.Run("multiple json", func(t *testing.T) {
 		if err := jsonschema.NewCompiler().AddResource("test.json", strings.NewReader("{}{}")); err == nil {
 			t.Error("error expected")
