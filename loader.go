@@ -129,8 +129,8 @@ func UnmarshalJSON(r io.Reader) (any, error) {
 	if err := decoder.Decode(&doc); err != nil {
 		return nil, err
 	}
-	if t, _ := decoder.Token(); t != nil {
-		return nil, fmt.Errorf("invalid character %v after top-level value", t)
+	if _, err := decoder.Token(); err == nil || err != io.EOF {
+		return nil, fmt.Errorf("invalid character after top-level value")
 	}
 	return doc, nil
 }
