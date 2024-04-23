@@ -62,6 +62,9 @@ func main() {
 		os.Exit(2)
 	}
 
+	stdinDecoder := json.NewDecoder(os.Stdin)
+	stdinDecoder.UseNumber()
+
 	// schema --
 	if len(flag.Args()) == 0 {
 		eprintln("missing SCHEMA")
@@ -85,7 +88,19 @@ func main() {
 	c.UseLoader(newLoader(*insecure))
 
 	// compile
-	sch, err := c.Compile(schema)
+	sch, err := func() (*jsonschema.Schema, error) {
+		if schema == "-" {
+			var v any
+			if err := stdinDecoder.Decode(&v); err != nil {
+				return nil, err
+			}
+			if err := c.AddResource("stdin.json", v); err != nil {
+				return nil, err
+			}
+			return c.Compile("stdin.json")
+		}
+		return c.Compile(schema)
+	}()
 	if err != nil {
 		fmt.Printf("schema %s: failed\n", schema)
 		if !*quiet {
@@ -101,27 +116,29 @@ func main() {
 		if !*quiet {
 			fmt.Println()
 		}
-		f, err := os.Open(instance)
-		if err != nil {
-			fmt.Printf("instance %s: failed\n", instance)
-			if !*quiet {
-				fmt.Printf("error opening file %v: %v\n", instance, err)
+		inst, err := func() (any, error) {
+			if instance == "-" {
+				var inst any
+				err := stdinDecoder.Decode(&inst)
+				return inst, err
 			}
-			allValid = false
-			continue
-		}
-		defer f.Close()
-
-		var inst any
-		if ext := filepath.Ext(instance); ext == ".yaml" || ext == ".yml" {
-			err = yaml.NewDecoder(f).Decode(&inst)
-		} else {
-			inst, err = jsonschema.UnmarshalJSON(f)
-		}
+			f, err := os.Open(instance)
+			if err != nil {
+				return nil, err
+			}
+			defer f.Close()
+			if ext := filepath.Ext(instance); ext == ".yaml" || ext == ".yml" {
+				var inst any
+				err = yaml.NewDecoder(f).Decode(&inst)
+				return inst, err
+			} else {
+				return jsonschema.UnmarshalJSON(f)
+			}
+		}()
 		if err != nil {
 			fmt.Printf("instance %s: failed\n", instance)
 			if !*quiet {
-				fmt.Printf("error parsing file %v: %v\n", instance, err)
+				fmt.Println(err)
 			}
 			allValid = false
 			continue
