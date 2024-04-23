@@ -73,16 +73,24 @@ func main() {
 	}
 
 	exitCode := 0
+	stdinDecoder := json.NewDecoder(os.Stdin)
+	stdinDecoder.UseNumber()
 	for _, f := range flag.Args()[1:] {
-		file, err := os.Open(f)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			exitCode = 1
-			continue
+		var v interface{}
+		var err error
+		if f == "-" {
+			err = stdinDecoder.Decode(&v)
+		} else {
+			var file *os.File
+			file, err = os.Open(f)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+				exitCode = 1
+				continue
+			}
+			v, err = decodeFile(file)
+			_ = file.Close()
 		}
-
-		v, err := decodeFile(file)
-		_ = file.Close()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			exitCode = 1
