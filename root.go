@@ -26,39 +26,6 @@ func (r *root) hasVocab(name string) bool {
 	return slices.Contains(r.draft.defaultVocabs, name)
 }
 
-func (r *root) getReqdVocabs() ([]string, error) {
-	if r.draft.version < 2019 {
-		return nil, nil
-	}
-	obj, ok := r.doc.(map[string]any)
-	if !ok {
-		return nil, nil
-	}
-	v, ok := obj["$vocabulary"]
-	if !ok {
-		return nil, nil
-	}
-	obj, ok = v.(map[string]any)
-	if !ok {
-		return nil, nil
-	}
-
-	var vocabs []string
-	for vocab, reqd := range obj {
-		if reqd, ok := reqd.(bool); !ok || !reqd {
-			continue
-		}
-		name, ok := strings.CutPrefix(vocab, r.draft.vocabPrefix)
-		if !ok {
-			return nil, &UnsupportedVocabularyError{r.url.String(), vocab}
-		}
-		if !slices.Contains(vocabs, name) {
-			vocabs = append(vocabs, name)
-		}
-	}
-	return vocabs, nil
-}
-
 func (r *root) rootResource() *resource {
 	res, ok := r.resources[""]
 	if !ok {
