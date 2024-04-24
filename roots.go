@@ -7,48 +7,31 @@ import (
 )
 
 type roots struct {
-	defaultDraft  *Draft
-	roots         map[url]*root
-	userResources map[url]any
-	loader        URLLoader
-	regexpEngine  RegexpEngine
-	vocabularies  map[string]*Vocabulary
+	defaultDraft *Draft
+	roots        map[url]*root
+	loader       defaultLoader
+	regexpEngine RegexpEngine
+	vocabularies map[string]*Vocabulary
 }
 
 func newRoots() *roots {
 	return &roots{
-		defaultDraft:  draftLatest,
-		roots:         map[url]*root{},
-		userResources: map[url]any{},
-		loader:        FileLoader{},
-		regexpEngine:  goRegexpCompile,
-		vocabularies:  map[string]*Vocabulary{},
+		defaultDraft: draftLatest,
+		roots:        map[url]*root{},
+		loader: defaultLoader{
+			docs:   map[url]any{},
+			loader: FileLoader{},
+		},
+		regexpEngine: goRegexpCompile,
+		vocabularies: map[string]*Vocabulary{},
 	}
-}
-
-func (rr *roots) loadURL(url url) (any, error) {
-	v, err := loadMeta(url.String())
-	if err != nil {
-		return nil, err
-	}
-	if v != nil {
-		return v, nil
-	}
-	if v, ok := rr.userResources[url]; ok {
-		return v, nil
-	}
-	v, err = rr.loader.Load(url.String())
-	if err != nil {
-		return nil, &LoadURLError{URL: url.String(), Err: err}
-	}
-	return v, nil
 }
 
 func (rr *roots) orLoad(u url) (*root, error) {
 	if r, ok := rr.roots[u]; ok {
 		return r, nil
 	}
-	doc, err := rr.loadURL(u)
+	doc, err := rr.loader.load(u)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +66,7 @@ func (rr *roots) getMeta(up urlPtr, doc any, cycle map[url]struct{}) (meta, erro
 		return meta{}, &MetaSchemaCycleError{schUrl.String()}
 	}
 	cycle[schUrl] = struct{}{}
-	doc, err := rr.loadURL(schUrl)
+	doc, err := rr.loader.load(schUrl)
 	if err != nil {
 		return meta{}, err
 	}

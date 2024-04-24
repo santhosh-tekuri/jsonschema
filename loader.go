@@ -99,6 +99,43 @@ func loadMeta(url string) (any, error) {
 
 // --
 
+type defaultLoader struct {
+	docs   map[url]any // docs loaded so far
+	loader URLLoader
+}
+
+func (l *defaultLoader) add(url url, doc any) {
+	if _, ok := l.docs[url]; ok {
+		return
+	}
+	l.docs[url] = doc
+}
+
+func (l *defaultLoader) load(url url) (any, error) {
+	if doc, ok := l.docs[url]; ok {
+		return doc, nil
+	}
+	doc, err := loadMeta(url.String())
+	if err != nil {
+		return nil, err
+	}
+	if doc != nil {
+		l.add(url, doc)
+		return doc, nil
+	}
+	if l.loader == nil {
+		return nil, &LoadURLError{url.String(), errors.New("no URLLoader set")}
+	}
+	doc, err = l.loader.Load(url.String())
+	if err != nil {
+		return nil, &LoadURLError{URL: url.String(), Err: err}
+	}
+	l.add(url, doc)
+	return doc, nil
+}
+
+// --
+
 type LoadURLError struct {
 	URL string
 	Err error

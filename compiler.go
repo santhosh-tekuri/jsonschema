@@ -107,14 +107,14 @@ func (c *Compiler) AddResource(url string, doc any) error {
 	if err != nil {
 		return err
 	}
-	c.roots.userResources[uf.url] = doc
+	c.roots.loader.add(uf.url, doc)
 	return nil
 }
 
 // UseLoader overrides the default [URLLoader] used
 // to load schema resources.
 func (c *Compiler) UseLoader(loader URLLoader) {
-	c.roots.loader = loader
+	c.roots.loader.loader = loader
 }
 
 // UseRegexpEngine changes the regexp-engine used.
