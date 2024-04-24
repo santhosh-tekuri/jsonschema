@@ -2,6 +2,7 @@ package jsonschema
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -220,6 +221,39 @@ func (d *Draft) getID(obj map[string]any) string {
 	}
 	id, _ = split(id) // ignore fragment
 	return id
+}
+
+func (d *Draft) getVocabs(url url, doc any) ([]string, error) {
+	if d.version < 2019 {
+		return nil, nil
+	}
+	obj, ok := doc.(map[string]any)
+	if !ok {
+		return nil, nil
+	}
+	v, ok := obj["$vocabulary"]
+	if !ok {
+		return nil, nil
+	}
+	obj, ok = v.(map[string]any)
+	if !ok {
+		return nil, nil
+	}
+
+	var vocabs []string
+	for vocab, reqd := range obj {
+		if reqd, ok := reqd.(bool); !ok || !reqd {
+			continue
+		}
+		name, ok := strings.CutPrefix(vocab, d.vocabPrefix)
+		if !ok {
+			return nil, &UnsupportedVocabularyError{url.String(), vocab}
+		}
+		if !slices.Contains(vocabs, name) {
+			vocabs = append(vocabs, name)
+		}
+	}
+	return vocabs, nil
 }
 
 func (d *Draft) validate(up urlPtr, v any, regexpEngine RegexpEngine) error {

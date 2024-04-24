@@ -327,13 +327,6 @@ func newResource(ptr jsonPointer, id url) *resource {
 
 //--
 
-type meta struct {
-	draft  *Draft
-	vocabs []string
-}
-
-// --
-
 type UnsupportedVocabularyError struct {
 	URL        string
 	Vocabulary string

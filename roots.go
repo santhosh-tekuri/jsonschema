@@ -2,7 +2,6 @@ package jsonschema
 
 import (
 	"fmt"
-	gourl "net/url"
 	"strings"
 )
 
@@ -35,60 +34,24 @@ func (rr *roots) orLoad(u url) (*root, error) {
 	if err != nil {
 		return nil, err
 	}
-	return rr.addRoot(u, doc, make(map[url]struct{}))
+	return rr.addRoot(u, doc)
 }
 
-func (rr *roots) getMeta(up urlPtr, doc any, cycle map[url]struct{}) (meta, error) {
-	obj, ok := doc.(map[string]any)
-	if !ok {
-		return meta{rr.defaultDraft, nil}, nil
-	}
-	sch, ok := strVal(obj, "$schema")
-	if !ok {
-		return meta{rr.defaultDraft, nil}, nil
-	}
-	if draft := draftFromURL(sch); draft != nil {
-		return meta{draft, nil}, nil
-	}
-	sch, _ = split(sch)
-	if _, err := gourl.Parse(sch); err != nil {
-		return meta{}, &InvalidMetaSchemaURLError{up.String(), err}
-	}
-	schUrl := url(sch)
-	if r, ok := rr.roots[schUrl]; ok {
-		vocabs, err := r.getReqdVocabs()
-		return meta{r.draft, vocabs}, err
-	}
-	if schUrl == up.url {
-		return meta{}, &UnsupportedDraftError{schUrl.String()}
-	}
-	if _, ok := cycle[schUrl]; ok {
-		return meta{}, &MetaSchemaCycleError{schUrl.String()}
-	}
-	cycle[schUrl] = struct{}{}
-	doc, err := rr.loader.load(schUrl)
+func (rr *roots) addRoot(u url, doc any) (*root, error) {
+	draft, err := rr.loader.getDraft(urlPtr{u, ""}, doc, rr.defaultDraft, map[url]struct{}{})
 	if err != nil {
-		return meta{}, err
+		return nil, err
 	}
-	r, err := rr.addRoot(schUrl, doc, cycle)
-	if err != nil {
-		return meta{}, err
-	}
-	vocabs, err := r.getReqdVocabs()
-	return meta{r.draft, vocabs}, err
-}
-
-func (rr *roots) addRoot(u url, doc any, cycle map[url]struct{}) (*root, error) {
-	meta, err := rr.getMeta(urlPtr{u, ""}, doc, cycle)
+	vocabs, err := rr.loader.getMetaVocabs(doc, draft)
 	if err != nil {
 		return nil, err
 	}
 	r := &root{
 		url:                 u,
 		doc:                 doc,
-		draft:               meta.draft,
+		draft:               draft,
 		resources:           map[jsonPointer]*resource{},
-		metaVocabs:          meta.vocabs,
+		metaVocabs:          vocabs,
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
 	if err := r.collectResources(doc, u, ""); err != nil {

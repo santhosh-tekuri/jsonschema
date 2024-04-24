@@ -134,6 +134,61 @@ func (l *defaultLoader) load(url url) (any, error) {
 	return doc, nil
 }
 
+func (l *defaultLoader) getDraft(up urlPtr, doc any, defaultDraft *Draft, cycle map[url]struct{}) (*Draft, error) {
+	obj, ok := doc.(map[string]any)
+	if !ok {
+		return defaultDraft, nil
+	}
+	sch, ok := strVal(obj, "$schema")
+	if !ok {
+		return defaultDraft, nil
+	}
+	if draft := draftFromURL(sch); draft != nil {
+		return draft, nil
+	}
+	sch, _ = split(sch)
+	if _, err := gourl.Parse(sch); err != nil {
+		return nil, &InvalidMetaSchemaURLError{up.String(), err}
+	}
+	schUrl := url(sch)
+	if up.ptr.isEmpty() && schUrl == up.url {
+		return nil, &UnsupportedDraftError{schUrl.String()}
+	}
+	if _, ok := cycle[schUrl]; ok {
+		return nil, &MetaSchemaCycleError{schUrl.String()}
+	}
+	cycle[schUrl] = struct{}{}
+	doc, err := l.load(schUrl)
+	if err != nil {
+		return nil, err
+	}
+	return l.getDraft(urlPtr{schUrl, ""}, doc, defaultDraft, cycle)
+}
+
+func (l *defaultLoader) getMetaVocabs(doc any, draft *Draft) ([]string, error) {
+	obj, ok := doc.(map[string]any)
+	if !ok {
+		return nil, nil
+	}
+	sch, ok := strVal(obj, "$schema")
+	if !ok {
+		return nil, nil
+	}
+	if draft := draftFromURL(sch); draft != nil {
+		return nil, nil
+	}
+	sch, _ = split(sch)
+	if _, err := gourl.Parse(sch); err != nil {
+		return nil, &ParseURLError{sch, err}
+	}
+	schUrl := url(sch)
+	doc, err := l.load(schUrl)
+	if err != nil {
+		return nil, err
+	}
+	return draft.getVocabs(schUrl, doc)
+}
+
 // --
 
 type LoadURLError struct {
