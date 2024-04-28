@@ -12,19 +12,20 @@ type objCompiler struct {
 	obj map[string]any
 	up  urlPtr
 	r   *root
+	res *resource
 	q   *queue
 }
 
 func (c *objCompiler) compile(s *Schema) error {
 	// id --
-	if id := c.r.draft.getID(c.obj); id != "" {
+	if id := c.res.dialect.draft.getID(c.obj); id != "" {
 		s.ID = id
 	}
 
 	// anchor --
 	if s.DraftVersion < 2019 {
 		// anchor is specified in id
-		id := c.string(c.r.draft.id)
+		id := c.string(c.res.dialect.draft.id)
 		if id != "" {
 			_, f := split(id)
 			if f != "" {
@@ -82,7 +83,7 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 		if s.Ref, err = c.enqueueRef("$ref"); err != nil {
 			return err
 		}
-		if c.draftVersion() < 2019 && s.Ref != nil {
+		if s.DraftVersion < 2019 && s.Ref != nil {
 			// All other properties in a "$ref" object MUST be ignored
 			return nil
 		}
@@ -94,7 +95,7 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 		s.OneOf = c.enqueueArr("oneOf")
 		s.Not = c.enqueueProp("not")
 
-		if c.draftVersion() < 2020 {
+		if s.DraftVersion < 2020 {
 			if items, ok := c.obj["items"]; ok {
 				if _, ok := items.([]any); ok {
 					s.Items = c.enqueueArr("items")
@@ -175,7 +176,7 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 	}
 
 	// format --
-	if c.assertFormat() {
+	if c.assertFormat(s.DraftVersion) {
 		if f := c.strVal("format"); f != nil {
 			if *f == "regex" {
 				s.Format = &Format{
@@ -284,7 +285,7 @@ func (c *objCompiler) compileDraft2019(s *Schema) error {
 	}
 
 	var unevaluated bool
-	if c.draftVersion() == 2019 {
+	if s.DraftVersion == 2019 {
 		unevaluated = c.hasVocab("applicator")
 	} else {
 		unevaluated = c.hasVocab("unevaluated")
@@ -344,7 +345,8 @@ func (c *objCompiler) enqueueRef(pname string) (*Schema, error) {
 	if ref == nil {
 		return nil, nil
 	}
-	baseURL := c.r.baseURL(c.up.ptr)
+	baseURL := c.res.id
+	// baseURL := c.r.baseURL(c.up.ptr)
 	uf, err := baseURL.join(*ref)
 	if err != nil {
 		return nil, err
@@ -413,19 +415,15 @@ func (c *objCompiler) enqueueAdditional(pname string) any {
 
 // --
 
-func (c *objCompiler) draftVersion() int {
-	return c.r.draft.version
-}
-
 func (c *objCompiler) hasVocab(name string) bool {
-	return c.r.hasVocab(name)
+	return c.res.dialect.hasVocab(name)
 }
 
-func (c *objCompiler) assertFormat() bool {
-	if c.c.assertFormat || c.draftVersion() < 2019 {
+func (c *objCompiler) assertFormat(draftVersion int) bool {
+	if c.c.assertFormat || draftVersion < 2019 {
 		return true
 	}
-	if c.draftVersion() == 2019 {
+	if draftVersion == 2019 {
 		return c.hasVocab("format")
 	} else {
 		return c.hasVocab("format-assertion")

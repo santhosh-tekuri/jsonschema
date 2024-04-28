@@ -38,23 +38,13 @@ func (rr *roots) orLoad(u url) (*root, error) {
 }
 
 func (rr *roots) addRoot(u url, doc any) (*root, error) {
-	draft, err := rr.loader.getDraft(urlPtr{u, ""}, doc, rr.defaultDraft, map[url]struct{}{})
-	if err != nil {
-		return nil, err
-	}
-	vocabs, err := rr.loader.getMetaVocabs(doc, draft)
-	if err != nil {
-		return nil, err
-	}
 	r := &root{
 		url:                 u,
 		doc:                 doc,
-		draft:               draft,
 		resources:           map[jsonPointer]*resource{},
-		metaVocabs:          vocabs,
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := r.collectResources(doc, u, ""); err != nil {
+	if err := r.collectResources(&rr.loader, doc, u, "", dialect{rr.defaultDraft, nil}); err != nil {
 		return nil, err
 	}
 	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
@@ -88,10 +78,15 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 	if err != nil {
 		return err
 	}
-	if err := r.validate(up.ptr, v, rr.regexpEngine); err != nil {
+	rClone := r.clone()
+	if err := rClone.addSubschema(&rr.loader, up.ptr); err != nil {
 		return err
 	}
-	return r.addSubschema(up.ptr)
+	if err := rClone.validate(up.ptr, v, rr.regexpEngine); err != nil {
+		return err
+	}
+	rr.roots[r.url] = rClone
+	return nil
 }
 
 // --

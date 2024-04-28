@@ -256,10 +256,7 @@
 					"$schema": "https://json-schema.org/draft/2019-09/schema#"
 				}
 			}
-		},
-		"errors": [
-			"MetaSchemaMismatchError{URL:\"http://invalid-schemas.com/schema.json#/$defs/one\"}"
-		]
+		}
 	},
 	{
 		"description": "MetaSchemaMismatch-nomismatch",

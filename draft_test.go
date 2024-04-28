@@ -73,12 +73,10 @@ func TestDraft_collectIds(t *testing.T) {
 	r := root{
 		url:                 url(u),
 		doc:                 doc,
-		draft:               Draft4,
 		resources:           map[jsonPointer]*resource{},
-		metaVocabs:          nil,
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := r.collectResources(doc, u, jsonPointer("")); err != nil {
+	if err := r.collectResources(nil, doc, u, jsonPointer(""), dialect{Draft4, nil}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -121,12 +119,10 @@ func TestDraft_collectAnchors(t *testing.T) {
 	r := root{
 		url:                 url(u),
 		doc:                 doc,
-		draft:               Draft2020,
 		resources:           map[jsonPointer]*resource{},
-		metaVocabs:          nil,
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := r.collectResources(doc, u, jsonPointer("")); err != nil {
+	if err := r.collectResources(nil, doc, u, jsonPointer(""), dialect{Draft2020, nil}); err != nil {
 		t.Fatal(err)
 	}
 

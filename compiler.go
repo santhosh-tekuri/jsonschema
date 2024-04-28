@@ -196,9 +196,10 @@ func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
 }
 
 func (c *Compiler) compileValue(v any, sch *Schema, r *root, q *queue) error {
-	sch.DraftVersion = r.draft.version
+	res := r.resource(sch.up.ptr)
+	sch.DraftVersion = res.dialect.draft.version
 
-	base := urlPtr{sch.up.url, r.resource(sch.up.ptr).ptr}
+	base := urlPtr{sch.up.url, res.ptr}
 	sch.resource = c.enqueue(q, base)
 
 	// if resource, enqueue dynamic anchors for compilation
@@ -253,6 +254,7 @@ func (c *Compiler) compileObject(obj map[string]any, sch *Schema, r *root, q *qu
 		obj: obj,
 		up:  sch.up,
 		r:   r,
+		res: r.resource(sch.up.ptr),
 		q:   q,
 	}
 	return oc.compile(sch)

@@ -266,6 +266,23 @@ func (d *Draft) validate(up urlPtr, v any, regexpEngine RegexpEngine) error {
 
 // --
 
+type dialect struct {
+	draft  *Draft
+	vocabs []string // nil means use draft.defaultVocabs
+}
+
+func (d *dialect) hasVocab(name string) bool {
+	if name == "core" || d.draft.version < 2019 {
+		return true
+	}
+	if d.vocabs != nil {
+		return slices.Contains(d.vocabs, name)
+	}
+	return slices.Contains(d.draft.defaultVocabs, name)
+}
+
+// --
+
 type ParseIDError struct {
 	URL string
 }
