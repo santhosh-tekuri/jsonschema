@@ -12,10 +12,10 @@ import (
 )
 
 func (sch *Schema) Validate(v any) error {
-	return sch.validate(v, nil)
+	return sch.validate(v, nil, nil, nil)
 }
 
-func (sch *Schema) validate(v any, regexpEngine RegexpEngine) error {
+func (sch *Schema) validate(v any, regexpEngine RegexpEngine, meta *Schema, resources map[jsonPointer]*resource) error {
 	vd := validator{
 		v:            v,
 		vloc:         make([]string, 0, 8),
@@ -25,6 +25,8 @@ func (sch *Schema) validate(v any, regexpEngine RegexpEngine) error {
 		errors:       nil,
 		boolResult:   false,
 		regexpEngine: regexpEngine,
+		meta:         meta,
+		resources:    resources,
 	}
 	if _, err := vd.validate(); err != nil {
 		verr := err.(*ValidationError)
@@ -54,6 +56,10 @@ type validator struct {
 	errors       []*ValidationError
 	boolResult   bool // is interested to know valid or not (but not actuall error)
 	regexpEngine RegexpEngine
+
+	// meta validation
+	meta      *Schema                   // set only when validating with metaschema
+	resources map[jsonPointer]*resource // resources which should be validated with their dialect
 }
 
 func (vd *validator) validate() (*uneval, error) {
@@ -274,7 +280,13 @@ func (vd *validator) objValidate(obj map[string]any) {
 	// propertyNames --
 	if s.PropertyNames != nil {
 		for pname := range obj {
-			if err := s.PropertyNames.validate(pname, vd.regexpEngine); err != nil {
+			sch, meta, resources := s.PropertyNames, vd.meta, vd.resources
+			res := vd.metaResource(sch)
+			if res != nil {
+				meta = res.dialect.draft.sch
+				sch = meta
+			}
+			if err := sch.validate(pname, vd.regexpEngine, meta, resources); err != nil {
 				verr := err.(*ValidationError)
 				verr.SchemaURL = s.PropertyNames.Location
 				verr.ErrorKind = kind.PropertyNames(pname)
@@ -478,7 +490,13 @@ func (vd *validator) strValidate(str string) {
 	}
 
 	if deserialized != nil && s.ContentSchema != nil {
-		if err = s.ContentSchema.validate(*deserialized, vd.regexpEngine); err != nil {
+		sch, meta, resources := s.ContentSchema, vd.meta, vd.resources
+		res := vd.metaResource(sch)
+		if res != nil {
+			meta = res.dialect.draft.sch
+			sch = meta
+		}
+		if err = sch.validate(*deserialized, vd.regexpEngine, meta, resources); err != nil {
 			verr := err.(*ValidationError)
 			verr.SchemaURL = s.Location
 			verr.ErrorKind = kind.ContentSchema{}
@@ -643,7 +661,10 @@ func (vd *validator) validateSelf(sch *Schema, refKw string, boolResult bool) er
 		errors:       nil,
 		boolResult:   vd.boolResult || boolResult,
 		regexpEngine: vd.regexpEngine,
+		meta:         vd.meta,
+		resources:    vd.resources,
 	}
+	subvd.handleMeta()
 	uneval, err := subvd.validate()
 	if err == nil {
 		vd.uneval.merge(uneval)
@@ -664,9 +685,34 @@ func (vd *validator) validateVal(sch *Schema, v any, vtok string) error {
 		errors:       nil,
 		boolResult:   vd.boolResult,
 		regexpEngine: vd.regexpEngine,
+		meta:         vd.meta,
+		resources:    vd.resources,
 	}
+	subvd.handleMeta()
 	_, err := subvd.validate()
 	return err
+}
+
+func (vd *validator) metaResource(sch *Schema) *resource {
+	if sch != vd.meta {
+		return nil
+	}
+	ptr := ""
+	for _, tok := range vd.instanceLocation() {
+		ptr += "/"
+		ptr += escape(tok)
+	}
+	return vd.resources[jsonPointer(ptr)]
+}
+
+func (vd *validator) handleMeta() {
+	res := vd.metaResource(vd.sch)
+	if res == nil {
+		return
+	}
+	sch := res.dialect.draft.sch
+	vd.meta = sch
+	vd.sch = sch
 }
 
 // reference validation --

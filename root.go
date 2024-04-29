@@ -269,15 +269,20 @@ func (r *root) validate(ptr jsonPointer, v any, regexpEngine RegexpEngine) error
 	dialect := r.resource(ptr).dialect
 	up := urlPtr{r.url, ptr}
 	if dialect.vocabs == nil {
-		return dialect.draft.validate(up, v, regexpEngine)
+		meta := dialect.draft.sch
+		if err := meta.validate(v, regexpEngine, meta, r.resources); err != nil {
+			return &SchemaValidationError{URL: up.String(), Err: err}
+		}
+		return nil
 	}
 
+	// TODO: validate with vocabs with metaswitch
 	// validate only with the vocabs listed in metaschema
-	if err := dialect.draft.allVocabs["core"].validate(v, regexpEngine); err != nil {
+	if err := dialect.draft.allVocabs["core"].validate(v, regexpEngine, nil, nil); err != nil {
 		return &SchemaValidationError{URL: up.String(), Err: err}
 	}
 	for _, vocab := range dialect.vocabs {
-		if err := dialect.draft.allVocabs[vocab].validate(v, regexpEngine); err != nil {
+		if err := dialect.draft.allVocabs[vocab].validate(v, regexpEngine, nil, nil); err != nil {
 			return &SchemaValidationError{URL: up.String(), Err: err}
 		}
 	}

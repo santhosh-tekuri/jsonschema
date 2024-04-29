@@ -256,14 +256,6 @@ func (d *Draft) getVocabs(url url, doc any) ([]string, error) {
 	return vocabs, nil
 }
 
-func (d *Draft) validate(up urlPtr, v any, regexpEngine RegexpEngine) error {
-	err := d.sch.validate(v, regexpEngine)
-	if err != nil {
-		return &SchemaValidationError{URL: up.String(), Err: err}
-	}
-	return nil
-}
-
 // --
 
 type dialect struct {
