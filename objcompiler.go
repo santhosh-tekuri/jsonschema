@@ -65,8 +65,13 @@ func (c *objCompiler) compile(s *Schema) error {
 	}
 
 	// vocabularies
-	for _, vocab := range c.c.roots.vocabularies {
-		ext, err := vocab.Compile(&CompilerContext{}, c.obj)
+	vocabs := c.res.dialect.activeVocabs(c.c.roots.assertVocabs, c.c.roots.vocabularies)
+	for _, vocab := range vocabs {
+		v := c.c.roots.vocabularies[vocab]
+		if v == nil {
+			continue
+		}
+		ext, err := v.Compile(&CompilerContext{}, c.obj)
 		if err != nil {
 			return err
 		}

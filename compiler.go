@@ -98,6 +98,16 @@ func (c *Compiler) RegisterVocabulary(vocab *Vocabulary) {
 	c.roots.vocabularies[vocab.URL] = vocab
 }
 
+// AssertVocabs always enables user-defined vocabularies assertions.
+//
+// Default Behavior:
+// for draft-07: enabled.
+// for draft/2019-09: disabled unless metaschema enables a vocabulary.
+// for draft/2020-12: disabled unless metaschema enables a vocabulary.
+func (c *Compiler) AssertVocabs() {
+	c.roots.assertVocabs = true
+}
+
 // AddResource adds schema resource which gets used later in reference
 // resolution.
 //

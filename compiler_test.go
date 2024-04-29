@@ -110,3 +110,21 @@ func TestCompileNonStd(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCustomVocabValidation(t *testing.T) {
+	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{"uniqueKeys": 1}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c := jsonschema.NewCompiler()
+	c.AssertVocabs()
+	c.RegisterVocabulary(uniqueKeysVocab())
+	if err := c.AddResource("schema.json", schema); err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.Compile("schema.json")
+	if err == nil {
+		t.Fatal("exception compilation failure")
+	}
+}

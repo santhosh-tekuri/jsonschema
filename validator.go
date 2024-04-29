@@ -12,10 +12,10 @@ import (
 )
 
 func (sch *Schema) Validate(v any) error {
-	return sch.validate(v, nil, nil, nil)
+	return sch.validate(v, nil, nil, nil, false, nil)
 }
 
-func (sch *Schema) validate(v any, regexpEngine RegexpEngine, meta *Schema, resources map[jsonPointer]*resource) error {
+func (sch *Schema) validate(v any, regexpEngine RegexpEngine, meta *Schema, resources map[jsonPointer]*resource, assertVocabs bool, vocabularies map[string]*Vocabulary) error {
 	vd := validator{
 		v:            v,
 		vloc:         make([]string, 0, 8),
@@ -27,6 +27,8 @@ func (sch *Schema) validate(v any, regexpEngine RegexpEngine, meta *Schema, reso
 		regexpEngine: regexpEngine,
 		meta:         meta,
 		resources:    resources,
+		assertVocabs: assertVocabs,
+		vocabularies: vocabularies,
 	}
 	if _, err := vd.validate(); err != nil {
 		verr := err.(*ValidationError)
@@ -58,8 +60,10 @@ type validator struct {
 	regexpEngine RegexpEngine
 
 	// meta validation
-	meta      *Schema                   // set only when validating with metaschema
-	resources map[jsonPointer]*resource // resources which should be validated with their dialect
+	meta         *Schema                   // set only when validating with metaschema
+	resources    map[jsonPointer]*resource // resources which should be validated with their dialect
+	assertVocabs bool
+	vocabularies map[string]*Vocabulary
 }
 
 func (vd *validator) validate() (*uneval, error) {
@@ -283,10 +287,10 @@ func (vd *validator) objValidate(obj map[string]any) {
 			sch, meta, resources := s.PropertyNames, vd.meta, vd.resources
 			res := vd.metaResource(sch)
 			if res != nil {
-				meta = res.dialect.getSchema()
+				meta = res.dialect.getSchema(vd.assertVocabs, vd.vocabularies)
 				sch = meta
 			}
-			if err := sch.validate(pname, vd.regexpEngine, meta, resources); err != nil {
+			if err := sch.validate(pname, vd.regexpEngine, meta, resources, vd.assertVocabs, vd.vocabularies); err != nil {
 				verr := err.(*ValidationError)
 				verr.SchemaURL = s.PropertyNames.Location
 				verr.ErrorKind = kind.PropertyNames(pname)
@@ -493,10 +497,10 @@ func (vd *validator) strValidate(str string) {
 		sch, meta, resources := s.ContentSchema, vd.meta, vd.resources
 		res := vd.metaResource(sch)
 		if res != nil {
-			meta = res.dialect.getSchema()
+			meta = res.dialect.getSchema(vd.assertVocabs, vd.vocabularies)
 			sch = meta
 		}
-		if err = sch.validate(*deserialized, vd.regexpEngine, meta, resources); err != nil {
+		if err = sch.validate(*deserialized, vd.regexpEngine, meta, resources, vd.assertVocabs, vd.vocabularies); err != nil {
 			verr := err.(*ValidationError)
 			verr.SchemaURL = s.Location
 			verr.ErrorKind = kind.ContentSchema{}
@@ -663,6 +667,8 @@ func (vd *validator) validateSelf(sch *Schema, refKw string, boolResult bool) er
 		regexpEngine: vd.regexpEngine,
 		meta:         vd.meta,
 		resources:    vd.resources,
+		assertVocabs: vd.assertVocabs,
+		vocabularies: vd.vocabularies,
 	}
 	subvd.handleMeta()
 	uneval, err := subvd.validate()
@@ -687,6 +693,8 @@ func (vd *validator) validateVal(sch *Schema, v any, vtok string) error {
 		regexpEngine: vd.regexpEngine,
 		meta:         vd.meta,
 		resources:    vd.resources,
+		assertVocabs: vd.assertVocabs,
+		vocabularies: vd.vocabularies,
 	}
 	subvd.handleMeta()
 	_, err := subvd.validate()
@@ -710,7 +718,7 @@ func (vd *validator) handleMeta() {
 	if res == nil {
 		return
 	}
-	sch := res.dialect.getSchema()
+	sch := res.dialect.getSchema(vd.assertVocabs, vd.vocabularies)
 	vd.meta = sch
 	vd.sch = sch
 }

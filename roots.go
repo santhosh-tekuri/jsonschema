@@ -11,6 +11,7 @@ type roots struct {
 	loader       defaultLoader
 	regexpEngine RegexpEngine
 	vocabularies map[string]*Vocabulary
+	assertVocabs bool
 }
 
 func newRoots() *roots {
@@ -49,7 +50,7 @@ func (rr *roots) addRoot(u url, doc any) (*root, error) {
 	}
 	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
 		!strings.HasPrefix(u.String(), "https://json-schema.org/") {
-		if err := r.validate("", doc, rr.regexpEngine); err != nil {
+		if err := rr.validate(r, doc, ""); err != nil {
 			return nil, err
 		}
 	}
@@ -82,10 +83,20 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 	if err := rClone.addSubschema(&rr.loader, up.ptr); err != nil {
 		return err
 	}
-	if err := rClone.validate(up.ptr, v, rr.regexpEngine); err != nil {
+	if err := rr.validate(rClone, v, up.ptr); err != nil {
 		return err
 	}
 	rr.roots[r.url] = rClone
+	return nil
+}
+
+func (rr *roots) validate(r *root, v any, ptr jsonPointer) error {
+	dialect := r.resource(ptr).dialect
+	meta := dialect.getSchema(rr.assertVocabs, rr.vocabularies)
+	if err := meta.validate(v, rr.regexpEngine, meta, r.resources, rr.assertVocabs, rr.vocabularies); err != nil {
+		up := urlPtr{r.url, ptr}
+		return &SchemaValidationError{URL: up.String(), Err: err}
+	}
 	return nil
 }
 

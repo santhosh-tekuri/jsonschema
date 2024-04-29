@@ -265,16 +265,6 @@ func (r *root) collectAnchors(sch any, schPtr jsonPointer, res *resource) error 
 	return nil
 }
 
-func (r *root) validate(ptr jsonPointer, v any, regexpEngine RegexpEngine) error {
-	dialect := r.resource(ptr).dialect
-	up := urlPtr{r.url, ptr}
-	meta := dialect.getSchema()
-	if err := meta.validate(v, regexpEngine, meta, r.resources); err != nil {
-		return &SchemaValidationError{URL: up.String(), Err: err}
-	}
-	return nil
-}
-
 func (r *root) clone() *root {
 	processed := map[jsonPointer]struct{}{}
 	for k := range r.subschemasProcessed {

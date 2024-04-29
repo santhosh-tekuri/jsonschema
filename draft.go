@@ -273,19 +273,49 @@ func (d *dialect) hasVocab(name string) bool {
 	return slices.Contains(d.draft.defaultVocabs, name)
 }
 
-func (d *dialect) getSchema() *Schema {
+func (d *dialect) activeVocabs(assertVocabs bool, vocabularies map[string]*Vocabulary) []string {
+	if len(vocabularies) == 0 {
+		return d.vocabs
+	}
+	if d.draft.version < 2019 {
+		assertVocabs = true
+	}
+	if !assertVocabs {
+		return d.vocabs
+	}
+	var vocabs []string
 	if d.vocabs == nil {
+		vocabs = slices.Clone(d.draft.defaultVocabs)
+	} else {
+		vocabs = slices.Clone(d.vocabs)
+	}
+	for vocab := range vocabularies {
+		if !slices.Contains(vocabs, vocab) {
+			vocabs = append(vocabs, vocab)
+		}
+	}
+	return vocabs
+}
+
+func (d *dialect) getSchema(assertVocabs bool, vocabularies map[string]*Vocabulary) *Schema {
+	vocabs := d.activeVocabs(assertVocabs, vocabularies)
+	if vocabs == nil {
 		return d.draft.sch
 	}
-	// TODO: support custom vocabulary
+
 	var allOf []*Schema
-	for _, vocab := range d.vocabs {
+	for _, vocab := range vocabs {
 		sch := d.draft.allVocabs[vocab]
+		if sch == nil {
+			if v, ok := vocabularies[vocab]; ok {
+				sch = v.Schema
+			}
+		}
 		if sch != nil {
 			allOf = append(allOf, sch)
 		}
 	}
-	if !slices.Contains(d.vocabs, "core") {
+	if !slices.Contains(vocabs, "core") {
 		sch := d.draft.allVocabs["core"]
 		if sch == nil {
 			sch = d.draft.sch

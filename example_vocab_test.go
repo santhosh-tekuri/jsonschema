@@ -116,6 +116,7 @@ func Example_vocab_uniquekeys() {
 	}
 
 	c := jsonschema.NewCompiler()
+	c.AssertVocabs()
 	c.RegisterVocabulary(uniqueKeysVocab())
 	if err := c.AddResource("schema.json", schema); err != nil {
 		log.Fatal(err)
