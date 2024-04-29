@@ -273,6 +273,41 @@ func (d *dialect) hasVocab(name string) bool {
 	return slices.Contains(d.draft.defaultVocabs, name)
 }
 
+func (d *dialect) getSchema() *Schema {
+	if d.vocabs == nil {
+		return d.draft.sch
+	}
+	// TODO: support custom vocabulary
+	var allOf []*Schema
+	for _, vocab := range d.vocabs {
+		sch := d.draft.allVocabs[vocab]
+		if sch != nil {
+			allOf = append(allOf, sch)
+		}
+	}
+	if !slices.Contains(d.vocabs, "core") {
+		sch := d.draft.allVocabs["core"]
+		if sch == nil {
+			sch = d.draft.sch
+		}
+		allOf = append(allOf, sch)
+	}
+	sch := &Schema{
+		Location:     "urn:mem:metaschema",
+		up:           urlPtr{url("urn:mem:metaschema"), ""},
+		DraftVersion: d.draft.version,
+		AllOf:        allOf,
+	}
+	sch.resource = sch
+	if sch.DraftVersion >= 2020 {
+		sch.DynamicAnchor = "meta"
+		sch.dynamicAnchors = map[string]*Schema{
+			"meta": sch,
+		}
+	}
+	return sch
+}
+
 // --
 
 type ParseIDError struct {

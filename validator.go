@@ -283,7 +283,7 @@ func (vd *validator) objValidate(obj map[string]any) {
 			sch, meta, resources := s.PropertyNames, vd.meta, vd.resources
 			res := vd.metaResource(sch)
 			if res != nil {
-				meta = res.dialect.draft.sch
+				meta = res.dialect.getSchema()
 				sch = meta
 			}
 			if err := sch.validate(pname, vd.regexpEngine, meta, resources); err != nil {
@@ -493,7 +493,7 @@ func (vd *validator) strValidate(str string) {
 		sch, meta, resources := s.ContentSchema, vd.meta, vd.resources
 		res := vd.metaResource(sch)
 		if res != nil {
-			meta = res.dialect.draft.sch
+			meta = res.dialect.getSchema()
 			sch = meta
 		}
 		if err = sch.validate(*deserialized, vd.regexpEngine, meta, resources); err != nil {
@@ -710,7 +710,7 @@ func (vd *validator) handleMeta() {
 	if res == nil {
 		return
 	}
-	sch := res.dialect.draft.sch
+	sch := res.dialect.getSchema()
 	vd.meta = sch
 	vd.sch = sch
 }

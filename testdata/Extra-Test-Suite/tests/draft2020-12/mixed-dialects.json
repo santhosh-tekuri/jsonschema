@@ -33,5 +33,35 @@
 				"valid": false
 			}
 		]
+	},
+	{
+		"description": "subschema without applicator",
+		"schema": {
+			"$defs": {
+				"one": {
+					"$id": "http://temp.com/one.json",
+     				"$schema": "http://localhost:1234/draft2020-12/no-applicator.json",
+					"$comment": "should ignore unevaluatedProperties",
+					"type": "object",
+					"allOf": [
+						1,
+						{ "type": "number" }
+					] 
+				}
+			},
+			"$ref": "#/$defs/one"
+		},
+		"tests": [
+			{
+				"description": "valid",
+				"data": {},
+				"valid": true
+			},
+			{
+				"description": "invalid",
+				"data": 1,
+				"valid": false
+			}
+		]
 	}
 ]
