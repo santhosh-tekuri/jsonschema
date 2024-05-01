@@ -128,3 +128,76 @@ func TestCustomVocabValidation(t *testing.T) {
 		t.Fatal("exception compilation failure")
 	}
 }
+
+func TestCustomVocabMetaschema(t *testing.T) {
+	metaschema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{
+		"$schema": "https://json-schema.org/draft/2020-12/schema",
+		"$vocabulary": {
+			"http://example.com/meta/unique-keys": true,
+			"https://json-schema.org/draft/2020-12/vocab/validation": true,
+			"https://json-schema.org/draft/2020-12/vocab/core": true
+		},
+		"$dynamicAnchor": "meta",
+		"allOf": [
+			{ "$ref": "http://example.com/meta/unique-keys" },
+			{ "$ref": "https://json-schema.org/draft/2020-12/meta/validation" },
+			{ "$ref": "https://json-schema.org/draft/2020-12/meta/core" }
+		]
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{
+		"$schema": "http://temp.com/metaschema",
+		"uniqueKeys": 1
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c := jsonschema.NewCompiler()
+	c.RegisterVocabulary(uniqueKeysVocab())
+	if err := c.AddResource("http://temp.com/metaschema", metaschema); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.AddResource("invalid_schema.json", schema); err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.Compile("invalid_schema.json")
+	if err == nil {
+		t.Fatal("exception compilation failure")
+	}
+	if _, ok := err.(*jsonschema.SchemaValidationError); !ok {
+		t.Log("want SchemaValidationError")
+		t.Fatalf(" got %v", err)
+	}
+
+	schema, err = jsonschema.UnmarshalJSON(strings.NewReader(`{
+		"$schema": "http://temp.com/metaschema",
+		"uniqueKeys": "id"
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	inst, err := jsonschema.UnmarshalJSON(strings.NewReader(`[
+		{ "id": 1, "name": "alice" },
+		{ "id": 2, "name": "bob" },
+		{ "id": 1, "name": "scott" }
+	]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := c.AddResource("valid_schema.json", schema); err != nil {
+		t.Fatal(err)
+	}
+	sch, err := c.Compile("valid_schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = sch.Validate(inst)
+	if err == nil {
+		t.Fatal("instance should be invalid")
+	}
+}

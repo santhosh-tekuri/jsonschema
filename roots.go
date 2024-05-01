@@ -45,7 +45,7 @@ func (rr *roots) addRoot(u url, doc any) (*root, error) {
 		resources:           map[jsonPointer]*resource{},
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := r.collectResources(&rr.loader, doc, u, "", dialect{rr.defaultDraft, nil}); err != nil {
+	if err := r.collectResources(&rr.loader, rr.vocabularies, doc, u, "", dialect{rr.defaultDraft, nil}); err != nil {
 		return nil, err
 	}
 	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
@@ -80,7 +80,7 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 		return err
 	}
 	rClone := r.clone()
-	if err := rClone.addSubschema(&rr.loader, up.ptr); err != nil {
+	if err := rClone.addSubschema(&rr.loader, rr.vocabularies, up.ptr); err != nil {
 		return err
 	}
 	if err := rr.validate(rClone, v, up.ptr); err != nil {

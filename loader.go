@@ -165,7 +165,7 @@ func (l *defaultLoader) getDraft(up urlPtr, doc any, defaultDraft *Draft, cycle 
 	return l.getDraft(urlPtr{schUrl, ""}, doc, defaultDraft, cycle)
 }
 
-func (l *defaultLoader) getMetaVocabs(doc any, draft *Draft) ([]string, error) {
+func (l *defaultLoader) getMetaVocabs(doc any, draft *Draft, vocabularies map[string]*Vocabulary) ([]string, error) {
 	obj, ok := doc.(map[string]any)
 	if !ok {
 		return nil, nil
@@ -186,7 +186,7 @@ func (l *defaultLoader) getMetaVocabs(doc any, draft *Draft) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return draft.getVocabs(schUrl, doc)
+	return draft.getVocabs(schUrl, doc, vocabularies)
 }
 
 // --

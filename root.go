@@ -79,18 +79,18 @@ func (r *root) resolve(uf urlFrag) (*urlPtr, error) {
 	return &up, err
 }
 
-func (r *root) collectResources(loader *defaultLoader, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (r *root) collectResources(loader *defaultLoader, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	if _, ok := r.subschemasProcessed[schPtr]; ok {
 		return nil
 	}
-	if err := r._collectResources(loader, sch, base, schPtr, fallback); err != nil {
+	if err := r._collectResources(loader, vocabularies, sch, base, schPtr, fallback); err != nil {
 		return err
 	}
 	r.subschemasProcessed[schPtr] = struct{}{}
 	return nil
 }
 
-func (r *root) _collectResources(loader *defaultLoader, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (r *root) _collectResources(loader *defaultLoader, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	if _, ok := sch.(bool); ok {
 		if schPtr.isEmpty() {
 			// root resource
@@ -150,7 +150,7 @@ func (r *root) _collectResources(loader *defaultLoader, sch any, base url, schPt
 		}
 		if !found {
 			if hasSchema {
-				vocabs, err := loader.getMetaVocabs(sch, draft)
+				vocabs, err := loader.getMetaVocabs(sch, draft, vocabularies)
 				if err != nil {
 					return err
 				}
@@ -177,7 +177,7 @@ func (r *root) _collectResources(loader *defaultLoader, sch any, base url, schPt
 	subschemas := map[jsonPointer]any{}
 	draft.subschemas.collect(obj, schPtr, subschemas)
 	for ptr, v := range subschemas {
-		if err := r.collectResources(loader, v, base, ptr, fallback); err != nil {
+		if err := r.collectResources(loader, vocabularies, v, base, ptr, fallback); err != nil {
 			return err
 		}
 	}
@@ -185,14 +185,14 @@ func (r *root) _collectResources(loader *defaultLoader, sch any, base url, schPt
 	return nil
 }
 
-func (r *root) addSubschema(loader *defaultLoader, ptr jsonPointer) error {
+func (r *root) addSubschema(loader *defaultLoader, vocabularies map[string]*Vocabulary, ptr jsonPointer) error {
 	v, err := (&urlPtr{r.url, ptr}).lookup(r.doc)
 	if err != nil {
 		return err
 	}
 	base := r.resource(ptr)
 	baseURL := base.id
-	if err := r.collectResources(loader, v, baseURL, ptr, base.dialect); err != nil {
+	if err := r.collectResources(loader, vocabularies, v, baseURL, ptr, base.dialect); err != nil {
 		return err
 	}
 

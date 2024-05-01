@@ -223,7 +223,7 @@ func (d *Draft) getID(obj map[string]any) string {
 	return id
 }
 
-func (d *Draft) getVocabs(url url, doc any) ([]string, error) {
+func (d *Draft) getVocabs(url url, doc any, vocabularies map[string]*Vocabulary) ([]string, error) {
 	if d.version < 2019 {
 		return nil, nil
 	}
@@ -246,11 +246,19 @@ func (d *Draft) getVocabs(url url, doc any) ([]string, error) {
 			continue
 		}
 		name, ok := strings.CutPrefix(vocab, d.vocabPrefix)
-		if !ok {
+		if ok {
+			if _, ok := d.allVocabs[name]; ok {
+				if !slices.Contains(vocabs, name) {
+					vocabs = append(vocabs, name)
+					continue
+				}
+			}
+		}
+		if _, ok := vocabularies[vocab]; !ok {
 			return nil, &UnsupportedVocabularyError{url.String(), vocab}
 		}
-		if !slices.Contains(vocabs, name) {
-			vocabs = append(vocabs, name)
+		if !slices.Contains(vocabs, vocab) {
+			vocabs = append(vocabs, vocab)
 		}
 	}
 	return vocabs, nil
