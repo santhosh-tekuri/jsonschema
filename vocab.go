@@ -2,7 +2,17 @@ package jsonschema
 
 // CompilerContext provides helpers for
 // compiling a [Vocabulary].
-type CompilerContext struct{}
+type CompilerContext struct {
+	c *objCompiler
+}
+
+func (ctx *CompilerContext) Enqueue(schPath []string) *Schema {
+	ptr := ctx.c.up.ptr
+	for _, tok := range schPath {
+		ptr = ptr.append(tok)
+	}
+	return ctx.c.enqueuePtr(ptr)
+}
 
 // Vocabulary defines a set of keywords, their syntax and
 // their semantics.
@@ -33,6 +43,18 @@ type SchemaExt interface {
 // validating with [SchemaExt].
 type ValidatorContext struct {
 	vd *validator
+}
+
+// Validate validates v with sch. vpath gives path of v from current context value.
+func (ctx *ValidatorContext) Validate(sch *Schema, v any, vpath []string) error {
+	switch len(vpath) {
+	case 0:
+		return ctx.vd.validateSelf(sch, "", false)
+	case 1:
+		return ctx.vd.validateVal(sch, v, vpath[0])
+	default:
+		return ctx.vd.validateValue(sch, v, vpath)
+	}
 }
 
 // EvaluatedProp marks given property of current object as evaluated.

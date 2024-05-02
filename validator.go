@@ -701,6 +701,29 @@ func (vd *validator) validateVal(sch *Schema, v any, vtok string) error {
 	return err
 }
 
+func (vd *validator) validateValue(sch *Schema, v any, vpath []string) error {
+	vloc := append(vd.vloc, vpath...)
+	scp := vd.scp.child(sch, "", vd.scp.vid+1)
+	uneval := unevalFrom(v, sch, false)
+	subvd := validator{
+		v:            v,
+		vloc:         vloc,
+		sch:          sch,
+		scp:          scp,
+		uneval:       uneval,
+		errors:       nil,
+		boolResult:   vd.boolResult,
+		regexpEngine: vd.regexpEngine,
+		meta:         vd.meta,
+		resources:    vd.resources,
+		assertVocabs: vd.assertVocabs,
+		vocabularies: vd.vocabularies,
+	}
+	subvd.handleMeta()
+	_, err := subvd.validate()
+	return err
+}
+
 func (vd *validator) metaResource(sch *Schema) *resource {
 	if sch != vd.meta {
 		return nil

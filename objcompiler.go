@@ -71,11 +71,13 @@ func (c *objCompiler) compile(s *Schema) error {
 		if v == nil {
 			continue
 		}
-		ext, err := v.Compile(&CompilerContext{}, c.obj)
+		ext, err := v.Compile(&CompilerContext{c}, c.obj)
 		if err != nil {
 			return err
 		}
-		s.Extensions = append(s.Extensions, ext)
+		if ext != nil {
+			s.Extensions = append(s.Extensions, ext)
+		}
 	}
 
 	return nil
