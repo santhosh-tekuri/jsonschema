@@ -26,6 +26,7 @@ func main() {
 	assertFormat := flag.Bool("f", false, "Enable format assertions with draft >= 2019")
 	assertContent := flag.Bool("c", false, "Enable content assertions with draft >= 7")
 	insecure := flag.Bool("k", false, "Use insecure TLS connection")
+	cacert := flag.String("cacert", "", "Use the specified `PEM-certificate-file` to verify the peer. The file may contain multiple CA certificates")
 	flag.Parse()
 
 	// help --
@@ -85,7 +86,12 @@ func main() {
 	if *assertContent {
 		c.AssertContent()
 	}
-	c.UseLoader(newLoader(*insecure))
+	loader, err := newLoader(*insecure, *cacert)
+	if err != nil {
+		eprintln("%v", err)
+		os.Exit(2)
+	}
+	c.UseLoader(loader)
 
 	// compile
 	sch, err := func() (*jsonschema.Schema, error) {

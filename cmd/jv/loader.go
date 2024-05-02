@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,11 +14,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func newLoader(insecure bool) jsonschema.URLLoader {
+func newLoader(insecure bool, cacert string) (jsonschema.URLLoader, error) {
 	httpLoader := HTTPLoader(http.Client{
 		Timeout: 15 * time.Second,
 	})
-	if insecure {
+	if cacert != "" {
+		pem, err := os.ReadFile(cacert)
+		if err != nil {
+			return nil, err
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(pem)
+		httpLoader.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: caCertPool},
+		}
+	} else if insecure {
 		httpLoader.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
@@ -26,7 +37,7 @@ func newLoader(insecure bool) jsonschema.URLLoader {
 		"file":  FileLoader{},
 		"http":  &httpLoader,
 		"https": &httpLoader,
-	}
+	}, nil
 }
 
 type FileLoader struct{}
