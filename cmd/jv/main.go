@@ -76,6 +76,7 @@ func main() {
 	stdinDecoder := json.NewDecoder(os.Stdin)
 	stdinDecoder.UseNumber()
 	for _, f := range flag.Args()[1:] {
+		fmt.Println("instance:", f)
 		var v interface{}
 		var err error
 		if f == "-" {
