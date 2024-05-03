@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -20,6 +21,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 	help := flag.Bool("h", false, "Print help information")
+	version := flag.Bool("v", false, "Print build information")
 	quiet := flag.Bool("q", false, "Do not print errors")
 	draftVersion := flag.Int("d", 2020, "Draft `version` used when '$schema' is missing. Valid values 4, 6, 7, 2019, 2020")
 	output := flag.String("o", "simple", "Output `format`. Valid values simple, alt, flag, basic, detailed")
@@ -32,6 +34,19 @@ func main() {
 	// help --
 	if *help {
 		flag.Usage()
+		os.Exit(0)
+	}
+
+	if *version {
+		bi, ok := debug.ReadBuildInfo()
+		if ok {
+			fmt.Println(bi.Main.Path, bi.Main.Version)
+			for _, dep := range bi.Deps {
+				fmt.Println(dep.Path, dep.Version)
+			}
+		} else {
+			fmt.Println("no build information available")
+		}
 		os.Exit(0)
 	}
 
