@@ -516,11 +516,11 @@ func (k *ContentMediaType) String() string {
 
 type ContentSchema struct{}
 
-func (ContentSchema) KeywordPath() []string {
+func (*ContentSchema) KeywordPath() []string {
 	return []string{"contentSchema"}
 }
 
-func (ContentSchema) String() string {
+func (*ContentSchema) String() string {
 	return "contentSchema failed"
 }
 
