@@ -22,25 +22,27 @@ func (k *InvalidJsonValue) String() string {
 
 // --
 
-type Schema string
+type Schema struct {
+	Location string
+}
 
-func (Schema) KeywordPath() []string {
+func (*Schema) KeywordPath() []string {
 	return nil
 }
 
-func (k Schema) String() string {
-	return fmt.Sprintf("jsonschema validation failed with %s", quote(string(k)))
+func (k *Schema) String() string {
+	return fmt.Sprintf("jsonschema validation failed with %s", quote(k.Location))
 }
 
 // --
 
 type Group struct{}
 
-func (Group) KeywordPath() []string {
+func (*Group) KeywordPath() []string {
 	return nil
 }
 
-func (Group) String() string {
+func (*Group) String() string {
 	return "validation failed"
 }
 
@@ -48,11 +50,11 @@ func (Group) String() string {
 
 type Not struct{}
 
-func (Not) KeywordPath() []string {
+func (*Not) KeywordPath() []string {
 	return nil
 }
 
-func (Not) String() string {
+func (*Not) String() string {
 	return "not failed"
 }
 
@@ -72,39 +74,42 @@ func (*AllOf) String() string {
 
 type AnyOf struct{}
 
-func (AnyOf) KeywordPath() []string {
+func (*AnyOf) KeywordPath() []string {
 	return []string{"anyOf"}
 }
 
-func (AnyOf) String() string {
+func (*AnyOf) String() string {
 	return "anyOf failed"
 }
 
 // --
 
-type OneOf []int
+type OneOf struct {
+	// Subschemas gives indexes of Subschemas that have matched.
+	// Value nil, means none of the subschemas matched.
+	Subschemas []int
+}
 
-func (OneOf) KeywordPath() []string {
+func (*OneOf) KeywordPath() []string {
 	return []string{"oneOf"}
 }
 
-func (k OneOf) String() string {
-	arr := []int(k)
-	if len(arr) == 0 {
+func (k *OneOf) String() string {
+	if len(k.Subschemas) == 0 {
 		return "oneOf failed, none matched"
 	}
-	return fmt.Sprintf("oneOf failed, subschemas %d, %d matched", arr[0], arr[1])
+	return fmt.Sprintf("oneOf failed, subschemas %d, %d matched", k.Subschemas[0], k.Subschemas[1])
 }
 
 //--
 
 type FalseSchema struct{}
 
-func (FalseSchema) KeywordPath() []string {
+func (*FalseSchema) KeywordPath() []string {
 	return nil
 }
 
-func (FalseSchema) String() string {
+func (*FalseSchema) String() string {
 	return "false schema"
 }
 
@@ -284,29 +289,33 @@ func (k *MaxItems) String() string {
 
 // --
 
-type AdditionalItems int
+type AdditionalItems struct {
+	Count int
+}
 
-func (AdditionalItems) KeywordPath() []string {
+func (*AdditionalItems) KeywordPath() []string {
 	return []string{"additionalItems"}
 }
 
-func (k AdditionalItems) String() string {
-	return fmt.Sprintf("last %d additionalItem(s) not allowed", k)
+func (k *AdditionalItems) String() string {
+	return fmt.Sprintf("last %d additionalItem(s) not allowed", k.Count)
 }
 
 // --
 
-type Required []string
+type Required struct {
+	Missing []string
+}
 
-func (Required) KeywordPath() []string {
+func (*Required) KeywordPath() []string {
 	return []string{"required"}
 }
 
-func (k Required) String() string {
-	if len(k) == 1 {
-		return fmt.Sprintf("missing property %s", quote(k[0]))
+func (k *Required) String() string {
+	if len(k.Missing) == 1 {
+		return fmt.Sprintf("missing property %s", quote(k.Missing[0]))
 	}
-	return fmt.Sprintf("missing properties %s", joinQuoted(k, ", "))
+	return fmt.Sprintf("missing properties %s", joinQuoted(k.Missing, ", "))
 }
 
 // --
@@ -341,49 +350,55 @@ func (k *DependentRequired) String() string {
 
 // --
 
-type AdditionalProperties []string
+type AdditionalProperties struct {
+	Properties []string
+}
 
-func (AdditionalProperties) KeywordPath() []string {
+func (*AdditionalProperties) KeywordPath() []string {
 	return []string{"additionalProperties"}
 }
 
-func (k AdditionalProperties) String() string {
-	return fmt.Sprintf("additional roperties %s not allowed", joinQuoted(k, ", "))
+func (k *AdditionalProperties) String() string {
+	return fmt.Sprintf("additional properties %s not allowed", joinQuoted(k.Properties, ", "))
 }
 
 // --
 
-type PropertyNames string
+type PropertyNames struct {
+	Property string
+}
 
-func (PropertyNames) KeywordPath() []string {
+func (*PropertyNames) KeywordPath() []string {
 	return []string{"propertyNames"}
 }
 
-func (k PropertyNames) String() string {
-	return fmt.Sprintf("invalid property %s", quote(string(k)))
+func (k *PropertyNames) String() string {
+	return fmt.Sprintf("invalid property %s", quote(k.Property))
 }
 
 // --
 
-type UniqueItems []int
+type UniqueItems struct {
+	Duplicates [2]int
+}
 
-func (UniqueItems) KeywordPath() []string {
+func (*UniqueItems) KeywordPath() []string {
 	return []string{"uniqueItems"}
 }
 
-func (k UniqueItems) String() string {
-	return fmt.Sprintf("items at %d and %d are equal", k[0], k[1])
+func (k *UniqueItems) String() string {
+	return fmt.Sprintf("items at %d and %d are equal", k.Duplicates[0], k.Duplicates[1])
 }
 
 // --
 
 type Contains struct{}
 
-func (Contains) KeywordPath() []string {
+func (*Contains) KeywordPath() []string {
 	return []string{"contains"}
 }
 
-func (Contains) String() string {
+func (*Contains) String() string {
 	return "no items match contains schema"
 }
 

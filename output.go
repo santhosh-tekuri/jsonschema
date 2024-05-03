@@ -53,7 +53,7 @@ func (e *ValidationError) display(sb *strings.Builder, verbose bool, indent int,
 		prevAbsKwLoc := absKwLoc
 		absKwLoc = e.absoluteKeywordLocation()
 
-		if _, ok := e.ErrorKind.(kind.Schema); ok {
+		if _, ok := e.ErrorKind.(*kind.Schema); ok {
 			sb.WriteString(e.ErrorKind.String())
 		} else {
 			sb.WriteString(fmt.Sprintf("at %s", quote(jsonPtr(e.InstanceLocation))))

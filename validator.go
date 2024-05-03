@@ -33,7 +33,7 @@ func (sch *Schema) validate(v any, regexpEngine RegexpEngine, meta *Schema, reso
 	if _, err := vd.validate(); err != nil {
 		verr := err.(*ValidationError)
 		var causes []*ValidationError
-		if _, ok := verr.ErrorKind.(kind.Group); ok {
+		if _, ok := verr.ErrorKind.(*kind.Group); ok {
 			causes = verr.Causes
 		} else {
 			causes = []*ValidationError{verr}
@@ -41,7 +41,7 @@ func (sch *Schema) validate(v any, regexpEngine RegexpEngine, meta *Schema, reso
 		return &ValidationError{
 			SchemaURL:        sch.Location,
 			InstanceLocation: nil,
-			ErrorKind:        kind.Schema(sch.Location),
+			ErrorKind:        &kind.Schema{Location: sch.Location},
 			Causes:           causes,
 		}
 	}
@@ -75,7 +75,7 @@ func (vd *validator) validate() (*uneval, error) {
 		if *s.Bool {
 			return vd.uneval, nil
 		} else {
-			return nil, vd.error(kind.FalseSchema{})
+			return nil, vd.error(&kind.FalseSchema{})
 		}
 	}
 
@@ -188,7 +188,7 @@ func (vd *validator) validate() (*uneval, error) {
 	case 1:
 		return nil, vd.errors[0]
 	default:
-		verr := vd.error(kind.Group{})
+		verr := vd.error(&kind.Group{})
 		verr.Causes = vd.errors
 		return nil, verr
 	}
@@ -214,7 +214,7 @@ func (vd *validator) objValidate(obj map[string]any) {
 	// required --
 	if len(s.Required) > 0 {
 		if missing := vd.findMissing(obj, s.Required); missing != nil {
-			vd.addError(kind.Required(missing))
+			vd.addError(&kind.Required{Missing: missing})
 		}
 	}
 
@@ -274,7 +274,7 @@ func (vd *validator) objValidate(obj map[string]any) {
 		}
 	}
 	if len(additionalPros) > 0 {
-		vd.addError(kind.AdditionalProperties(additionalPros))
+		vd.addError(&kind.AdditionalProperties{Properties: additionalPros})
 	}
 
 	if s.DraftVersion == 4 {
@@ -293,7 +293,7 @@ func (vd *validator) objValidate(obj map[string]any) {
 			if err := sch.validate(pname, vd.regexpEngine, meta, resources, vd.assertVocabs, vd.vocabularies); err != nil {
 				verr := err.(*ValidationError)
 				verr.SchemaURL = s.PropertyNames.Location
-				verr.ErrorKind = kind.PropertyNames(pname)
+				verr.ErrorKind = &kind.PropertyNames{Property: pname}
 				vd.addErr(verr)
 			}
 		}
@@ -343,7 +343,7 @@ func (vd *validator) arrValidate(arr []any) {
 		if k != nil {
 			vd.addError(k)
 		} else if i != -1 {
-			vd.addError(kind.UniqueItems{i, j})
+			vd.addError(&kind.UniqueItems{Duplicates: [2]int{i, j}})
 		}
 	}
 
@@ -370,7 +370,7 @@ func (vd *validator) arrValidate(arr []any) {
 			switch additional := s.AdditionalItems.(type) {
 			case bool:
 				if !additional && evaluated != len(arr) {
-					vd.addError(kind.AdditionalItems(len(arr) - evaluated))
+					vd.addError(&kind.AdditionalItems{Count: len(arr) - evaluated})
 				}
 			case *Schema:
 				for i, item := range arr[evaluated:] {
@@ -416,7 +416,7 @@ func (vd *validator) arrValidate(arr []any) {
 				vd.addErrors(errors, &kind.MinContains{Got: matched, Want: *s.MinContains})
 			}
 		} else if len(matched) == 0 {
-			vd.addErrors(errors, kind.Contains{})
+			vd.addErrors(errors, &kind.Contains{})
 		}
 
 		// maxContains --
@@ -503,7 +503,7 @@ func (vd *validator) strValidate(str string) {
 		if err = sch.validate(*deserialized, vd.regexpEngine, meta, resources, vd.assertVocabs, vd.vocabularies); err != nil {
 			verr := err.(*ValidationError)
 			verr.SchemaURL = s.Location
-			verr.ErrorKind = kind.ContentSchema{}
+			verr.ErrorKind = &kind.ContentSchema{}
 			vd.addErr(verr)
 		}
 	}
@@ -554,7 +554,7 @@ func (vd *validator) condValidate() {
 	// not --
 	if s.Not != nil {
 		if vd.validateSelf(s.Not, "", true) == nil {
-			vd.addError(kind.Not{})
+			vd.addError(&kind.Not{})
 		}
 	}
 
@@ -607,13 +607,13 @@ func (vd *validator) condValidate() {
 				if matched == -1 {
 					matched = i
 				} else {
-					vd.addError(kind.OneOf{matched, i})
+					vd.addError(&kind.OneOf{Subschemas: []int{matched, i}})
 					break
 				}
 			}
 		}
 		if matched == -1 {
-			vd.addErrors(errors, kind.OneOf(nil))
+			vd.addErrors(errors, &kind.OneOf{Subschemas: nil})
 		}
 	}
 
@@ -753,7 +753,7 @@ func (vd *validator) validateRef(sch *Schema, kw string) error {
 	if err != nil {
 		refErr := vd.error(&kind.Reference{Keyword: kw, URL: sch.Location})
 		verr := err.(*ValidationError)
-		if _, ok := verr.ErrorKind.(kind.Group); ok {
+		if _, ok := verr.ErrorKind.(*kind.Group); ok {
 			refErr.Causes = verr.Causes
 		} else {
 			refErr.Causes = append(refErr.Causes, verr)
