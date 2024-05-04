@@ -273,7 +273,7 @@ func isInteger(num any) bool {
 }
 
 // quote returns single-quoted string.
-// used for embedding quoted strings in json
+// used for embedding quoted strings in json.
 func quote(s string) string {
 	s = fmt.Sprintf("%q", s)
 	s = strings.ReplaceAll(s, `\"`, `"`)
