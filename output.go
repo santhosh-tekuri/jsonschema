@@ -6,7 +6,11 @@ import (
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
+
+var defaultPrinter = message.NewPrinter(language.English)
 
 // format ---
 
@@ -39,7 +43,7 @@ func (e *ValidationError) skip() bool {
 	return false
 }
 
-func (e *ValidationError) display(sb *strings.Builder, verbose bool, indent int, absKwLoc string) {
+func (e *ValidationError) display(sb *strings.Builder, verbose bool, indent int, absKwLoc string, p *message.Printer) {
 	if !e.skip() {
 		if indent > 0 {
 			sb.WriteByte('\n')
@@ -54,9 +58,9 @@ func (e *ValidationError) display(sb *strings.Builder, verbose bool, indent int,
 		absKwLoc = e.absoluteKeywordLocation()
 
 		if _, ok := e.ErrorKind.(*kind.Schema); ok {
-			sb.WriteString(e.ErrorKind.String())
+			sb.WriteString(e.ErrorKind.LocalizedString(p))
 		} else {
-			sb.WriteString(fmt.Sprintf("at %s", quote(jsonPtr(e.InstanceLocation))))
+			sb.WriteString(p.Sprintf("at %s", quote(jsonPtr(e.InstanceLocation))))
 			if verbose {
 				schLoc := absKwLoc
 				if prevAbsKwLoc != "" {
@@ -68,23 +72,31 @@ func (e *ValidationError) display(sb *strings.Builder, verbose bool, indent int,
 				}
 				sb.WriteString(fmt.Sprintf(" [%s]", schLoc))
 			}
-			sb.WriteString(fmt.Sprintf(": %s", e.ErrorKind))
+			sb.WriteString(fmt.Sprintf(": %s", e.ErrorKind.LocalizedString(p)))
 		}
 	}
 	for _, cause := range e.Causes {
-		cause.display(sb, verbose, indent, absKwLoc)
+		cause.display(sb, verbose, indent, absKwLoc, p)
 	}
 }
 
 func (e *ValidationError) Error() string {
+	return e.LocalizedError(defaultPrinter)
+}
+
+func (e *ValidationError) LocalizedError(p *message.Printer) string {
 	var sb strings.Builder
-	e.display(&sb, false, 0, "")
+	e.display(&sb, false, 0, "", p)
 	return sb.String()
 }
 
 func (e *ValidationError) GoString() string {
+	return e.LocalizedGoString(defaultPrinter)
+}
+
+func (e *ValidationError) LocalizedGoString(p *message.Printer) string {
 	var sb strings.Builder
-	e.display(&sb, true, 0, "")
+	e.display(&sb, true, 0, "", p)
 	return sb.String()
 }
 
@@ -120,25 +132,36 @@ type OutputUnit struct {
 	Errors                  []OutputUnit `json:"errors,omitempty"`
 }
 
-type OutputError struct{ Kind ErrorKind }
+type OutputError struct {
+	Kind ErrorKind
+	p    *message.Printer
+}
 
 func (k OutputError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(k.Kind.String())
+	return json.Marshal(k.Kind.LocalizedString(k.p))
 }
 
 // The `Basic` structure, a flat list of output units.
 func (e *ValidationError) BasicOutput() *OutputUnit {
-	out := e.output(true, false, "", "")
+	return e.LocalizedBasicOutput(defaultPrinter)
+}
+
+func (e *ValidationError) LocalizedBasicOutput(p *message.Printer) *OutputUnit {
+	out := e.output(true, false, "", "", p)
 	return &out
 }
 
 // The `Detailed` structure, based on the schema.
 func (e *ValidationError) DetailedOutput() *OutputUnit {
-	out := e.output(false, false, "", "")
+	return e.LocalizedDetailedOutput(defaultPrinter)
+}
+
+func (e *ValidationError) LocalizedDetailedOutput(p *message.Printer) *OutputUnit {
+	out := e.output(false, false, "", "", p)
 	return &out
 }
 
-func (e *ValidationError) output(flatten, inRef bool, schemaURL, kwLoc string) OutputUnit {
+func (e *ValidationError) output(flatten, inRef bool, schemaURL, kwLoc string, p *message.Printer) OutputUnit {
 	if !inRef {
 		if _, ok := e.ErrorKind.(*kind.Reference); ok {
 			inRef = true
@@ -166,14 +189,14 @@ func (e *ValidationError) output(flatten, inRef bool, schemaURL, kwLoc string) O
 		out.AbsoluteKeywordLocation = e.absoluteKeywordLocation()
 	}
 	for _, cause := range e.Causes {
-		causeOut := cause.output(flatten, inRef, schemaURL, kwLoc)
+		causeOut := cause.output(flatten, inRef, schemaURL, kwLoc, p)
 		if cause.skip() {
 			causeOut = causeOut.Errors[0]
 		}
 		if flatten {
 			errors := causeOut.Errors
 			causeOut.Errors = nil
-			causeOut.Error = &OutputError{cause.ErrorKind}
+			causeOut.Error = &OutputError{cause.ErrorKind, p}
 			out.Errors = append(out.Errors, causeOut)
 			if len(errors) > 0 {
 				out.Errors = append(out.Errors, errors...)
@@ -183,7 +206,7 @@ func (e *ValidationError) output(flatten, inRef bool, schemaURL, kwLoc string) O
 		}
 	}
 	if len(out.Errors) == 0 {
-		out.Error = &OutputError{e.ErrorKind}
+		out.Error = &OutputError{e.ErrorKind, p}
 	}
 	return out
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+
+	"golang.org/x/text/message"
 )
 
 // --
@@ -16,8 +18,8 @@ func (*InvalidJsonValue) KeywordPath() []string {
 	return nil
 }
 
-func (k *InvalidJsonValue) String() string {
-	return fmt.Sprintf("invalid jsonType %T", k.Value)
+func (k *InvalidJsonValue) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("invalid jsonType %T", k.Value)
 }
 
 // --
@@ -30,8 +32,8 @@ func (*Schema) KeywordPath() []string {
 	return nil
 }
 
-func (k *Schema) String() string {
-	return fmt.Sprintf("jsonschema validation failed with %s", quote(k.Location))
+func (k *Schema) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("jsonschema validation failed with %s", quote(k.Location))
 }
 
 // --
@@ -42,8 +44,8 @@ func (*Group) KeywordPath() []string {
 	return nil
 }
 
-func (*Group) String() string {
-	return "validation failed"
+func (*Group) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("validation failed")
 }
 
 // --
@@ -54,8 +56,8 @@ func (*Not) KeywordPath() []string {
 	return nil
 }
 
-func (*Not) String() string {
-	return "not failed"
+func (*Not) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("not failed")
 }
 
 // --
@@ -66,8 +68,8 @@ func (*AllOf) KeywordPath() []string {
 	return []string{"allOf"}
 }
 
-func (*AllOf) String() string {
-	return "allOf failed"
+func (*AllOf) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("allOf failed")
 }
 
 // --
@@ -78,8 +80,8 @@ func (*AnyOf) KeywordPath() []string {
 	return []string{"anyOf"}
 }
 
-func (*AnyOf) String() string {
-	return "anyOf failed"
+func (*AnyOf) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("anyOf failed")
 }
 
 // --
@@ -94,11 +96,11 @@ func (*OneOf) KeywordPath() []string {
 	return []string{"oneOf"}
 }
 
-func (k *OneOf) String() string {
+func (k *OneOf) LocalizedString(p *message.Printer) string {
 	if len(k.Subschemas) == 0 {
-		return "oneOf failed, none matched"
+		return p.Sprintf("oneOf failed, none matched")
 	}
-	return fmt.Sprintf("oneOf failed, subschemas %d, %d matched", k.Subschemas[0], k.Subschemas[1])
+	return p.Sprintf("oneOf failed, subschemas %d, %d matched", k.Subschemas[0], k.Subschemas[1])
 }
 
 //--
@@ -109,8 +111,8 @@ func (*FalseSchema) KeywordPath() []string {
 	return nil
 }
 
-func (*FalseSchema) String() string {
-	return "false schema"
+func (*FalseSchema) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("false schema")
 }
 
 // --
@@ -125,8 +127,8 @@ func (*RefCycle) KeywordPath() []string {
 	return nil
 }
 
-func (k *RefCycle) String() string {
-	return fmt.Sprintf("both %s and %s resolve to %q causing reference cycle", k.KeywordLocation1, k.KeywordLocation2, k.URL)
+func (k *RefCycle) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("both %s and %s resolve to %q causing reference cycle", k.KeywordLocation1, k.KeywordLocation2, k.URL)
 }
 
 // --
@@ -140,9 +142,9 @@ func (*Type) KeywordPath() []string {
 	return []string{"type"}
 }
 
-func (k *Type) String() string {
+func (k *Type) LocalizedString(p *message.Printer) string {
 	want := strings.Join(k.Want, " or ")
-	return fmt.Sprintf("got %s, want %s", k.Got, want)
+	return p.Sprintf("got %s, want %s", k.Got, want)
 }
 
 // --
@@ -157,7 +159,7 @@ func (*Enum) KeywordPath() []string {
 	return []string{"enum"}
 }
 
-func (k *Enum) String() string {
+func (k *Enum) LocalizedString(p *message.Printer) string {
 	allPrimitive := true
 loop:
 	for _, item := range k.Want {
@@ -169,15 +171,15 @@ loop:
 	}
 	if allPrimitive {
 		if len(k.Want) == 1 {
-			return fmt.Sprintf("value must be %s", display(k.Want[0]))
+			return p.Sprintf("value must be %s", display(k.Want[0]))
 		}
 		var want []string
 		for _, v := range k.Want {
 			want = append(want, display(v))
 		}
-		return fmt.Sprintf("value must be one of %s", strings.Join(want, ", "))
+		return p.Sprintf("value must be one of %s", strings.Join(want, ", "))
 	}
-	return "enum failed"
+	return p.Sprintf("enum failed")
 }
 
 // --
@@ -191,12 +193,12 @@ func (*Const) KeywordPath() []string {
 	return []string{"const"}
 }
 
-func (k *Const) String() string {
+func (k *Const) LocalizedString(p *message.Printer) string {
 	switch want := k.Want.(type) {
 	case []any, map[string]any:
-		return "const failed"
+		return p.Sprintf("const failed")
 	default:
-		return fmt.Sprintf("value must be %s", display(want))
+		return p.Sprintf("value must be %s", display(want))
 	}
 }
 
@@ -212,8 +214,8 @@ func (*Format) KeywordPath() []string {
 	return []string{"format"}
 }
 
-func (k *Format) String() string {
-	return fmt.Sprintf("%s is not valid %s: %v", display(k.Got), k.Want, k.Err)
+func (k *Format) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("%s is not valid %s: %v", display(k.Got), k.Want, k.Err)
 }
 
 // --
@@ -227,8 +229,8 @@ func (k *Reference) KeywordPath() []string {
 	return []string{k.Keyword}
 }
 
-func (*Reference) String() string {
-	return "validation failed"
+func (*Reference) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("validation failed")
 }
 
 // --
@@ -241,8 +243,8 @@ func (*MinProperties) KeywordPath() []string {
 	return []string{"minProperties"}
 }
 
-func (k *MinProperties) String() string {
-	return fmt.Sprintf("minProperties: got %d, want %d", k.Got, k.Want)
+func (k *MinProperties) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("minProperties: got %d, want %d", k.Got, k.Want)
 }
 
 // --
@@ -255,8 +257,8 @@ func (*MaxProperties) KeywordPath() []string {
 	return []string{"maxProperties"}
 }
 
-func (k *MaxProperties) String() string {
-	return fmt.Sprintf("maxProperties: got %d, want %d", k.Got, k.Want)
+func (k *MaxProperties) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("maxProperties: got %d, want %d", k.Got, k.Want)
 }
 
 // --
@@ -269,8 +271,8 @@ func (*MinItems) KeywordPath() []string {
 	return []string{"minItems"}
 }
 
-func (k *MinItems) String() string {
-	return fmt.Sprintf("minItems: got %d, want %d", k.Got, k.Want)
+func (k *MinItems) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("minItems: got %d, want %d", k.Got, k.Want)
 }
 
 // --
@@ -283,8 +285,8 @@ func (*MaxItems) KeywordPath() []string {
 	return []string{"maxItems"}
 }
 
-func (k *MaxItems) String() string {
-	return fmt.Sprintf("maxItems: got %d, want %d", k.Got, k.Want)
+func (k *MaxItems) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("maxItems: got %d, want %d", k.Got, k.Want)
 }
 
 // --
@@ -297,8 +299,8 @@ func (*AdditionalItems) KeywordPath() []string {
 	return []string{"additionalItems"}
 }
 
-func (k *AdditionalItems) String() string {
-	return fmt.Sprintf("last %d additionalItem(s) not allowed", k.Count)
+func (k *AdditionalItems) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("last %d additionalItem(s) not allowed", k.Count)
 }
 
 // --
@@ -311,11 +313,11 @@ func (*Required) KeywordPath() []string {
 	return []string{"required"}
 }
 
-func (k *Required) String() string {
+func (k *Required) LocalizedString(p *message.Printer) string {
 	if len(k.Missing) == 1 {
-		return fmt.Sprintf("missing property %s", quote(k.Missing[0]))
+		return p.Sprintf("missing property %s", quote(k.Missing[0]))
 	}
-	return fmt.Sprintf("missing properties %s", joinQuoted(k.Missing, ", "))
+	return p.Sprintf("missing properties %s", joinQuoted(k.Missing, ", "))
 }
 
 // --
@@ -329,8 +331,8 @@ func (k *Dependency) KeywordPath() []string {
 	return []string{"dependency", k.Prop}
 }
 
-func (k *Dependency) String() string {
-	return fmt.Sprintf("properties %s required, if %s exists", joinQuoted(k.Missing, ", "), quote(k.Prop))
+func (k *Dependency) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("properties %s required, if %s exists", joinQuoted(k.Missing, ", "), quote(k.Prop))
 }
 
 // --
@@ -344,8 +346,8 @@ func (k *DependentRequired) KeywordPath() []string {
 	return []string{"dependentRequired", k.Prop}
 }
 
-func (k *DependentRequired) String() string {
-	return fmt.Sprintf("properties %s required, if %s exists", joinQuoted(k.Missing, ", "), quote(k.Prop))
+func (k *DependentRequired) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("properties %s required, if %s exists", joinQuoted(k.Missing, ", "), quote(k.Prop))
 }
 
 // --
@@ -358,8 +360,8 @@ func (*AdditionalProperties) KeywordPath() []string {
 	return []string{"additionalProperties"}
 }
 
-func (k *AdditionalProperties) String() string {
-	return fmt.Sprintf("additional properties %s not allowed", joinQuoted(k.Properties, ", "))
+func (k *AdditionalProperties) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("additional properties %s not allowed", joinQuoted(k.Properties, ", "))
 }
 
 // --
@@ -372,8 +374,8 @@ func (*PropertyNames) KeywordPath() []string {
 	return []string{"propertyNames"}
 }
 
-func (k *PropertyNames) String() string {
-	return fmt.Sprintf("invalid property %s", quote(k.Property))
+func (k *PropertyNames) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("invalid propertyName %s", quote(k.Property))
 }
 
 // --
@@ -386,8 +388,8 @@ func (*UniqueItems) KeywordPath() []string {
 	return []string{"uniqueItems"}
 }
 
-func (k *UniqueItems) String() string {
-	return fmt.Sprintf("items at %d and %d are equal", k.Duplicates[0], k.Duplicates[1])
+func (k *UniqueItems) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("items at %d and %d are equal", k.Duplicates[0], k.Duplicates[1])
 }
 
 // --
@@ -398,8 +400,8 @@ func (*Contains) KeywordPath() []string {
 	return []string{"contains"}
 }
 
-func (*Contains) String() string {
-	return "no items match contains schema"
+func (*Contains) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("no items match contains schema")
 }
 
 // --
@@ -413,12 +415,12 @@ func (*MinContains) KeywordPath() []string {
 	return []string{"minContains"}
 }
 
-func (k *MinContains) String() string {
+func (k *MinContains) LocalizedString(p *message.Printer) string {
 	if len(k.Got) == 0 {
-		return fmt.Sprintf("min %d items required to match contains schema, but none matched", k.Want)
+		return p.Sprintf("min %d items required to match contains schema, but none matched", k.Want)
 	} else {
 		got := fmt.Sprintf("%v", k.Got)
-		return fmt.Sprintf("min %d items required to match contains schema, but matched %d items at %v", k.Want, len(k.Got), got[1:len(got)-1])
+		return p.Sprintf("min %d items required to match contains schema, but matched %d items at %v", k.Want, len(k.Got), got[1:len(got)-1])
 	}
 }
 
@@ -433,9 +435,9 @@ func (*MaxContains) KeywordPath() []string {
 	return []string{"maxContains"}
 }
 
-func (k *MaxContains) String() string {
+func (k *MaxContains) LocalizedString(p *message.Printer) string {
 	got := fmt.Sprintf("%v", k.Got)
-	return fmt.Sprintf("max %d items required to match contains schema, but matched %d items at %v", k.Want, len(k.Got), got[1:len(got)-1])
+	return p.Sprintf("max %d items required to match contains schema, but matched %d items at %v", k.Want, len(k.Got), got[1:len(got)-1])
 }
 
 // --
@@ -448,8 +450,8 @@ func (*MinLength) KeywordPath() []string {
 	return []string{"minLength"}
 }
 
-func (k *MinLength) String() string {
-	return fmt.Sprintf("minLength: got %d, want %d", k.Got, k.Want)
+func (k *MinLength) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("minLength: got %d, want %d", k.Got, k.Want)
 }
 
 // --
@@ -462,8 +464,8 @@ func (*MaxLength) KeywordPath() []string {
 	return []string{"maxLength"}
 }
 
-func (k *MaxLength) String() string {
-	return fmt.Sprintf("maxLength: got %d, want %d", k.Got, k.Want)
+func (k *MaxLength) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("maxLength: got %d, want %d", k.Got, k.Want)
 }
 
 // --
@@ -477,8 +479,8 @@ func (*Pattern) KeywordPath() []string {
 	return []string{"pattern"}
 }
 
-func (k *Pattern) String() string {
-	return fmt.Sprintf("%s does not match pattern %s", quote(k.Got), quote(k.Want))
+func (k *Pattern) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("%s does not match pattern %s", quote(k.Got), quote(k.Want))
 }
 
 // --
@@ -492,8 +494,8 @@ func (*ContentEncoding) KeywordPath() []string {
 	return []string{"contentEncoding"}
 }
 
-func (k *ContentEncoding) String() string {
-	return fmt.Sprintf("value is not %s encoded: %v", quote(k.Want), k.Err)
+func (k *ContentEncoding) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("value is not %s encoded: %v", quote(k.Want), k.Err)
 }
 
 // --
@@ -508,8 +510,8 @@ func (*ContentMediaType) KeywordPath() []string {
 	return []string{"contentMediaType"}
 }
 
-func (k *ContentMediaType) String() string {
-	return fmt.Sprintf("value if not of mediatype %s: %v", quote(k.Want), k.Err)
+func (k *ContentMediaType) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("value if not of mediatype %s: %v", quote(k.Want), k.Err)
 }
 
 // --
@@ -520,8 +522,8 @@ func (*ContentSchema) KeywordPath() []string {
 	return []string{"contentSchema"}
 }
 
-func (*ContentSchema) String() string {
-	return "contentSchema failed"
+func (*ContentSchema) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("contentSchema failed")
 }
 
 // --
@@ -535,10 +537,10 @@ func (*Minimum) KeywordPath() []string {
 	return []string{"minimum"}
 }
 
-func (k *Minimum) String() string {
+func (k *Minimum) LocalizedString(p *message.Printer) string {
 	got, _ := k.Got.Float64()
 	want, _ := k.Want.Float64()
-	return fmt.Sprintf("minimum: got %v, want %v", got, want)
+	return p.Sprintf("minimum: got %v, want %v", got, want)
 }
 
 // --
@@ -552,10 +554,10 @@ func (*Maximum) KeywordPath() []string {
 	return []string{"maximum"}
 }
 
-func (k *Maximum) String() string {
+func (k *Maximum) LocalizedString(p *message.Printer) string {
 	got, _ := k.Got.Float64()
 	want, _ := k.Want.Float64()
-	return fmt.Sprintf("maximum: got %v, want %v", got, want)
+	return p.Sprintf("maximum: got %v, want %v", got, want)
 }
 
 // --
@@ -569,10 +571,10 @@ func (*ExclusiveMinimum) KeywordPath() []string {
 	return []string{"exclusiveMinimum"}
 }
 
-func (k *ExclusiveMinimum) String() string {
+func (k *ExclusiveMinimum) LocalizedString(p *message.Printer) string {
 	got, _ := k.Got.Float64()
 	want, _ := k.Want.Float64()
-	return fmt.Sprintf("exclusiveMinimum: got %v, want %v", got, want)
+	return p.Sprintf("exclusiveMinimum: got %v, want %v", got, want)
 }
 
 // --
@@ -586,10 +588,10 @@ func (*ExclusiveMaximum) KeywordPath() []string {
 	return []string{"exclusiveMaximum"}
 }
 
-func (k *ExclusiveMaximum) String() string {
+func (k *ExclusiveMaximum) LocalizedString(p *message.Printer) string {
 	got, _ := k.Got.Float64()
 	want, _ := k.Want.Float64()
-	return fmt.Sprintf("exclusiveMaximum: got %v, want %v", got, want)
+	return p.Sprintf("exclusiveMaximum: got %v, want %v", got, want)
 }
 
 // --
@@ -603,10 +605,10 @@ func (*MultipleOf) KeywordPath() []string {
 	return []string{"multipleOf"}
 }
 
-func (k *MultipleOf) String() string {
+func (k *MultipleOf) LocalizedString(p *message.Printer) string {
 	got, _ := k.Got.Float64()
 	want, _ := k.Want.Float64()
-	return fmt.Sprintf("multipleOf: got %v, want %v", got, want)
+	return p.Sprintf("multipleOf: got %v, want %v", got, want)
 }
 
 // --

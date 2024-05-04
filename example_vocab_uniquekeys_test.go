@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
+	"golang.org/x/text/message"
 )
 
 // SchemaExt --
@@ -93,8 +94,8 @@ func (*UniqueKeys) KeywordPath() []string {
 	return []string{"uniqueKeys"}
 }
 
-func (k *UniqueKeys) String() string {
-	return fmt.Sprintf("items at %d and %d have same %s", k.Duplicates[0], k.Duplicates[1], k.Key)
+func (k *UniqueKeys) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("items at %d and %d have same %s", k.Duplicates[0], k.Duplicates[1], k.Key)
 }
 
 // Example --

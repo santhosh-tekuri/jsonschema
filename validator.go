@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
+	"golang.org/x/text/message"
 )
 
 func (sch *Schema) Validate(v any) error {
@@ -970,5 +971,5 @@ type ValidationError struct {
 
 type ErrorKind interface {
 	KeywordPath() []string
-	String() string
+	LocalizedString(*message.Printer) string
 }
