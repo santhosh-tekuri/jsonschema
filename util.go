@@ -15,8 +15,6 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
 )
 
-// TODO: what json-pointer itself has hash symbol
-
 // --
 
 type url (string)
@@ -269,12 +267,13 @@ func strVal(obj map[string]any, prop string) (string, bool) {
 	return s, ok
 }
 
-func isInteger(v any) bool {
-	num, ok := new(big.Rat).SetString(fmt.Sprint(v))
-	return ok && num.IsInt()
+func isInteger(num any) bool {
+	rat, ok := new(big.Rat).SetString(fmt.Sprint(num))
+	return ok && rat.IsInt()
 }
 
 // quote returns single-quoted string.
+// used for embedding quoted strings in json
 func quote(s string) string {
 	s = fmt.Sprintf("%q", s)
 	s = strings.ReplaceAll(s, `\"`, `"`)
