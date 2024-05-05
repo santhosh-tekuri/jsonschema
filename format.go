@@ -36,6 +36,7 @@ var formats = map[string]*Format{
 	"uri-reference":         {"uri-reference", validateURIReference},
 	"iri-reference":         {"iri-reference", validateURIReference},
 	"uri-template":          {"uri-template", validateURITemplate},
+	"semver":                {"semver", validateSemver},
 }
 
 // see https://www.rfc-editor.org/rfc/rfc6901#section-3
@@ -628,6 +629,82 @@ func validatePeriod(v any) error {
 			}
 		} else if err := validateDateTime(end); err != nil {
 			return fmt.Errorf("invalid end date-time: %v", err)
+		}
+	}
+
+	return nil
+}
+
+// see https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
+func validateSemver(v any) error {
+	s, ok := v.(string)
+	if !ok {
+		return nil
+	}
+
+	// build --
+	if i := strings.IndexByte(s, '+'); i != -1 {
+		build := s[i+1:]
+		if build == "" {
+			return errors.New("build is empty")
+		}
+		for _, buildID := range strings.Split(build, ".") {
+			if buildID == "" {
+				return errors.New("build identifier is empty")
+			}
+			for _, ch := range buildID {
+				switch {
+				case ch >= '0' && ch <= '9':
+				case (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '-':
+				default:
+					return fmt.Errorf("invalid character %q in build identifier", ch)
+				}
+			}
+		}
+		s = s[:i]
+	}
+
+	// pre-release --
+	if i := strings.IndexByte(s, '-'); i != -1 {
+		preRelease := s[i+1:]
+		for _, preReleaseID := range strings.Split(preRelease, ".") {
+			if preReleaseID == "" {
+				return errors.New("pre-release identifier is empty")
+			}
+			allDigits := true
+			for _, ch := range preReleaseID {
+				switch {
+				case ch >= '0' && ch <= '9':
+				case (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '-':
+					allDigits = false
+				default:
+					return fmt.Errorf("invalid character %q in pre-release identifier", ch)
+				}
+			}
+			if allDigits && len(preReleaseID) > 1 && preReleaseID[0] == '0' {
+				return fmt.Errorf("pre-release numeric identifier starts with zero")
+			}
+		}
+		s = s[:i]
+	}
+
+	// versionCore --
+	versions := strings.Split(s, ".")
+	if len(versions) != 3 {
+		return errors.New("versionCore must have 3 numbers separated by dot")
+	}
+	names := []string{"major", "minor", "patch"}
+	for i, version := range versions {
+		if version == "" {
+			return fmt.Errorf("%s is empty", names[i])
+		}
+		if len(version) > 1 && version[0] == '0' {
+			return fmt.Errorf("%s starts with zero", names[i])
+		}
+		for _, ch := range version {
+			if ch < '0' || ch > '9' {
+				return fmt.Errorf("%s contains non-digit", names[i])
+			}
 		}
 	}
 
