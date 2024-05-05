@@ -39,9 +39,9 @@ func (sp SchemaPosition) collect(v any, ptr jsonPointer, target map[jsonPointer]
 	}
 }
 
-type SubSchemas map[string][]SchemaPosition
+type Subschemas map[string][]SchemaPosition
 
-func (ss SubSchemas) collect(obj map[string]any, ptr jsonPointer, target map[jsonPointer]any) {
+func (ss Subschemas) collect(obj map[string]any, ptr jsonPointer, target map[jsonPointer]any) {
 	for kw, spp := range ss {
 		v, ok := obj[kw]
 		if !ok {
@@ -59,7 +59,7 @@ type Draft struct {
 	url           string
 	sch           *Schema
 	id            string             // property name used to represent id
-	subschemas    SubSchemas         // locations of subschemas
+	subschemas    Subschemas         // locations of subschemas
 	vocabPrefix   string             // prefix used for vocabulary
 	allVocabs     map[string]*Schema // names of supported vocabs with its schemas
 	defaultVocabs []string           // names of default vocabs
