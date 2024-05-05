@@ -74,7 +74,7 @@ var (
 		version: 4,
 		url:     "http://json-schema.org/draft-04/schema",
 		id:      "id",
-		subschemas: map[string][]SchemaPosition{
+		subschemas: Subschemas{
 			// type agonistic
 			"definitions": {{PosProp}},
 			"not":         {{}},
@@ -99,7 +99,7 @@ var (
 		version: 6,
 		url:     "http://json-schema.org/draft-06/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft4.subschemas, map[string][]SchemaPosition{
+		subschemas: joinMaps(Draft4.subschemas, Subschemas{
 			"propertyNames": {{}},
 			"contains":      {{}},
 		}),
@@ -112,7 +112,7 @@ var (
 		version: 7,
 		url:     "http://json-schema.org/draft-07/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft6.subschemas, map[string][]SchemaPosition{
+		subschemas: joinMaps(Draft6.subschemas, Subschemas{
 			"if":   {{}},
 			"then": {{}},
 			"else": {{}},
@@ -126,7 +126,7 @@ var (
 		version: 2019,
 		url:     "https://json-schema.org/draft/2019-09/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft7.subschemas, map[string][]SchemaPosition{
+		subschemas: joinMaps(Draft7.subschemas, Subschemas{
 			"$defs":                 {{PosProp}},
 			"dependentSchemas":      {{PosProp}},
 			"unevaluatedProperties": {{}},
@@ -149,7 +149,7 @@ var (
 		version: 2020,
 		url:     "https://json-schema.org/draft/2020-12/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft2019.subschemas, map[string][]SchemaPosition{
+		subschemas: joinMaps(Draft2019.subschemas, Subschemas{
 			"prefixItems": {{PosItem}},
 		}),
 		vocabPrefix: "https://json-schema.org/draft/2020-12/vocab/",
@@ -394,8 +394,8 @@ func (e *DuplicateAnchorError) Error() string {
 
 // --
 
-func joinMaps(m1 map[string][]SchemaPosition, m2 map[string][]SchemaPosition) map[string][]SchemaPosition {
-	m := make(map[string][]SchemaPosition)
+func joinMaps(m1 Subschemas, m2 Subschemas) Subschemas {
+	m := Subschemas{}
 	for k, v := range m1 {
 		m[k] = v
 	}
