@@ -79,18 +79,18 @@ func (r *root) resolve(uf urlFrag) (*urlPtr, error) {
 	return &up, err
 }
 
-func (r *root) collectResources(loader *defaultLoader, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (r *root) collectResources(loader *defaultLoader, assertVocabs bool, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	if _, ok := r.subschemasProcessed[schPtr]; ok {
 		return nil
 	}
-	if err := r._collectResources(loader, vocabularies, sch, base, schPtr, fallback); err != nil {
+	if err := r._collectResources(loader, assertVocabs, vocabularies, sch, base, schPtr, fallback); err != nil {
 		return err
 	}
 	r.subschemasProcessed[schPtr] = struct{}{}
 	return nil
 }
 
-func (r *root) _collectResources(loader *defaultLoader, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (r *root) _collectResources(loader *defaultLoader, assertVocabs bool, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	if _, ok := sch.(bool); ok {
 		if schPtr.isEmpty() {
 			// root resource
@@ -162,22 +162,32 @@ func (r *root) _collectResources(loader *defaultLoader, vocabularies map[string]
 		}
 	}
 
-	// collect anchors into base resource
+	var baseRes *resource
 	for _, res := range r.resources {
 		if res.id == base {
-			// found base resource
-			if err := r.collectAnchors(sch, schPtr, res); err != nil {
-				return err
-			}
+			baseRes = res
 			break
 		}
+	}
+	if baseRes == nil {
+		panic("baseres is nil")
+	}
+
+	// found base resource
+	if err := r.collectAnchors(sch, schPtr, baseRes); err != nil {
+		return err
 	}
 
 	// process subschemas
 	subschemas := map[jsonPointer]any{}
 	draft.subschemas.collect(obj, schPtr, subschemas)
+	for _, vocab := range baseRes.dialect.activeVocabs(true, vocabularies) { // TODO: take assertVcabs flag argument
+		if v := vocabularies[vocab]; v != nil {
+			v.Subschemas.collect(obj, schPtr, subschemas)
+		}
+	}
 	for ptr, v := range subschemas {
-		if err := r.collectResources(loader, vocabularies, v, base, ptr, fallback); err != nil {
+		if err := r.collectResources(loader, assertVocabs, vocabularies, v, base, ptr, baseRes.dialect); err != nil {
 			return err
 		}
 	}
@@ -185,14 +195,14 @@ func (r *root) _collectResources(loader *defaultLoader, vocabularies map[string]
 	return nil
 }
 
-func (r *root) addSubschema(loader *defaultLoader, vocabularies map[string]*Vocabulary, ptr jsonPointer) error {
+func (r *root) addSubschema(loader *defaultLoader, assertVocabs bool, vocabularies map[string]*Vocabulary, ptr jsonPointer) error {
 	v, err := (&urlPtr{r.url, ptr}).lookup(r.doc)
 	if err != nil {
 		return err
 	}
 	base := r.resource(ptr)
 	baseURL := base.id
-	if err := r.collectResources(loader, vocabularies, v, baseURL, ptr, base.dialect); err != nil {
+	if err := r.collectResources(loader, assertVocabs, vocabularies, v, baseURL, ptr, base.dialect); err != nil {
 		return err
 	}
 

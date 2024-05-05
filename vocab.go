@@ -24,6 +24,10 @@ type Vocabulary struct {
 	// vocabulary.
 	Schema *Schema
 
+	// Subschemas lists the possible locations of subschemas introduced by
+	// this vocabulary.
+	Subschemas Subschemas
+
 	// Compile compiles the keywords(introduced by this vocabulary) in obj into [SchemaExt].
 	// If obj does not contain any keywords introduced by this vocabulary, nil SchemaExt must
 	// be returned.

@@ -125,7 +125,7 @@ func TestCustomVocabValidation(t *testing.T) {
 	}
 	_, err = c.Compile("schema.json")
 	if err == nil {
-		t.Fatal("exception compilation failure")
+		t.Fatal("excepted compilation failure")
 	}
 }
 
@@ -199,5 +199,33 @@ func TestCustomVocabMetaschema(t *testing.T) {
 	err = sch.Validate(inst)
 	if err == nil {
 		t.Fatal("instance should be invalid")
+	}
+}
+
+func TestCustomVocabSubschemaResource(t *testing.T) {
+	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{
+		"discriminator": {
+			"p1" : {
+				"v1": {
+					"$id": "http://temp.com/inner.json",
+					"type": "string"
+				}
+			}
+		},
+		"$ref": "http://temp.com/inner.json"
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c := jsonschema.NewCompiler()
+	c.AssertVocabs()
+	c.RegisterVocabulary(discriminatorVocab())
+	if err := c.AddResource("schema.json", schema); err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.Compile("schema.json")
+	if err != nil {
+		t.Fatal(err)
 	}
 }
