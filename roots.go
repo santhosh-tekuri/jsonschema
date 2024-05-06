@@ -67,6 +67,122 @@ func (rr *roots) resolveFragment(uf urlFrag) (urlPtr, error) {
 	return r.resolveFragment(uf.frag)
 }
 
+func (rr *roots) collectResources(r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+	if _, ok := r.subschemasProcessed[schPtr]; ok {
+		return nil
+	}
+	if err := rr._collectResources(r, sch, base, schPtr, fallback); err != nil {
+		return err
+	}
+	r.subschemasProcessed[schPtr] = struct{}{}
+	return nil
+}
+
+func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+	if _, ok := sch.(bool); ok {
+		if schPtr.isEmpty() {
+			// root resource
+			res := newResource(schPtr, base)
+			res.dialect = fallback
+			r.resources[schPtr] = res
+		}
+		return nil
+	}
+	obj, ok := sch.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	hasSchema := false
+	if sch, ok := obj["$schema"]; ok {
+		if _, ok := sch.(string); ok {
+			hasSchema = true
+		}
+	}
+
+	draft, err := rr.loader.getDraft(urlPtr{r.url, schPtr}, sch, fallback.draft, map[url]struct{}{})
+	if err != nil {
+		return err
+	}
+	id := draft.getID(obj)
+	if id == "" && !schPtr.isEmpty() {
+		// ignore $schema
+		draft = fallback.draft
+		hasSchema = false
+		id = draft.getID(obj)
+	}
+
+	var res *resource
+	if id != "" {
+		uf, err := base.join(id)
+		if err != nil {
+			loc := urlPtr{r.url, schPtr}
+			return &ParseIDError{loc.String()}
+		}
+		base = uf.url
+		res = newResource(schPtr, base)
+	} else if schPtr.isEmpty() {
+		// root resource
+		res = newResource(schPtr, base)
+	}
+
+	if res != nil {
+		found := false
+		for _, res := range r.resources {
+			if res.id == base {
+				found = true
+				if res.ptr != schPtr {
+					return &DuplicateIDError{base.String(), r.url.String(), string(schPtr), string(res.ptr)}
+				}
+			}
+		}
+		if !found {
+			if hasSchema {
+				vocabs, err := rr.loader.getMetaVocabs(sch, draft, rr.vocabularies)
+				if err != nil {
+					return err
+				}
+				res.dialect = dialect{draft, vocabs}
+			} else {
+				res.dialect = fallback
+			}
+			r.resources[schPtr] = res
+		}
+	}
+
+	var baseRes *resource
+	for _, res := range r.resources {
+		if res.id == base {
+			baseRes = res
+			break
+		}
+	}
+	if baseRes == nil {
+		panic("baseres is nil")
+	}
+
+	// found base resource
+	if err := r.collectAnchors(sch, schPtr, baseRes); err != nil {
+		return err
+	}
+
+	// process subschemas
+	subschemas := map[jsonPointer]any{}
+	draft.subschemas.collect(obj, schPtr, subschemas)
+	for _, vocab := range baseRes.dialect.activeVocabs(true, rr.vocabularies) {
+		if v := rr.vocabularies[vocab]; v != nil {
+			v.Subschemas.collect(obj, schPtr, subschemas)
+		}
+	}
+	for ptr, v := range subschemas {
+		if err := rr.collectResources(r, v, base, ptr, baseRes.dialect); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (rr *roots) ensureSubschema(up urlPtr) error {
 	r, err := rr.orLoad(up.url)
 	if err != nil {
@@ -87,6 +203,27 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 		return err
 	}
 	rr.roots[r.url] = rClone
+	return nil
+}
+
+func (rr *roots) addSubschema(r *root, ptr jsonPointer) error {
+	v, err := (&urlPtr{r.url, ptr}).lookup(r.doc)
+	if err != nil {
+		return err
+	}
+	base := r.resource(ptr)
+	baseURL := base.id
+	if err := rr.collectResources(r, v, baseURL, ptr, base.dialect); err != nil {
+		return err
+	}
+
+	// collect anchors
+	if _, ok := r.resources[ptr]; !ok {
+		res := r.resource(ptr)
+		if err := r.collectAnchors(v, ptr, res); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
