@@ -79,18 +79,18 @@ func (r *root) resolve(uf urlFrag) (*urlPtr, error) {
 	return &up, err
 }
 
-func (r *root) collectResources(loader *defaultLoader, assertVocabs bool, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (rr *roots) collectResources(r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	if _, ok := r.subschemasProcessed[schPtr]; ok {
 		return nil
 	}
-	if err := r._collectResources(loader, assertVocabs, vocabularies, sch, base, schPtr, fallback); err != nil {
+	if err := rr._collectResources(r, sch, base, schPtr, fallback); err != nil {
 		return err
 	}
 	r.subschemasProcessed[schPtr] = struct{}{}
 	return nil
 }
 
-func (r *root) _collectResources(loader *defaultLoader, assertVocabs bool, vocabularies map[string]*Vocabulary, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	if _, ok := sch.(bool); ok {
 		if schPtr.isEmpty() {
 			// root resource
@@ -112,7 +112,7 @@ func (r *root) _collectResources(loader *defaultLoader, assertVocabs bool, vocab
 		}
 	}
 
-	draft, err := loader.getDraft(urlPtr{r.url, schPtr}, sch, fallback.draft, map[url]struct{}{})
+	draft, err := rr.loader.getDraft(urlPtr{r.url, schPtr}, sch, fallback.draft, map[url]struct{}{})
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (r *root) _collectResources(loader *defaultLoader, assertVocabs bool, vocab
 		}
 		if !found {
 			if hasSchema {
-				vocabs, err := loader.getMetaVocabs(sch, draft, vocabularies)
+				vocabs, err := rr.loader.getMetaVocabs(sch, draft, rr.vocabularies)
 				if err != nil {
 					return err
 				}
@@ -181,13 +181,13 @@ func (r *root) _collectResources(loader *defaultLoader, assertVocabs bool, vocab
 	// process subschemas
 	subschemas := map[jsonPointer]any{}
 	draft.subschemas.collect(obj, schPtr, subschemas)
-	for _, vocab := range baseRes.dialect.activeVocabs(true, vocabularies) { // TODO: take assertVcabs flag argument
-		if v := vocabularies[vocab]; v != nil {
+	for _, vocab := range baseRes.dialect.activeVocabs(true, rr.vocabularies) { // TODO: take assertVcabs flag argument
+		if v := rr.vocabularies[vocab]; v != nil {
 			v.Subschemas.collect(obj, schPtr, subschemas)
 		}
 	}
 	for ptr, v := range subschemas {
-		if err := r.collectResources(loader, assertVocabs, vocabularies, v, base, ptr, baseRes.dialect); err != nil {
+		if err := rr.collectResources(r, v, base, ptr, baseRes.dialect); err != nil {
 			return err
 		}
 	}
@@ -195,14 +195,14 @@ func (r *root) _collectResources(loader *defaultLoader, assertVocabs bool, vocab
 	return nil
 }
 
-func (r *root) addSubschema(loader *defaultLoader, assertVocabs bool, vocabularies map[string]*Vocabulary, ptr jsonPointer) error {
+func (rr *roots) addSubschema(r *root, ptr jsonPointer) error {
 	v, err := (&urlPtr{r.url, ptr}).lookup(r.doc)
 	if err != nil {
 		return err
 	}
 	base := r.resource(ptr)
 	baseURL := base.id
-	if err := r.collectResources(loader, assertVocabs, vocabularies, v, baseURL, ptr, base.dialect); err != nil {
+	if err := rr.collectResources(r, v, baseURL, ptr, base.dialect); err != nil {
 		return err
 	}
 

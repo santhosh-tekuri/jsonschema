@@ -70,13 +70,14 @@ func TestDraft_collectIds(t *testing.T) {
 		"/definitions/s4":                      "http://e.com/def", // id with fragments
 	}
 
+	rr := newRoots()
 	r := root{
 		url:                 url(u),
 		doc:                 doc,
 		resources:           map[jsonPointer]*resource{},
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := r.collectResources(nil, false, nil, doc, u, jsonPointer(""), dialect{Draft4, nil}); err != nil {
+	if err := rr.collectResources(&r, doc, u, jsonPointer(""), dialect{Draft4, nil}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -116,13 +117,14 @@ func TestDraft_collectAnchors(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	rr := newRoots()
 	r := root{
 		url:                 url(u),
 		doc:                 doc,
 		resources:           map[jsonPointer]*resource{},
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := r.collectResources(nil, false, nil, doc, u, jsonPointer(""), dialect{Draft2020, nil}); err != nil {
+	if err := rr.collectResources(&r, doc, u, jsonPointer(""), dialect{Draft2020, nil}); err != nil {
 		t.Fatal(err)
 	}
 
