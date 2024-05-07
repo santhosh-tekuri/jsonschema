@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
+	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,15 +20,15 @@ func main() {
 		eprintln("Options:")
 		flag.PrintDefaults()
 	}
-	help := flag.Bool("h", false, "Print help information")
-	version := flag.Bool("v", false, "Print build information")
-	quiet := flag.Bool("q", false, "Do not print errors")
-	draftVersion := flag.Int("d", 2020, "Draft `version` used when '$schema' is missing. Valid values 4, 6, 7, 2019, 2020")
-	output := flag.String("o", "simple", "Output `format`. Valid values simple, alt, flag, basic, detailed")
-	assertFormat := flag.Bool("f", false, "Enable format assertions with draft >= 2019")
-	assertContent := flag.Bool("c", false, "Enable content assertions with draft >= 7")
-	insecure := flag.Bool("k", false, "Use insecure TLS connection")
-	cacert := flag.String("cacert", "", "Use the specified `PEM-certificate-file` to verify the peer. The file may contain multiple CA certificates")
+	help := flag.BoolP("help", "h", false, "Print help information")
+	version := flag.BoolP("version", "v", false, "Print build information")
+	quiet := flag.BoolP("quiet", "q", false, "Do not print errors")
+	draftVersion := flag.IntP("draft", "d", 2020, "Draft `version` used when '$schema' is missing. Valid values 4, 6, 7, 2019, 2020")
+	output := flag.StringP("output", "o", "simple", "Output `format`. Valid values simple, alt, flag, basic, detailed")
+	assertFormat := flag.BoolP("assert-format", "f", false, "Enable format assertions with draft >= 2019")
+	assertContent := flag.BoolP("assert-content", "c", false, "Enable content assertions with draft >= 7")
+	insecure := flag.BoolP("insecure", "k", false, "Use insecure TLS connection")
+	cacert := flag.String("cacert", "", "Use the specified `pem-file` to verify the peer. The file may contain multiple CA certificates")
 	flag.Parse()
 
 	// help --
