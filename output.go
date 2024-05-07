@@ -75,3 +75,38 @@ func (ve *ValidationError) DetailedOutput() Detailed {
 		Errors:                  errors,
 	}
 }
+
+// Truncated return output in format
+type Truncated struct {
+	Valid                   bool         `json:"valid"`
+	KeywordLocation         string       `json:"keywordLocation"`
+	AbsoluteKeywordLocation string       `json:"absoluteKeywordLocation"`
+	InstanceLocation        string       `json:"instanceLocation"`
+	Error                   string       `json:"error,omitempty"`
+	Errors                  []BasicError `json:"errors,omitempty"`
+}
+
+func (ve *ValidationError) TruncatedOutput() Truncated {
+	var errors []BasicError
+	var flatten func(*ValidationError)
+	flatten = func(ve *ValidationError) {
+		errors = append(errors, BasicError{
+			KeywordLocation:         ve.KeywordLocation,
+			AbsoluteKeywordLocation: ve.AbsoluteKeywordLocation,
+			InstanceLocation:        ve.InstanceLocation,
+			Error:                   ve.Message,
+		})
+		for _, cause := range ve.Causes {
+			flatten(cause)
+			break
+		}
+	}
+	flatten(ve)
+	return Truncated{
+		KeywordLocation:         ve.KeywordLocation,
+		AbsoluteKeywordLocation: ve.AbsoluteKeywordLocation,
+		InstanceLocation:        ve.InstanceLocation,
+		Error:                   ve.Message,
+		Errors:                  errors,
+	}
+}
