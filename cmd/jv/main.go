@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"slices"
+	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	flag "github.com/spf13/pflag"
-	"gopkg.in/yaml.v3"
 )
 
 func main() {
@@ -29,6 +29,8 @@ func main() {
 	assertContent := flag.BoolP("assert-content", "c", false, "Enable content assertions with draft >= 7")
 	insecure := flag.BoolP("insecure", "k", false, "Use insecure TLS connection")
 	cacert := flag.String("cacert", "", "Use the specified `pem-file` to verify the peer. The file may contain multiple CA certificates")
+	maps := flag.StringArrayP("map", "m", nil, "load url with prefix from given directory. Syntax `url_prefix=/path/to/dir`")
+	flag.CommandLine.SortFlags = false
 	flag.Parse()
 
 	// help --
@@ -78,6 +80,36 @@ func main() {
 		os.Exit(2)
 	}
 
+	// maps --
+	mappings, err := func() (map[string]string, error) {
+		mappings := map[string]string{}
+		for _, m := range *maps {
+			equal := strings.IndexByte(m, '=')
+			if equal == -1 {
+				return nil, fmt.Errorf("invalid map: %v", m)
+			}
+			u, dir := m[:equal], m[equal+1:]
+			if dir == "" {
+				return nil, fmt.Errorf("invalid map: %v", m)
+			}
+			_, err := url.Parse(u)
+			if err != nil {
+				return nil, fmt.Errorf("invalid map %v: %v", m, err)
+			}
+			if !strings.HasSuffix(u, "/") {
+				u += "/"
+			}
+			mappings[u] = dir
+		}
+		return mappings, nil
+	}()
+	if err != nil {
+		eprintln("%v", err)
+		eprintln("")
+		flag.Usage()
+		os.Exit(2)
+	}
+
 	stdinDecoder := json.NewDecoder(os.Stdin)
 	stdinDecoder.UseNumber()
 
@@ -101,7 +133,7 @@ func main() {
 	if *assertContent {
 		c.AssertContent()
 	}
-	loader, err := newLoader(*insecure, *cacert)
+	loader, err := newLoader(mappings, *insecure, *cacert)
 	if err != nil {
 		eprintln("%v", err)
 		os.Exit(2)
@@ -143,18 +175,7 @@ func main() {
 				err := stdinDecoder.Decode(&inst)
 				return inst, err
 			}
-			f, err := os.Open(instance)
-			if err != nil {
-				return nil, err
-			}
-			defer f.Close()
-			if ext := filepath.Ext(instance); ext == ".yaml" || ext == ".yml" {
-				var inst any
-				err = yaml.NewDecoder(f).Decode(&inst)
-				return inst, err
-			} else {
-				return jsonschema.UnmarshalJSON(f)
-			}
+			return loadFile(instance)
 		}()
 		if err != nil {
 			fmt.Printf("instance %s: failed\n", instance)

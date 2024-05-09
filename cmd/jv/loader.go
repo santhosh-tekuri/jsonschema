@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func newLoader(insecure bool, cacert string) (jsonschema.URLLoader, error) {
+func newLoader(mappings map[string]string, insecure bool, cacert string) (jsonschema.URLLoader, error) {
 	httpLoader := HTTPLoader(http.Client{
 		Timeout: 15 * time.Second,
 	})
@@ -33,20 +33,32 @@ func newLoader(insecure bool, cacert string) (jsonschema.URLLoader, error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 	}
-	return jsonschema.SchemeURLLoader{
-		"file":  FileLoader{},
-		"http":  &httpLoader,
-		"https": &httpLoader,
-	}, nil
+	return &JVLoader{
+		mappings: mappings,
+		fallback: jsonschema.SchemeURLLoader{
+			"file":  FileLoader{},
+			"http":  &httpLoader,
+			"https": &httpLoader,
+		}}, nil
 }
 
-type FileLoader struct{}
+// --
 
-func (l FileLoader) Load(url string) (any, error) {
-	path, err := jsonschema.FileLoader{}.ToFile(url)
-	if err != nil {
-		return nil, err
+type JVLoader struct {
+	mappings map[string]string
+	fallback jsonschema.URLLoader
+}
+
+func (l *JVLoader) Load(url string) (any, error) {
+	for prefix, dir := range l.mappings {
+		if suffix, ok := strings.CutPrefix(url, prefix); ok {
+			return loadFile(filepath.Join(dir, suffix))
+		}
 	}
+	return l.fallback.Load(url)
+}
+
+func loadFile(path string) (any, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -59,6 +71,20 @@ func (l FileLoader) Load(url string) (any, error) {
 	}
 	return jsonschema.UnmarshalJSON(f)
 }
+
+// --
+
+type FileLoader struct{}
+
+func (l FileLoader) Load(url string) (any, error) {
+	path, err := jsonschema.FileLoader{}.ToFile(url)
+	if err != nil {
+		return nil, err
+	}
+	return loadFile(path)
+}
+
+// --
 
 type HTTPLoader http.Client
 
