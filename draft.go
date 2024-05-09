@@ -261,6 +261,9 @@ func (d *Draft) getVocabs(url url, doc any, vocabularies map[string]*Vocabulary)
 			vocabs = append(vocabs, vocab)
 		}
 	}
+	if !slices.Contains(vocabs, "core") {
+		vocabs = append(vocabs, "core")
+	}
 	return vocabs, nil
 }
 
