@@ -17,7 +17,7 @@ type Compiler struct {
 	mediaTypes    map[string]*MediaType
 }
 
-// NewCompiler create CompilerObject.
+// NewCompiler create Compiler Object.
 func NewCompiler() *Compiler {
 	return &Compiler{
 		schemas:       map[urlPtr]*Schema{},
@@ -34,7 +34,7 @@ func NewCompiler() *Compiler {
 // compile schemas without `$schema` field.
 //
 // By default, this library uses the latest
-// draft supprted.
+// draft supported.
 //
 // The use of this option is HIGHLY encouraged
 // to ensure continued correct operation of your
