@@ -17,6 +17,7 @@ type Compiler struct {
 	mediaTypes    map[string]*MediaType
 }
 
+// NewCompiler create CompilerObject.
 func NewCompiler() *Compiler {
 	return &Compiler{
 		schemas:       map[urlPtr]*Schema{},
@@ -94,6 +95,10 @@ func (c *Compiler) RegisterContentMediaType(mt *MediaType) {
 }
 
 // RegisterVocabulary registers custom vocabulary.
+//
+// NOTE:
+//   - vocabularies are disabled for draft >= 2019-09
+//     see [Compiler.AssertVocabs]
 func (c *Compiler) RegisterVocabulary(vocab *Vocabulary) {
 	c.roots.vocabularies[vocab.URL] = vocab
 }
@@ -163,7 +168,7 @@ func (c *Compiler) MustCompile(loc string) *Schema {
 	return sch
 }
 
-// Compile compiles json-schema at gven loc.
+// Compile compiles json-schema at given loc.
 func (c *Compiler) Compile(loc string) (*Schema, error) {
 	uf, err := absolute(loc)
 	if err != nil {
@@ -296,11 +301,18 @@ func (q *queue) get(up urlPtr) *Schema {
 
 // regexp --
 
+// Regexp is the representation of compiled regular expression.
 type Regexp interface {
 	fmt.Stringer
+
+	// MatchString reports whether the string s contains
+	// any match of the regular expression.
 	MatchString(string) bool
 }
 
+// RegexpEngine parses a regular expression and returns,
+// if successful, a Regexp object that can be used to
+// match against text.
 type RegexpEngine func(string) (Regexp, error)
 
 func (re RegexpEngine) validate(v any) error {

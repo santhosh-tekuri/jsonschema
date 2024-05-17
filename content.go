@@ -8,7 +8,9 @@ import (
 
 // Decoder specifies how to decode specific contentEncoding.
 type Decoder struct {
-	Name   string
+	// Name of contentEncoding.
+	Name string
+	// Decode given string to byte array.
 	Decode func(string) ([]byte, error)
 }
 
@@ -23,6 +25,7 @@ var decoders = map[string]*Decoder{
 
 // MediaType specified how to validate bytes against specific contentMediaType.
 type MediaType struct {
+	// Name of contentMediaType.
 	Name string
 
 	// Validate checks whether bytes conform to this mediatype.

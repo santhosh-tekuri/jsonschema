@@ -22,6 +22,7 @@ type URLLoader interface {
 
 // --
 
+// FileLoader loads json file url.
 type FileLoader struct{}
 
 func (l FileLoader) Load(url string) (any, error) {
@@ -37,6 +38,7 @@ func (l FileLoader) Load(url string) (any, error) {
 	return UnmarshalJSON(f)
 }
 
+// ToFile is helper method to convert file url to file path.
 func (l FileLoader) ToFile(url string) (string, error) {
 	u, err := gourl.Parse(url)
 	if err != nil {

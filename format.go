@@ -12,6 +12,7 @@ import (
 
 // Format defined specific format.
 type Format struct {
+	// Name of format.
 	Name string
 
 	// Validate checks if given value is of this format.

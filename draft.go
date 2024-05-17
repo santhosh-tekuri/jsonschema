@@ -6,13 +6,17 @@ import (
 	"strings"
 )
 
+// Position tells possible tokens in json.
 type Position uint
 
 const (
+	// PosProp represents all properties of json object.
 	PosProp Position = 0
+	// PosItem represents all items of json array.
 	PosItem Position = 1
 )
 
+// SchemaPosition tells where to look for subschema inside keyword.
 type SchemaPosition []Position
 
 func (sp SchemaPosition) collect(v any, ptr jsonPointer, target map[jsonPointer]any) {
@@ -39,6 +43,7 @@ func (sp SchemaPosition) collect(v any, ptr jsonPointer, target map[jsonPointer]
 	}
 }
 
+// Subschemas tells possible Subschemas for given keyword.
 type Subschemas map[string][]SchemaPosition
 
 func (ss Subschemas) collect(obj map[string]any, ptr jsonPointer, target map[jsonPointer]any) {
@@ -54,6 +59,7 @@ func (ss Subschemas) collect(obj map[string]any, ptr jsonPointer, target map[jso
 	}
 }
 
+// A Draft represents json-schema specification.
 type Draft struct {
 	version       int
 	url           string
@@ -65,6 +71,7 @@ type Draft struct {
 	defaultVocabs []string           // names of default vocabs
 }
 
+// String returns the specification url.
 func (d *Draft) String() string {
 	return d.url
 }

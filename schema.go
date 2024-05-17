@@ -6,6 +6,8 @@ import (
 	"math/big"
 )
 
+// Schema is the regpresentation of a compiled
+// jsonschema.
 type Schema struct {
 	up                urlPtr
 	resource          *Schema
@@ -167,6 +169,7 @@ func (jt jsonType) String() string {
 
 // --
 
+// Types encapsulates list of json value types.
 type Types int
 
 func newTypes(v any) *Types {
