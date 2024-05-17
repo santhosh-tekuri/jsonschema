@@ -6,59 +6,6 @@ import (
 	"strings"
 )
 
-// Position tells possible tokens in json.
-type Position uint
-
-const (
-	// PosProp represents all properties of json object.
-	PosProp Position = 0
-	// PosItem represents all items of json array.
-	PosItem Position = 1
-)
-
-// SchemaPosition tells where to look for subschema inside keyword.
-type SchemaPosition []Position
-
-func (sp SchemaPosition) collect(v any, ptr jsonPointer, target map[jsonPointer]any) {
-	if len(sp) == 0 {
-		target[ptr] = v
-		return
-	}
-	p, sp := sp[0], sp[1:]
-	switch p {
-	case PosProp:
-		if obj, ok := v.(map[string]any); ok {
-			for pname, pvalue := range obj {
-				ptr := ptr.append(pname)
-				sp.collect(pvalue, ptr, target)
-			}
-		}
-	case PosItem:
-		if arr, ok := v.([]any); ok {
-			for i, item := range arr {
-				ptr := ptr.append(fmt.Sprint(i))
-				sp.collect(item, ptr, target)
-			}
-		}
-	}
-}
-
-// Subschemas tells possible Subschemas for given keyword.
-type Subschemas map[string][]SchemaPosition
-
-func (ss Subschemas) collect(obj map[string]any, ptr jsonPointer, target map[jsonPointer]any) {
-	for kw, spp := range ss {
-		v, ok := obj[kw]
-		if !ok {
-			continue
-		}
-		ptr := ptr.append(kw)
-		for _, sp := range spp {
-			sp.collect(v, ptr, target)
-		}
-	}
-}
-
 // A Draft represents json-schema specification.
 type Draft struct {
 	version       int
@@ -83,19 +30,19 @@ var (
 		id:      "id",
 		subschemas: Subschemas{
 			// type agonistic
-			"definitions": {{PosProp}},
+			"definitions": {{AllProp{}}},
 			"not":         {{}},
-			"allOf":       {{PosItem}},
-			"anyOf":       {{PosItem}},
-			"oneOf":       {{PosItem}},
+			"allOf":       {{AllItem{}}},
+			"anyOf":       {{AllItem{}}},
+			"oneOf":       {{AllItem{}}},
 			// object
-			"properties":           {{PosProp}},
+			"properties":           {{AllProp{}}},
 			"additionalProperties": {{}},
-			"patternProperties":    {{PosProp}},
+			"patternProperties":    {{AllProp{}}},
 			// array
-			"items":           {{}, {PosItem}},
+			"items":           {{}, {AllItem{}}},
 			"additionalItems": {{}},
-			"dependencies":    {{PosProp}},
+			"dependencies":    {{AllProp{}}},
 		},
 		vocabPrefix:   "",
 		allVocabs:     map[string]*Schema{},
@@ -134,8 +81,8 @@ var (
 		url:     "https://json-schema.org/draft/2019-09/schema",
 		id:      "$id",
 		subschemas: joinMaps(Draft7.subschemas, Subschemas{
-			"$defs":                 {{PosProp}},
-			"dependentSchemas":      {{PosProp}},
+			"$defs":                 {{AllProp{}}},
+			"dependentSchemas":      {{AllProp{}}},
 			"unevaluatedProperties": {{}},
 			"unevaluatedItems":      {{}},
 			"contentSchema":         {{}},
@@ -157,7 +104,7 @@ var (
 		url:     "https://json-schema.org/draft/2020-12/schema",
 		id:      "$id",
 		subschemas: joinMaps(Draft2019.subschemas, Subschemas{
-			"prefixItems": {{PosItem}},
+			"prefixItems": {{AllItem{}}},
 		}),
 		vocabPrefix: "https://json-schema.org/draft/2020-12/vocab/",
 		allVocabs: map[string]*Schema{
