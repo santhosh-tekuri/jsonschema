@@ -76,10 +76,8 @@ func discriminatorVocab() *jsonschema.Vocabulary {
 	return &jsonschema.Vocabulary{
 		URL:    url,
 		Schema: sch,
-		Subschemas: jsonschema.Subschemas{
-			"discriminator": {
-				{jsonschema.AllProp{}, jsonschema.AllProp{}},
-			},
+		Subschemas: []jsonschema.SchemaPath{
+			{jsonschema.Prop("discriminator"), jsonschema.AllProp{}, jsonschema.AllProp{}},
 		},
 		Compile: compileDiscriminator,
 	}

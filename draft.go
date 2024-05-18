@@ -12,7 +12,7 @@ type Draft struct {
 	url           string
 	sch           *Schema
 	id            string             // property name used to represent id
-	subschemas    Subschemas         // locations of subschemas
+	subschemas    []SchemaPath       // locations of subschemas
 	vocabPrefix   string             // prefix used for vocabulary
 	allVocabs     map[string]*Schema // names of supported vocabs with its schemas
 	defaultVocabs []string           // names of default vocabs
@@ -28,21 +28,22 @@ var (
 		version: 4,
 		url:     "http://json-schema.org/draft-04/schema",
 		id:      "id",
-		subschemas: Subschemas{
+		subschemas: []SchemaPath{
 			// type agonistic
-			"definitions": {{AllProp{}}},
-			"not":         {{}},
-			"allOf":       {{AllItem{}}},
-			"anyOf":       {{AllItem{}}},
-			"oneOf":       {{AllItem{}}},
+			schemaPath("definitions/*"),
+			schemaPath("not"),
+			schemaPath("allOf/[]"),
+			schemaPath("anyOf/[]"),
+			schemaPath("oneOf/[]"),
 			// object
-			"properties":           {{AllProp{}}},
-			"additionalProperties": {{}},
-			"patternProperties":    {{AllProp{}}},
+			schemaPath("properties/*"),
+			schemaPath("additionalProperties"),
+			schemaPath("patternProperties/*"),
 			// array
-			"items":           {{}, {AllItem{}}},
-			"additionalItems": {{}},
-			"dependencies":    {{AllProp{}}},
+			schemaPath("items"),
+			schemaPath("items/[]"),
+			schemaPath("additionalItems"),
+			schemaPath("dependencies/*"),
 		},
 		vocabPrefix:   "",
 		allVocabs:     map[string]*Schema{},
@@ -53,10 +54,10 @@ var (
 		version: 6,
 		url:     "http://json-schema.org/draft-06/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft4.subschemas, Subschemas{
-			"propertyNames": {{}},
-			"contains":      {{}},
-		}),
+		subschemas: joinSubschemas(Draft4.subschemas,
+			schemaPath("propertyNames"),
+			schemaPath("contains"),
+		),
 		vocabPrefix:   "",
 		allVocabs:     map[string]*Schema{},
 		defaultVocabs: []string{},
@@ -66,11 +67,11 @@ var (
 		version: 7,
 		url:     "http://json-schema.org/draft-07/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft6.subschemas, Subschemas{
-			"if":   {{}},
-			"then": {{}},
-			"else": {{}},
-		}),
+		subschemas: joinSubschemas(Draft6.subschemas,
+			schemaPath("if"),
+			schemaPath("then"),
+			schemaPath("else"),
+		),
 		vocabPrefix:   "",
 		allVocabs:     map[string]*Schema{},
 		defaultVocabs: []string{},
@@ -80,13 +81,13 @@ var (
 		version: 2019,
 		url:     "https://json-schema.org/draft/2019-09/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft7.subschemas, Subschemas{
-			"$defs":                 {{AllProp{}}},
-			"dependentSchemas":      {{AllProp{}}},
-			"unevaluatedProperties": {{}},
-			"unevaluatedItems":      {{}},
-			"contentSchema":         {{}},
-		}),
+		subschemas: joinSubschemas(Draft7.subschemas,
+			schemaPath("$defs/*"),
+			schemaPath("dependentSchemas/*"),
+			schemaPath("unevaluatedProperties"),
+			schemaPath("unevaluatedItems"),
+			schemaPath("contentSchema"),
+		),
 		vocabPrefix: "https://json-schema.org/draft/2019-09/vocab/",
 		allVocabs: map[string]*Schema{
 			"core":       nil,
@@ -103,9 +104,9 @@ var (
 		version: 2020,
 		url:     "https://json-schema.org/draft/2020-12/schema",
 		id:      "$id",
-		subschemas: joinMaps(Draft2019.subschemas, Subschemas{
-			"prefixItems": {{AllItem{}}},
-		}),
+		subschemas: joinSubschemas(Draft2019.subschemas,
+			schemaPath("prefixItems/[]"),
+		),
 		vocabPrefix: "https://json-schema.org/draft/2020-12/vocab/",
 		allVocabs: map[string]*Schema{
 			"core":              nil,
@@ -351,13 +352,9 @@ func (e *DuplicateAnchorError) Error() string {
 
 // --
 
-func joinMaps(m1 Subschemas, m2 Subschemas) Subschemas {
-	m := Subschemas{}
-	for k, v := range m1 {
-		m[k] = v
-	}
-	for k, v := range m2 {
-		m[k] = v
-	}
-	return m
+func joinSubschemas(a1 []SchemaPath, a2 ...SchemaPath) []SchemaPath {
+	var a []SchemaPath
+	a = append(a, a1...)
+	a = append(a, a2...)
+	return a
 }

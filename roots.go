@@ -168,15 +168,19 @@ func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointe
 
 	// process subschemas
 	subschemas := map[jsonPointer]any{}
-	ss := draft.subschemas.collect(obj, schPtr)
-	for k, v := range ss {
-		subschemas[k] = v
+	for _, sp := range draft.subschemas {
+		ss := sp.collect(obj, schPtr)
+		for k, v := range ss {
+			subschemas[k] = v
+		}
 	}
 	for _, vocab := range baseRes.dialect.activeVocabs(true, rr.vocabularies) {
 		if v := rr.vocabularies[vocab]; v != nil {
-			ss := v.Subschemas.collect(obj, schPtr)
-			for k, v := range ss {
-				subschemas[k] = v
+			for _, sp := range v.Subschemas {
+				ss := sp.collect(obj, schPtr)
+				for k, v := range ss {
+					subschemas[k] = v
+				}
 			}
 		}
 	}

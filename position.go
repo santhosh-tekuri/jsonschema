@@ -1,6 +1,9 @@
 package jsonschema
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 // Position tells possible tokens in json.
 type Position interface {
@@ -79,6 +82,27 @@ func (i Item) collect(v any, ptr jsonPointer) map[jsonPointer]any {
 // SchemaPath tells where to look for subschema inside keyword.
 type SchemaPath []Position
 
+func schemaPath(path string) SchemaPath {
+	var sp SchemaPath
+	for _, tok := range strings.Split(path, "/") {
+		var pos Position
+		switch {
+		case tok == "*":
+			pos = AllProp{}
+		case tok == "[]":
+			pos = AllItem{}
+		default:
+			if i, err := strconv.Atoi(tok); err == nil {
+				pos = Item(i)
+			} else {
+				pos = Prop(tok)
+			}
+		}
+		sp = append(sp, pos)
+	}
+	return sp
+}
+
 func (sp SchemaPath) collect(v any, ptr jsonPointer) map[jsonPointer]any {
 	if len(sp) == 0 {
 		return map[jsonPointer]any{
@@ -97,25 +121,22 @@ func (sp SchemaPath) collect(v any, ptr jsonPointer) map[jsonPointer]any {
 	return mm
 }
 
-// --
-
-// Subschemas tells possible subschemas for given keyword.
-type Subschemas map[string][]SchemaPath
-
-func (ss Subschemas) collect(obj map[string]any, ptr jsonPointer) map[jsonPointer]any {
-	mm := map[jsonPointer]any{}
-	for kw, spp := range ss {
-		v, ok := obj[kw]
-		if !ok {
-			continue
+func (sp SchemaPath) String() string {
+	var sb strings.Builder
+	for _, pos := range sp {
+		if sb.Len() != 0 {
+			sb.WriteByte('/')
 		}
-		ptr := ptr.append(kw)
-		for _, sp := range spp {
-			m := sp.collect(v, ptr)
-			for k, v := range m {
-				mm[k] = v
-			}
+		switch pos := pos.(type) {
+		case AllProp:
+			sb.WriteString("*")
+		case AllItem:
+			sb.WriteString("[]")
+		case Prop:
+			sb.WriteString(string(pos))
+		case Item:
+			sb.WriteString(strconv.Itoa(int(pos)))
 		}
 	}
-	return mm
+	return sb.String()
 }
