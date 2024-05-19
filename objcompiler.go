@@ -502,11 +502,11 @@ func (c *objCompiler) objVal(pname string) map[string]any {
 	if !ok {
 		return nil
 	}
-	m, ok := v.(map[string]any)
+	obj, ok := v.(map[string]any)
 	if !ok {
 		return nil
 	}
-	return m
+	return obj
 }
 
 func (c *objCompiler) arrVal(pname string) []any {
@@ -514,11 +514,11 @@ func (c *objCompiler) arrVal(pname string) []any {
 	if !ok {
 		return nil
 	}
-	m, ok := v.([]any)
+	arr, ok := v.([]any)
 	if !ok {
 		return nil
 	}
-	return m
+	return arr
 }
 
 // --
