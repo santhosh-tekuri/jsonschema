@@ -125,9 +125,6 @@ func validateUUID(v any) error {
 		return fmt.Errorf("must have %d elements", len(hexGroups))
 	}
 	for i, group := range groups {
-		if i >= len(hexGroups) {
-			return errors.New("more than 5 elements")
-		}
 		if len(group) != hexGroups[i] {
 			return fmt.Errorf("element %d must be %d characters long", i+1, hexGroups[i])
 		}
