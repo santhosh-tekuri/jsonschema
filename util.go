@@ -69,11 +69,12 @@ func unescape(tok string) (string, bool) {
 		if tok == "" {
 			return "", false
 		}
-		if tok[0] == '0' {
+		switch tok[0] {
+		case '0':
 			sb.WriteByte('~')
-		} else if tok[0] == '1' {
+		case '1':
 			sb.WriteByte('/')
-		} else {
+		default:
 			return "", false
 		}
 		tok = tok[1:]

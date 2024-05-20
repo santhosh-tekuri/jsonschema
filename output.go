@@ -70,9 +70,9 @@ func (e *ValidationError) display(sb *strings.Builder, verbose bool, indent int,
 						schLoc = fmt.Sprintf("S#%s", f)
 					}
 				}
-				sb.WriteString(fmt.Sprintf(" [%s]", schLoc))
+				fmt.Fprintf(sb, " [%s]", schLoc)
 			}
-			sb.WriteString(fmt.Sprintf(": %s", e.ErrorKind.LocalizedString(p)))
+			fmt.Fprintf(sb, ": %s", e.ErrorKind.LocalizedString(p))
 		}
 	}
 	for _, cause := range e.Causes {

@@ -86,10 +86,10 @@ func schemaPath(path string) SchemaPath {
 	var sp SchemaPath
 	for _, tok := range strings.Split(path, "/") {
 		var pos Position
-		switch {
-		case tok == "*":
+		switch tok {
+		case "*":
 			pos = AllProp{}
-		case tok == "[]":
+		case "[]":
 			pos = AllItem{}
 		default:
 			if i, err := strconv.Atoi(tok); err == nil {

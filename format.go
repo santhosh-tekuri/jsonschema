@@ -483,7 +483,7 @@ func validateTime(v any) error {
 	}
 
 	// check leap second
-	if !(s < 60 || (h == 23 && m == 59)) {
+	if s >= 60 && (h != 23 || m != 59) {
 		return errors.New("invalid leap second")
 	}
 
