@@ -10,11 +10,11 @@ import (
 type Compiler struct {
 	schemas       map[urlPtr]*Schema
 	roots         *roots
-	assertFormat  bool
-	assertContent bool
 	formats       map[string]*Format
 	decoders      map[string]*Decoder
 	mediaTypes    map[string]*MediaType
+	assertFormat  bool
+	assertContent bool
 }
 
 // NewCompiler create Compiler Object.
@@ -22,11 +22,11 @@ func NewCompiler() *Compiler {
 	return &Compiler{
 		schemas:       map[urlPtr]*Schema{},
 		roots:         newRoots(),
-		assertFormat:  false,
-		assertContent: false,
 		formats:       map[string]*Format{},
 		decoders:      map[string]*Decoder{},
 		mediaTypes:    map[string]*MediaType{},
+		assertFormat:  false,
+		assertContent: false,
 	}
 }
 
