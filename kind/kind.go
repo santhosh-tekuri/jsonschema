@@ -215,7 +215,7 @@ func (*Format) KeywordPath() []string {
 }
 
 func (k *Format) LocalizedString(p *message.Printer) string {
-	return p.Sprintf("%s is not valid %s: %v", display(k.Got), k.Want, k.Err)
+	return p.Sprintf("%s is not valid %s: %v", display(k.Got), k.Want, localizedError(k.Err, p))
 }
 
 // --
@@ -495,7 +495,7 @@ func (*ContentEncoding) KeywordPath() []string {
 }
 
 func (k *ContentEncoding) LocalizedString(p *message.Printer) string {
-	return p.Sprintf("value is not %s encoded: %v", quote(k.Want), k.Err)
+	return p.Sprintf("value is not %s encoded: %v", quote(k.Want), localizedError(k.Err, p))
 }
 
 // --
@@ -641,4 +641,11 @@ func display(v any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func localizedError(err error, p *message.Printer) string {
+	if err, ok := err.(interface{ LocalizedError(*message.Printer) string }); ok {
+		return err.LocalizedError(p)
+	}
+	return err.Error()
 }
