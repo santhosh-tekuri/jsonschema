@@ -223,6 +223,27 @@ var (
 			"https://json-schema.org/draft/2020-12/vocab/validation",
 		},
 	}
+	Draft2020HyperSchema = &Draft{
+		version:    2020,
+		id:         "$id",
+		boolSchema: true,
+		vocab: []string{
+			"https://json-schema.org/draft/2020-12/vocab/core",
+			"https://json-schema.org/draft/2020-12/vocab/applicator",
+			"https://json-schema.org/draft/2020-12/vocab/unevaluated",
+			"https://json-schema.org/draft/2020-12/vocab/validation",
+			"https://json-schema.org/draft/2020-12/vocab/meta-data",
+			"https://json-schema.org/draft/2020-12/vocab/format-annotation",
+			"https://json-schema.org/draft/2020-12/vocab/content",
+			"https://json-schema.org/draft/2019-09/vocab/hyper-schema",
+		},
+		defaultVocab: []string{
+			"https://json-schema.org/draft/2020-12/vocab/core",
+			"https://json-schema.org/draft/2020-12/vocab/applicator",
+			"https://json-schema.org/draft/2020-12/vocab/unevaluated",
+			"https://json-schema.org/draft/2020-12/vocab/validation",
+		},
+	}
 
 	latest = Draft2020
 )
@@ -239,6 +260,8 @@ func findDraft(url string) *Draft {
 		return latest
 	case "https://json-schema.org/draft/2020-12/schema":
 		return Draft2020
+	case "https://json-schema.org/draft/2020-12/hyper-schema":
+		return Draft2020HyperSchema
 	case "https://json-schema.org/draft/2019-09/schema":
 		return Draft2019
 	case "https://json-schema.org/draft-07/schema":
