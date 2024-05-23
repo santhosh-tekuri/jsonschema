@@ -122,7 +122,12 @@ func (c *Compiler) AddResource(url string, doc any) error {
 	if err != nil {
 		return err
 	}
-	c.roots.loader.add(uf.url, doc)
+	if isMeta(string(uf.url)) {
+		return &ResourceExistsError{string(uf.url)}
+	}
+	if !c.roots.loader.add(uf.url, doc) {
+		return &ResourceExistsError{string(uf.url)}
+	}
 	return nil
 }
 

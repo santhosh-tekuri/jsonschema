@@ -78,14 +78,14 @@ func (l SchemeURLLoader) Load(url string) (any, error) {
 //go:embed metaschemas
 var metaFS embed.FS
 
-func loadMeta(url string) (any, error) {
+func openMeta(url string) (fs.File, error) {
 	u, meta := strings.CutPrefix(url, "http://json-schema.org/")
 	if !meta {
 		u, meta = strings.CutPrefix(url, "https://json-schema.org/")
 	}
 	if meta {
 		if u == "schema" {
-			return loadMeta(draftLatest.url)
+			return openMeta(draftLatest.url)
 		}
 		f, err := metaFS.Open("metaschemas/" + u)
 		if err != nil {
@@ -94,9 +94,34 @@ func loadMeta(url string) (any, error) {
 			}
 			return nil, err
 		}
-		return UnmarshalJSON(f)
+		return f, err
 	}
 	return nil, nil
+
+}
+
+func isMeta(url string) bool {
+	f, err := openMeta(url)
+	if err != nil {
+		return true
+	}
+	if f != nil {
+		f.Close()
+		return true
+	}
+	return false
+}
+
+func loadMeta(url string) (any, error) {
+	f, err := openMeta(url)
+	if err != nil {
+		return nil, err
+	}
+	if f == nil {
+		return nil, nil
+	}
+	defer f.Close()
+	return UnmarshalJSON(f)
 }
 
 // --
@@ -106,11 +131,12 @@ type defaultLoader struct {
 	loader URLLoader
 }
 
-func (l *defaultLoader) add(url url, doc any) {
+func (l *defaultLoader) add(url url, doc any) bool {
 	if _, ok := l.docs[url]; ok {
-		return
+		return false
 	}
 	l.docs[url] = doc
+	return true
 }
 
 func (l *defaultLoader) load(url url) (any, error) {
@@ -210,6 +236,16 @@ type UnsupportedURLSchemeError struct {
 
 func (e *UnsupportedURLSchemeError) Error() string {
 	return fmt.Sprintf("no URLLoader registered for %q", e.url)
+}
+
+// --
+
+type ResourceExistsError struct {
+	url string
+}
+
+func (e *ResourceExistsError) Error() string {
+	return fmt.Sprintf("resource for %q already exists", e.url)
 }
 
 // --
