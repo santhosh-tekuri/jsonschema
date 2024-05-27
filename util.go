@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
+	"golang.org/x/text/message"
 )
 
 // --
@@ -451,4 +452,24 @@ type Bug struct {
 
 func (e *Bug) Error() string {
 	return e.Msg
+}
+
+// --
+
+// LocalizableError is an error whose message is localizable.
+func LocalizableError(format string, args ...any) error {
+	return &localizableError{format, args}
+}
+
+type localizableError struct {
+	msg  string
+	args []any
+}
+
+func (e *localizableError) Error() string {
+	return fmt.Sprintf(e.msg, e.args...)
+}
+
+func (e *localizableError) LocalizedError(p *message.Printer) string {
+	return p.Sprintf(e.msg, e.args...)
 }
