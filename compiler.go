@@ -196,10 +196,7 @@ func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
 		if err := c.roots.ensureSubschema(sch.up); err != nil {
 			return nil, err
 		}
-		r, ok := c.roots.roots[sch.up.url]
-		if !ok {
-			return nil, &Bug{"orLoad did not add"}
-		}
+		r := c.roots.roots[sch.up.url]
 		v, err := sch.up.lookup(r.doc)
 		if err != nil {
 			return nil, err

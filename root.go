@@ -14,11 +14,7 @@ type root struct {
 }
 
 func (r *root) rootResource() *resource {
-	res, ok := r.resources[""]
-	if !ok {
-		panic(&Bug{fmt.Sprintf("root resource should exist for %q", r.url)})
-	}
-	return res
+	return r.resources[""]
 }
 
 func (r *root) resource(ptr jsonPointer) *resource {

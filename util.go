@@ -445,17 +445,6 @@ func (e *SchemaValidationError) Error() string {
 
 // --
 
-//nolint:errname
-type Bug struct {
-	Msg string
-}
-
-func (e *Bug) Error() string {
-	return e.Msg
-}
-
-// --
-
 // LocalizableError is an error whose message is localizable.
 func LocalizableError(format string, args ...any) error {
 	return &localizableError{format, args}
