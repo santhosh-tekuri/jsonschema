@@ -4,10 +4,9 @@
 [![GoDoc](https://godoc.org/github.com/santhosh-tekuri/jsonschema?status.svg)](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v6)
 [![Go Report Card](https://goreportcard.com/badge/github.com/santhosh-tekuri/jsonschema/v6)](https://goreportcard.com/report/github.com/santhosh-tekuri/jsonschema/v6)
 [![Build Status](https://github.com/santhosh-tekuri/jsonschema/actions/workflows/go.yaml/badge.svg?branch=boon)](https://github.com/santhosh-tekuri/jsonschema/actions/workflows/go.yaml)
-[![codecov](https://codecov.io/gh/santhosh-tekuri/jsonschema/branch/boon/graph/badge.svg?token=JMVj1pFT2l)](https://codecov.io/gh/santhosh-tekuri/jsonschema)
+[![codecov](https://codecov.io/gh/santhosh-tekuri/jsonschema/branch/boon/graph/badge.svg?token=JMVj1pFT2l)](https://codecov.io/gh/santhosh-tekuri/jsonschema/tree/boon)
 
-[Examples](https://github.com/santhosh-tekuri/boon/blob/main/tests/examples.rs)
-[Changelog](https://github.com/santhosh-tekuri/boon/blob/main/CHANGELOG.md)
+see [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v6) for examples
 
 ## Library Features
 
