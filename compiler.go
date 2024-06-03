@@ -57,9 +57,9 @@ func (c *Compiler) AssertFormat() {
 // AssertContent enables content assertions.
 //
 // Content assertions include keywords:
-// - contentEncoding
-// - contentMediaType
-// - contentSchema
+//   - contentEncoding
+//   - contentMediaType
+//   - contentSchema
 //
 // Default behavior is always disabled.
 func (c *Compiler) AssertContent() {
@@ -69,7 +69,7 @@ func (c *Compiler) AssertContent() {
 // RegisterFormat registers custom format.
 //
 // NOTE:
-//   - `regex` format can not be overridden
+//   - "regex" format can not be overridden
 //   - format assertions are disabled for draft >= 2019-09
 //     see [Compiler.AssertFormat]
 func (c *Compiler) RegisterFormat(f *Format) {
@@ -117,6 +117,7 @@ func (c *Compiler) AssertVocabs() {
 // resolution.
 //
 // The argument url can be file path or url. Any fragment in url is ignored.
+// The argument doc must be valid json value.
 func (c *Compiler) AddResource(url string, doc any) error {
 	uf, err := absolute(url)
 	if err != nil {
