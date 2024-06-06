@@ -91,6 +91,7 @@ type Schema struct {
 	ReadOnly    bool
 	WriteOnly   bool
 	Examples    []any
+	Deprecated  bool
 }
 
 // --

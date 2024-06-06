@@ -308,6 +308,9 @@ func (c *objCompiler) compileDraft2019(s *Schema) error {
 		}
 	}
 
+	// annotations --
+	s.Deprecated = c.boolean("deprecated")
+
 	return nil
 }
 
