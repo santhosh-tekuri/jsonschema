@@ -790,7 +790,7 @@ func (vd *validator) resolveDynamicAnchor(name string, fallback *Schema) *Schema
 
 func (vd *validator) validateRefs() {
 	// $recursiveRef --
-	if sch := vd.sch.RecusiveRef; sch != nil {
+	if sch := vd.sch.RecursiveRef; sch != nil {
 		if sch.RecursiveAnchor {
 			sch = vd.resolveRecursiveAnchor(sch)
 		}

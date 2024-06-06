@@ -24,7 +24,7 @@ type Schema struct {
 	ID              string
 	Ref             *Schema
 	Anchor          string
-	RecusiveRef     *Schema
+	RecursiveRef    *Schema
 	RecursiveAnchor bool
 	DynamicRef      *DynamicRef
 	DynamicAnchor   string // "" if not specified

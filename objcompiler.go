@@ -266,7 +266,7 @@ func (c *objCompiler) compileDraft2019(s *Schema) error {
 	var err error
 
 	if c.hasVocab("core") {
-		if s.RecusiveRef, err = c.enqueueRef("$recursiveRef"); err != nil {
+		if s.RecursiveRef, err = c.enqueueRef("$recursiveRef"); err != nil {
 			return err
 		}
 		s.RecursiveAnchor = c.boolean("$recursiveAnchor")
