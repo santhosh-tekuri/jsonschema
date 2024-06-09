@@ -165,7 +165,7 @@ func Example_customContentMediaType() {
 		Validate: func(b []byte) error {
 			return xml.Unmarshal(b, new(any))
 		},
-		UnmarshalJSON: nil, // xml is not json-compatiable format
+		UnmarshalJSON: nil, // xml is not json-compatible format
 	})
 	c.AssertContent()
 	if err := c.AddResource("schema.json", schema); err != nil {
