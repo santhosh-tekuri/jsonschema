@@ -75,7 +75,7 @@ Options:
   -v, --version           Print build information
 ```
 
-- [x] exit code `1` for validation erros, `2` for usage errors
+- [x] exit code `1` for validation errors, `2` for usage errors
 - [x] validate both schema and multiple instances
 - [x] support both json and yaml files
 - [x] support standard input, use `-`
