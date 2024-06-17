@@ -56,9 +56,11 @@ see [godoc](https://pkg.go.dev/github.com/santhosh-tekuri/jsonschema/v6) for exa
     - enable via flag for draft <= 7
 - [x] mixed dialect support
 
-## CLI
+## CLI v0.7.0
 
 to install: `go install github.com/santhosh-tekuri/jsonschema/cmd/jv@latest`
+
+Note that the cli is versioned independently. you can see it in git tags `cmd/jv/v0.7.0`
 
 ```
 Usage: jv [OPTIONS] SCHEMA [INSTANCE...]
