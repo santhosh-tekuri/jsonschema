@@ -17,8 +17,8 @@ import (
 	"strings"
 	"testing"
 
+	_ "github.com/bmeg/jsonschema/v5/httploader"
 	"github.com/santhosh-tekuri/jsonschema/v5"
-	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
 
 var skipTests = map[string]map[string][]string{
