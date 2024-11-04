@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/bmeg/jsonschema"
 )
 
 func TestPath_Absolute(t *testing.T) {

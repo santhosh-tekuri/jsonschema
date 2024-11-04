@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/bmeg/jsonschema"
 )
 
 var skip = []string{

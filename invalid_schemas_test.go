@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/bmeg/jsonschema"
 )
 
 func TestInvalidSchemas(t *testing.T) {

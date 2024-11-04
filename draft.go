@@ -121,6 +121,26 @@ var (
 		defaultVocabs: []string{"core", "applicator", "unevaluated", "validation"},
 	}
 
+	Draft2020HyperSchema = &Draft{
+		version: 2020,
+		url:     "https://json-schema.org/draft/2020-12/hyper-schema",
+		id:      "$id",
+		subschemas: joinSubschemas(Draft2019.subschemas,
+			schemaPath("prefixItems/[]"),
+		),
+		vocabPrefix: "https://json-schema.org/draft/2020-12/vocab",
+		allVocabs: map[string]*Schema{
+			"core":              nil,
+			"applicator":        nil,
+			"unevaluated":       nil,
+			"validation":        nil,
+			"meta-data":         nil,
+			"format-annotation": nil,
+			"content":           nil,
+			"hyper-schema":      nil,
+		},
+		defaultVocabs: []string{"core", "applicator", "unevaluated", "validation"},
+	}
 	draftLatest = Draft2020
 )
 
@@ -147,6 +167,8 @@ func draftFromURL(url string) *Draft {
 	switch u {
 	case "json-schema.org/schema":
 		return draftLatest
+	case "https://json-schema.org/draft/2020-12/hyper-schema":
+		return Draft2020HyperSchema
 	case "json-schema.org/draft/2020-12/schema":
 		return Draft2020
 	case "json-schema.org/draft/2019-09/schema":
