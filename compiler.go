@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"sync"
 )
 
 // Compiler compiles json schema into *Schema.
 type Compiler struct {
+	mu										sync.RWMutex 
 	schemas       map[urlPtr]*Schema
 	roots         *roots
 	formats       map[string]*Format
@@ -207,9 +209,11 @@ func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
 		}
 		compiled++
 	}
+	c.mu.RLock()
 	for _, sch := range *q {
 		c.schemas[sch.up] = sch
 	}
+	c.mu.RUnlock()
 	return c.schemas[up], nil
 }
 
