@@ -9,7 +9,7 @@ import (
 
 // Compiler compiles json schema into *Schema.
 type Compiler struct {
-	mu										sync.RWMutex 
+	mu            sync.RWMutex 
 	schemas       map[urlPtr]*Schema
 	roots         *roots
 	formats       map[string]*Format
