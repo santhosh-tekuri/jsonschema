@@ -6,7 +6,7 @@ import (
 	"math/big"
 )
 
-// Schema is the regpresentation of a compiled
+// Schema is the representation of a compiled
 // jsonschema.
 type Schema struct {
 	up                urlPtr
