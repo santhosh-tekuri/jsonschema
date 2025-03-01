@@ -3,6 +3,7 @@ package kind
 import (
 	"fmt"
 	"math/big"
+	"sort"
 	"strings"
 
 	"golang.org/x/text/message"
@@ -622,7 +623,12 @@ func quote(s string) string {
 
 func joinQuoted(arr []string, sep string) string {
 	var sb strings.Builder
-	for _, s := range arr {
+	// After upgrade to Go 1.23 can be replaced just with
+	// ... range slices.Sorted(arr)
+	sarr := make([]string, len(arr))
+	copy(sarr, arr)
+	sort.Strings(sarr)
+	for _, s := range sarr {
 		if sb.Len() > 0 {
 			sb.WriteString(sep)
 		}
