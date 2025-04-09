@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tidwall/gjson"
+	"io"
 	"net/url"
 	"os"
 	"runtime/debug"
@@ -73,7 +75,7 @@ func main() {
 	}
 
 	// output --
-	if !slices.Contains([]string{"simple", "alt", "flag", "basic", "detailed"}, *output) {
+	if !slices.Contains([]string{"simple", "alt", "flag", "basic", "detailed", "github"}, *output) {
 		eprintln("invalid output: %v", *output)
 		eprintln("")
 		flag.Usage()
@@ -202,6 +204,8 @@ func main() {
 						printJSON(verr.BasicOutput())
 					case "detailed":
 						printJSON(verr.DetailedOutput())
+					case "github":
+						printGitHub(verr.DetailedOutput(), instance)
 					}
 				} else {
 					fmt.Println(err)
@@ -228,4 +232,64 @@ func printJSON(v any) {
 		panic(err)
 	}
 	fmt.Println(string(b))
+}
+
+func printGitHub(o *jsonschema.OutputUnit, file string) {
+	if o.Valid {
+		return
+	}
+
+	if o.Error != nil {
+		bytes, err := o.Error.MarshalJSON()
+		if err != nil {
+			panic(err)
+		}
+		line, err := GetLineNumber(file, toJsonPath(o.InstanceLocation))
+		if err != nil {
+			panic(err)
+		}
+		log := fmt.Sprintf("::error file=%s,line=%d::%s: %s", file, line, o.InstanceLocation, string(bytes))
+		fmt.Println(log)
+	}
+
+	for _, output := range o.Errors {
+		printGitHub(&output, file)
+	}
+}
+
+func toJsonPath(location string) string {
+	location, _ = strings.CutPrefix(location, "/")
+	location = strings.ReplaceAll(location, "/", ".")
+	return location
+}
+
+// GetLineNumber retrieves the line number of a JSON Path match in a JSON file
+func GetLineNumber(jsonFilePath string, jsonPath string) (int, error) {
+	// Open the file
+	file, err := os.Open(jsonFilePath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	b, err := io.ReadAll(file)
+	if err != nil {
+		return 0, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	result := gjson.GetBytes(b, jsonPath)
+	if !result.Exists() {
+		return 0, fmt.Errorf("no match found for JSON Path: %s", jsonPath)
+	}
+	
+	lines := strings.Split(string(b), "\n")
+	total := 0
+	for i, line := range lines {
+		total += len(line) + 1 // +1 for the newline character
+		if total >= result.Index {
+			return i + 1, nil // +1 because line numbers are 1-based
+		}
+	}
+
+	return result.Index, nil
 }
