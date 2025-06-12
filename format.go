@@ -32,7 +32,7 @@ var formats = map[string]*Format{
 	"time":                  {"time", validateTime},
 	"date-time":             {"date-time", validateDateTime},
 	"uri":                   {"uri", validateURI},
-	"iri":                   {"iri", validateURI},
+	"iri":                   {"iri", validateIRI},
 	"uri-reference":         {"uri-reference", validateURIReference},
 	"iri-reference":         {"iri-reference", validateURIReference},
 	"uri-template":          {"uri-template", validateURITemplate},
@@ -534,18 +534,30 @@ func parseURL(s string) (*gourl.URL, error) {
 }
 
 func validateURI(v any) error {
+	return validateRI(v, false)
+}
+
+func validateIRI(v any) error {
+	return validateRI(v, true)
+}
+
+func validateRI(v any, international bool) error {
 	s, ok := v.(string)
 	if !ok {
 		return nil
 	}
+
 	// rfc3986: 2.  Characters
 	//   [..] The ABNF notation defines its terminal values to be non-negative
 	//   integers (codepoints) based on the US-ASCII coded character set
-	for _, r := range s {
-		if r > unicode.MaxASCII {
-			return LocalizableError("has unescaped non-ASCII characters")
+	if !international {
+		for _, r := range s {
+			if r > unicode.MaxASCII {
+				return LocalizableError("has unescaped non-ASCII characters")
+			}
 		}
 	}
+
 	u, err := parseURL(s)
 	if err != nil {
 		return err
