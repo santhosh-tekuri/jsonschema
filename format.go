@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // Format defined specific format.
@@ -536,6 +537,14 @@ func validateURI(v any) error {
 	s, ok := v.(string)
 	if !ok {
 		return nil
+	}
+	// rfc3986: 2.  Characters
+	//   [..] The ABNF notation defines its terminal values to be non-negative
+	//   integers (codepoints) based on the US-ASCII coded character set
+	for _, r := range s {
+		if r > unicode.MaxASCII {
+			return LocalizableError("has unescaped non-ASCII characters")
+		}
 	}
 	u, err := parseURL(s)
 	if err != nil {
