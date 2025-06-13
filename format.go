@@ -565,9 +565,14 @@ func validateRI(v any, international bool, reference bool) error {
 				return LocalizableError("has unescaped non-ASCII characters")
 			}
 		}
-		// rfc3986 does not list `\` (aka %x5C) as allowed character
-		if strings.Contains(s, `\`) {
-			return LocalizableError(`contains \`)
+		// rfc3986 does not list a number of ASCII chars, they are not allowed
+		// its sister RFC lists them explicitely:
+		// rfc3987: 3.1.  Mapping of IRIs to URIs
+		//   [..] Systems accepting IRIs MAY also deal with the printable
+		//   characters in US-ASCII that are not allowed in URIs, namely "<",
+		//   ">", '"', space, "{", "}", "|", "\", "^", and "`" [..]
+		if strings.ContainsAny(s, "<>\" {}|\\^`") {
+			return LocalizableError(`has illegal ASCII characters`)
 		}
 	}
 

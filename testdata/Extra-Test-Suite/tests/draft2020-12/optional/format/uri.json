@@ -22,6 +22,41 @@
                 "description": "invalid backslash character",
                 "data": "https://example.org/foobar\\.txt",
                 "valid": false
+            },
+            {
+                "description": "invalid \" character",
+                "data": "https://example.org/foobar\".txt",
+                "valid": false
+            },
+            {
+                "description": "invalid <> characters",
+                "data": "https://example.org/foobar<>.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid {} characters",
+                "data": "https://example.org/foobar{}.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid ^ character",
+                "data": "https://example.org/foobar^.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid ` character",
+                "data": "https://example.org/foobar`.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid SPACE character",
+                "data": "https://example.org/foo bar.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid | character",
+                "data": "https://example.org/foobar|.txt",
+                "valid": false
             }
         ]
     }
