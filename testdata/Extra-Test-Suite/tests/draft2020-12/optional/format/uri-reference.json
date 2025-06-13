@@ -1,21 +1,21 @@
 [
     {
-        "description": "validation of uri strings",
-        "schema": { "format": "uri" },
+        "description": "validation of uri-reference strings",
+        "schema": { "format": "uri-reference" },
         "tests": [
             {
-                "description": "ok",
+                "description": "ok absolute",
                 "data": "https://example.org/",
                 "valid": true
             },
             {
-                "description": "invalid userinfo",
-                "data": "https://[@example.org/test.txt",
-                "valid": false
+                "description": "ok relative",
+                "data": "/test.txt",
+                "valid": true
             },
             {
                 "description": "unescaped non US-ASCII characters",
-                "data": "https://example.org/foobar®.txt",
+                "data": "/foobar®.txt",
                 "valid": false
             },
             {

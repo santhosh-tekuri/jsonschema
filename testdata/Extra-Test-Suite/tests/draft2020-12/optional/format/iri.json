@@ -4,7 +4,7 @@
         "schema": { "format": "iri" },
         "tests": [
             {
-                "description": "ok unescape non US-ASCII characters",
+                "description": "ok unescaped non US-ASCII characters",
                 "data": "https://example.org/foobar®.txt",
                 "valid": true
             }

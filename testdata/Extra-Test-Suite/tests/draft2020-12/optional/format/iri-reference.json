@@ -1,0 +1,23 @@
+[
+    {
+        "description": "validation of iri strings",
+        "schema": { "format": "iri-reference" },
+        "tests": [
+            {
+                "description": "ok unescaped non US-ASCII characters",
+                "data": "https://example.org/foobar®.txt",
+                "valid": true
+            },
+            {
+                "description": "ok relative unescaped non US-ASCII characters",
+                "data": "/foobar®.txt",
+                "valid": true
+            },
+            {
+                "description": "ok backslash",
+                "data": "/fo\\obar.txt",
+                "valid": true
+            }
+        ]
+    }
+]
