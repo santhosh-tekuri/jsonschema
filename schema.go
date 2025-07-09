@@ -1,3 +1,19 @@
+/*
+Package jsonschema provides json-schema compilation and validation.
+
+The schema is compiled against the version specified in "$schema" property.
+If "$schema" property is missing, it uses latest draft which currently implemented
+by this library.
+
+You can force to use specific draft,  when "$schema" is missing, as follows:
+
+	compiler := jsonschema.NewCompiler()
+	compiler.DefaultDraft(jsonschema.Draft4)
+
+This package supports loading json-schema from filePath and fileURL.
+
+see examples for usage.
+*/
 package jsonschema
 
 import (
