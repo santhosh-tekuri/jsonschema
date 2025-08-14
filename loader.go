@@ -179,6 +179,7 @@ func (l *defaultLoader) getDraft(up urlPtr, doc any, defaultDraft *Draft, cycle 
 		return nil, &InvalidMetaSchemaURLError{up.String(), err}
 	}
 	schUrl := url(sch)
+
 	if up.ptr.isEmpty() && schUrl == up.url {
 		return nil, &UnsupportedDraftError{schUrl.String()}
 	}

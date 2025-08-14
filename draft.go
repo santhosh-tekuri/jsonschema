@@ -117,6 +117,7 @@ var (
 			"format-annotation": nil,
 			"format-assertion":  nil,
 			"content":           nil,
+			"hyper-schema":      nil,
 		},
 		defaultVocabs: []string{"core", "applicator", "unevaluated", "validation"},
 	}
@@ -127,8 +128,10 @@ var (
 func init() {
 	c := NewCompiler()
 	c.AssertFormat()
+
 	for _, d := range []*Draft{Draft4, Draft6, Draft7, Draft2019, Draft2020} {
 		d.sch = c.MustCompile(d.url)
+
 		for name := range d.allVocabs {
 			d.allVocabs[name] = c.MustCompile(strings.TrimSuffix(d.url, "schema") + "meta/" + name)
 		}
@@ -148,6 +151,8 @@ func draftFromURL(url string) *Draft {
 	case "json-schema.org/schema":
 		return draftLatest
 	case "json-schema.org/draft/2020-12/schema":
+		return Draft2020
+	case "json-schema.org/draft/2020-12/hyper-schema": // Add hyper-schema support
 		return Draft2020
 	case "json-schema.org/draft/2019-09/schema":
 		return Draft2019
@@ -169,7 +174,6 @@ func (d *Draft) getID(obj map[string]any) string {
 			return ""
 		}
 	}
-
 	id, ok := strVal(obj, d.id)
 	if !ok {
 		return ""
