@@ -1,12 +1,12 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"fmt"
 	"hash/maphash"
 	"math/big"
 	gourl "net/url"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"slices"
 	"strconv"
@@ -284,42 +284,53 @@ func quote(s string) string {
 }
 
 func equals(v1, v2 any) (bool, ErrorKind) {
-	switch v1 := v1.(type) {
-	case map[string]any:
-		v2, ok := v2.(map[string]any)
-		if !ok || len(v1) != len(v2) {
+	t1 := typeOf(v1)
+	t2 := typeOf(v2)
+
+	if t1 != t2 {
+		return false, nil
+	}
+
+	switch t1 {
+	case objectType:
+		rv1 := reflect.ValueOf(v1)
+		rv2 := reflect.ValueOf(v2)
+		if rv1.Len() != rv2.Len() {
 			return false, nil
 		}
-		for k, val1 := range v1 {
-			val2, ok := v2[k]
-			if !ok {
+		iter := rv1.MapRange()
+		for iter.Next() {
+			k := iter.Key()
+			val1 := iter.Value().Interface()
+			val2Reflect := rv2.MapIndex(k)
+			if !val2Reflect.IsValid() {
 				return false, nil
 			}
-			if ok, k := equals(val1, val2); !ok || k != nil {
-				return ok, k
+			val2 := val2Reflect.Interface()
+			if ok, errKind := equals(val1, val2); !ok || errKind != nil {
+				return ok, errKind
 			}
 		}
 		return true, nil
-	case []any:
-		v2, ok := v2.([]any)
-		if !ok || len(v1) != len(v2) {
+	case arrayType:
+		rv1 := reflect.ValueOf(v1)
+		rv2 := reflect.ValueOf(v2)
+		if rv1.Len() != rv2.Len() {
 			return false, nil
 		}
-		for i := range v1 {
-			if ok, k := equals(v1[i], v2[i]); !ok || k != nil {
-				return ok, k
+		for i := 0; i < rv1.Len(); i++ {
+			if ok, errKind := equals(rv1.Index(i).Interface(), rv2.Index(i).Interface()); !ok || errKind != nil {
+				return ok, errKind
 			}
 		}
 		return true, nil
-	case nil:
-		return v2 == nil, nil
-	case bool:
-		v2, ok := v2.(bool)
-		return ok && v1 == v2, nil
-	case string:
-		v2, ok := v2.(string)
-		return ok && v1 == v2, nil
-	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+	case nullType:
+		return true, nil
+	case booleanType:
+		return reflect.ValueOf(v1).Bool() == reflect.ValueOf(v2).Bool(), nil
+	case stringType:
+		return reflect.ValueOf(v1).String() == reflect.ValueOf(v2).String(), nil
+	case numberType:
 		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
 		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
 		return ok1 && ok2 && num1.Cmp(num2) == 0, nil
@@ -328,11 +339,12 @@ func equals(v1, v2 any) (bool, ErrorKind) {
 	}
 }
 
-func duplicates(arr []any) (int, int, ErrorKind) {
-	if len(arr) <= 20 {
-		for i := 1; i < len(arr); i++ {
+func duplicates(arrVal reflect.Value) (int, int, ErrorKind) {
+	arrLen := arrVal.Len()
+	if arrLen <= 20 {
+		for i := 1; i < arrLen; i++ {
 			for j := 0; j < i; j++ {
-				if ok, k := equals(arr[i], arr[j]); ok || k != nil {
+				if ok, k := equals(arrVal.Index(i).Interface(), arrVal.Index(j).Interface()); ok || k != nil {
 					return j, i, k
 				}
 			}
@@ -342,14 +354,15 @@ func duplicates(arr []any) (int, int, ErrorKind) {
 
 	m := make(map[uint64][]int)
 	h := new(maphash.Hash)
-	for i, item := range arr {
+	for i := 0; i < arrLen; i++ {
+		item := arrVal.Index(i).Interface()
 		h.Reset()
 		writeHash(item, h)
 		hash := h.Sum64()
 		indexes, ok := m[hash]
 		if ok {
 			for _, j := range indexes {
-				if ok, k := equals(item, arr[j]); ok || k != nil {
+				if ok, k := equals(item, arrVal.Index(j).Interface()); ok || k != nil {
 					return j, i, k
 				}
 			}
@@ -361,36 +374,48 @@ func duplicates(arr []any) (int, int, ErrorKind) {
 }
 
 func writeHash(v any, h *maphash.Hash) ErrorKind {
-	switch v := v.(type) {
-	case map[string]any:
+	t := typeOf(v)
+	switch t {
+	case objectType:
 		_ = h.WriteByte(0)
-		props := make([]string, 0, len(v))
-		for prop := range v {
-			props = append(props, prop)
+		rv := reflect.ValueOf(v)
+		// Collect all keys and sort them as strings
+		keys := make([]string, 0, rv.Len())
+		iter := rv.MapRange()
+		for iter.Next() {
+			keys = append(keys, fmt.Sprint(iter.Key().Interface()))
 		}
-		slices.Sort(props)
-		for _, prop := range props {
-			writeHash(prop, h)
-			writeHash(v[prop], h)
+		slices.Sort(keys)
+		for _, keyStr := range keys {
+			writeHash(keyStr, h)
+			// Find the value for this key
+			iter2 := rv.MapRange()
+			for iter2.Next() {
+				if fmt.Sprint(iter2.Key().Interface()) == keyStr {
+					writeHash(iter2.Value().Interface(), h)
+					break
+				}
+			}
 		}
-	case []any:
+	case arrayType:
 		_ = h.WriteByte(1)
-		for _, item := range v {
-			writeHash(item, h)
+		rv := reflect.ValueOf(v)
+		for i := 0; i < rv.Len(); i++ {
+			writeHash(rv.Index(i).Interface(), h)
 		}
-	case nil:
+	case nullType:
 		_ = h.WriteByte(2)
-	case bool:
+	case booleanType:
 		_ = h.WriteByte(3)
-		if v {
+		if reflect.ValueOf(v).Bool() {
 			_ = h.WriteByte(1)
 		} else {
 			_ = h.WriteByte(0)
 		}
-	case string:
+	case stringType:
 		_ = h.WriteByte(4)
-		_, _ = h.WriteString(v)
-	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		_, _ = h.WriteString(reflect.ValueOf(v).String())
+	case numberType:
 		_ = h.WriteByte(5)
 		num, _ := new(big.Rat).SetString(fmt.Sprint(v))
 		_, _ = h.Write(num.Num().Bytes())

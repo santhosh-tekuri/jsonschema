@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"reflect"
 )
 
 // Schema is the representation of a compiled
@@ -126,18 +127,23 @@ const (
 )
 
 func typeOf(v any) jsonType {
-	switch v.(type) {
-	case nil:
+	if v == nil {
 		return nullType
-	case bool:
+	}
+	value := reflect.ValueOf(v)
+	switch value.Kind() {
+	case reflect.Bool:
 		return booleanType
-	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
 		return numberType
-	case string:
+	case reflect.String:
+		if _, ok := v.(json.Number); ok {
+			return numberType
+		}
 		return stringType
-	case []any:
+	case reflect.Slice, reflect.Array:
 		return arrayType
-	case map[string]any:
+	case reflect.Map:
 		return objectType
 	default:
 		return invalidType

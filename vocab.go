@@ -1,5 +1,7 @@
 package jsonschema
 
+import "reflect"
+
 // CompilerContext provides helpers for
 // compiling a [Vocabulary].
 type CompilerContext struct {
@@ -107,7 +109,7 @@ func (ctx *ValidatorContext) Equals(v1, v2 any) (bool, error) {
 }
 
 func (ctx *ValidatorContext) Duplicates(arr []any) (int, int, error) {
-	i, j, k := duplicates(arr)
+	i, j, k := duplicates(reflect.ValueOf(arr))
 	if k != nil {
 		return -1, -1, ctx.vd.error(k)
 	}

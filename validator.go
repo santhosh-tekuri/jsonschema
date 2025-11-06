@@ -1,9 +1,9 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
+	"reflect"
 	"slices"
 	"strconv"
 	"unicode/utf8"
@@ -157,14 +157,16 @@ func (vd *validator) validate() (*uneval, error) {
 	}
 
 	// type specific validations --
-	switch v := v.(type) {
-	case map[string]any:
+	switch t {
+	case objectType:
 		vd.objValidate(v)
-	case []any:
+	case arrayType:
 		vd.arrValidate(v)
-	case string:
-		vd.strValidate(v)
-	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+	case stringType:
+		if str, ok := v.(string); ok {
+			vd.strValidate(str)
+		}
+	case numberType:
 		vd.numValidate(v)
 	}
 
@@ -195,26 +197,29 @@ func (vd *validator) validate() (*uneval, error) {
 	}
 }
 
-func (vd *validator) objValidate(obj map[string]any) {
+func (vd *validator) objValidate(obj any) {
 	s := vd.sch
+
+	objVal := reflect.ValueOf(obj)
+	objLen := objVal.Len()
 
 	// minProperties --
 	if s.MinProperties != nil {
-		if len(obj) < *s.MinProperties {
-			vd.addError(&kind.MinProperties{Got: len(obj), Want: *s.MinProperties})
+		if objLen < *s.MinProperties {
+			vd.addError(&kind.MinProperties{Got: objLen, Want: *s.MinProperties})
 		}
 	}
 
 	// maxProperties --
 	if s.MaxProperties != nil {
-		if len(obj) > *s.MaxProperties {
-			vd.addError(&kind.MaxProperties{Got: len(obj), Want: *s.MaxProperties})
+		if objLen > *s.MaxProperties {
+			vd.addError(&kind.MaxProperties{Got: objLen, Want: *s.MaxProperties})
 		}
 	}
 
 	// required --
 	if len(s.Required) > 0 {
-		if missing := vd.findMissing(obj, s.Required); missing != nil {
+		if missing := vd.findMissing(objVal, s.Required); missing != nil {
 			vd.addError(&kind.Required{Missing: missing})
 		}
 	}
@@ -225,10 +230,10 @@ func (vd *validator) objValidate(obj map[string]any) {
 
 	// dependencies --
 	for pname, dep := range s.Dependencies {
-		if _, ok := obj[pname]; ok {
+		if objVal.MapIndex(reflect.ValueOf(pname)).IsValid() {
 			switch dep := dep.(type) {
 			case []string:
-				if missing := vd.findMissing(obj, dep); missing != nil {
+				if missing := vd.findMissing(objVal, dep); missing != nil {
 					vd.addError(&kind.Dependency{Prop: pname, Missing: missing})
 				}
 			case *Schema:
@@ -238,10 +243,13 @@ func (vd *validator) objValidate(obj map[string]any) {
 	}
 
 	var additionalPros []string
-	for pname, pvalue := range obj {
+	iter := objVal.MapRange()
+	for iter.Next() {
 		if vd.boolResult && len(vd.errors) > 0 {
 			return
 		}
+		pname := iter.Key().String()
+		pvalue := iter.Value().Interface()
 		evaluated := false
 
 		// properties --
@@ -284,7 +292,9 @@ func (vd *validator) objValidate(obj map[string]any) {
 
 	// propertyNames --
 	if s.PropertyNames != nil {
-		for pname := range obj {
+		iter2 := objVal.MapRange()
+		for iter2.Next() {
+			pname := iter2.Key().String()
 			sch, meta, resources := s.PropertyNames, vd.meta, vd.resources
 			res := vd.metaResource(sch)
 			if res != nil {
@@ -306,41 +316,44 @@ func (vd *validator) objValidate(obj map[string]any) {
 
 	// dependentSchemas --
 	for pname, sch := range s.DependentSchemas {
-		if _, ok := obj[pname]; ok {
+		if objVal.MapIndex(reflect.ValueOf(pname)).IsValid() {
 			vd.addErr(vd.validateSelf(sch, "", false))
 		}
 	}
 
 	// dependentRequired --
 	for pname, reqd := range s.DependentRequired {
-		if _, ok := obj[pname]; ok {
-			if missing := vd.findMissing(obj, reqd); missing != nil {
+		if objVal.MapIndex(reflect.ValueOf(pname)).IsValid() {
+			if missing := vd.findMissing(objVal, reqd); missing != nil {
 				vd.addError(&kind.DependentRequired{Prop: pname, Missing: missing})
 			}
 		}
 	}
 }
 
-func (vd *validator) arrValidate(arr []any) {
+func (vd *validator) arrValidate(arr any) {
 	s := vd.sch
+
+	arrVal := reflect.ValueOf(arr)
+	arrLen := arrVal.Len()
 
 	// minItems --
 	if s.MinItems != nil {
-		if len(arr) < *s.MinItems {
-			vd.addError(&kind.MinItems{Got: len(arr), Want: *s.MinItems})
+		if arrLen < *s.MinItems {
+			vd.addError(&kind.MinItems{Got: arrLen, Want: *s.MinItems})
 		}
 	}
 
 	// maxItems --
 	if s.MaxItems != nil {
-		if len(arr) > *s.MaxItems {
-			vd.addError(&kind.MaxItems{Got: len(arr), Want: *s.MaxItems})
+		if arrLen > *s.MaxItems {
+			vd.addError(&kind.MaxItems{Got: arrLen, Want: *s.MaxItems})
 		}
 	}
 
 	// uniqueItems --
-	if s.UniqueItems && len(arr) > 1 {
-		i, j, k := duplicates(arr)
+	if s.UniqueItems && arrLen > 1 {
+		i, j, k := duplicates(arrVal)
 		if k != nil {
 			vd.addError(k)
 		} else if i != -1 {
@@ -354,14 +367,14 @@ func (vd *validator) arrValidate(arr []any) {
 		// items --
 		switch items := s.Items.(type) {
 		case *Schema:
-			for i, item := range arr {
-				vd.addErr(vd.validateVal(items, item, strconv.Itoa(i)))
+			for i := 0; i < arrLen; i++ {
+				vd.addErr(vd.validateVal(items, arrVal.Index(i).Interface(), strconv.Itoa(i)))
 			}
-			evaluated = len(arr)
+			evaluated = arrLen
 		case []*Schema:
-			min := minInt(len(arr), len(items))
-			for i, item := range arr[:min] {
-				vd.addErr(vd.validateVal(items[i], item, strconv.Itoa(i)))
+			min := minInt(arrLen, len(items))
+			for i := 0; i < min; i++ {
+				vd.addErr(vd.validateVal(items[i], arrVal.Index(i).Interface(), strconv.Itoa(i)))
 			}
 			evaluated = min
 		}
@@ -370,27 +383,27 @@ func (vd *validator) arrValidate(arr []any) {
 		if s.AdditionalItems != nil {
 			switch additional := s.AdditionalItems.(type) {
 			case bool:
-				if !additional && evaluated != len(arr) {
-					vd.addError(&kind.AdditionalItems{Count: len(arr) - evaluated})
+				if !additional && evaluated != arrLen {
+					vd.addError(&kind.AdditionalItems{Count: arrLen - evaluated})
 				}
 			case *Schema:
-				for i, item := range arr[evaluated:] {
-					vd.addErr(vd.validateVal(additional, item, strconv.Itoa(i)))
+				for i := evaluated; i < arrLen; i++ {
+					vd.addErr(vd.validateVal(additional, arrVal.Index(i).Interface(), strconv.Itoa(i)))
 				}
 			}
 		}
 	} else {
-		evaluated := minInt(len(s.PrefixItems), len(arr))
+		evaluated := minInt(len(s.PrefixItems), arrLen)
 
 		// prefixItems --
-		for i, item := range arr[:evaluated] {
-			vd.addErr(vd.validateVal(s.PrefixItems[i], item, strconv.Itoa(i)))
+		for i := 0; i < evaluated; i++ {
+			vd.addErr(vd.validateVal(s.PrefixItems[i], arrVal.Index(i).Interface(), strconv.Itoa(i)))
 		}
 
 		// items2020 --
 		if s.Items2020 != nil {
-			for i, item := range arr[evaluated:] {
-				vd.addErr(vd.validateVal(s.Items2020, item, strconv.Itoa(i)))
+			for i := evaluated; i < arrLen; i++ {
+				vd.addErr(vd.validateVal(s.Items2020, arrVal.Index(i).Interface(), strconv.Itoa(i)))
 			}
 		}
 	}
@@ -400,8 +413,8 @@ func (vd *validator) arrValidate(arr []any) {
 		var errors []*ValidationError
 		var matched []int
 
-		for i, item := range arr {
-			if err := vd.validateVal(s.Contains, item, strconv.Itoa(i)); err != nil {
+		for i := 0; i < arrLen; i++ {
+			if err := vd.validateVal(s.Contains, arrVal.Index(i).Interface(), strconv.Itoa(i)); err != nil {
 				errors = append(errors, err.(*ValidationError))
 			} else {
 				matched = append(matched, i)
@@ -634,19 +647,22 @@ func (vd *validator) unevalValidate() {
 	s := vd.sch
 
 	// unevaluatedProperties
-	if obj, ok := vd.v.(map[string]any); ok && s.UnevaluatedProperties != nil {
+	if typeOf(vd.v) == objectType && s.UnevaluatedProperties != nil {
+		objVal := reflect.ValueOf(vd.v)
 		for pname := range vd.uneval.props {
-			if pvalue, ok := obj[pname]; ok {
-				vd.addErr(vd.validateVal(s.UnevaluatedProperties, pvalue, pname))
+			pvalue := objVal.MapIndex(reflect.ValueOf(pname))
+			if pvalue.IsValid() {
+				vd.addErr(vd.validateVal(s.UnevaluatedProperties, pvalue.Interface(), pname))
 			}
 		}
 		vd.uneval.props = nil
 	}
 
 	// unevaluatedItems
-	if arr, ok := vd.v.([]any); ok && s.UnevaluatedItems != nil {
+	if typeOf(vd.v) == arrayType && s.UnevaluatedItems != nil {
+		arrVal := reflect.ValueOf(vd.v)
 		for i := range vd.uneval.items {
-			vd.addErr(vd.validateVal(s.UnevaluatedItems, arr[i], strconv.Itoa(i)))
+			vd.addErr(vd.validateVal(s.UnevaluatedItems, arrVal.Index(i).Interface(), strconv.Itoa(i)))
 		}
 		vd.uneval.items = nil
 	}
@@ -845,10 +861,10 @@ func (vd *validator) addErrors(errors []*ValidationError, kind ErrorKind) {
 	vd.errors = append(vd.errors, err)
 }
 
-func (vd *validator) findMissing(obj map[string]any, reqd []string) []string {
+func (vd *validator) findMissing(objVal reflect.Value, reqd []string) []string {
 	var missing []string
 	for _, pname := range reqd {
-		if _, ok := obj[pname]; !ok {
+		if !objVal.MapIndex(reflect.ValueOf(pname)).IsValid() {
 			if vd.boolResult {
 				return []string{} // non-nil
 			}
@@ -917,18 +933,23 @@ type uneval struct {
 
 func unevalFrom(v any, sch *Schema, callerNeeds bool) *uneval {
 	uneval := &uneval{}
-	switch v := v.(type) {
-	case map[string]any:
+	t := typeOf(v)
+	switch t {
+	case objectType:
 		if !sch.allPropsEvaluated && (callerNeeds || sch.UnevaluatedProperties != nil) {
 			uneval.props = map[string]struct{}{}
-			for k := range v {
-				uneval.props[k] = struct{}{}
+			objVal := reflect.ValueOf(v)
+			iter := objVal.MapRange()
+			for iter.Next() {
+				uneval.props[iter.Key().String()] = struct{}{}
 			}
 		}
-	case []any:
-		if !sch.allItemsEvaluated && (callerNeeds || sch.UnevaluatedItems != nil) && sch.numItemsEvaluated < len(v) {
+	case arrayType:
+		arrVal := reflect.ValueOf(v)
+		arrLen := arrVal.Len()
+		if !sch.allItemsEvaluated && (callerNeeds || sch.UnevaluatedItems != nil) && sch.numItemsEvaluated < arrLen {
 			uneval.items = map[int]struct{}{}
-			for i := sch.numItemsEvaluated; i < len(v); i++ {
+			for i := sch.numItemsEvaluated; i < arrLen; i++ {
 				uneval.items[i] = struct{}{}
 			}
 		}
