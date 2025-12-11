@@ -320,9 +320,15 @@ func equals(v1, v2 any) (bool, ErrorKind) {
 		v2, ok := v2.(string)
 		return ok && v1 == v2, nil
 	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
-		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
-		return ok1 && ok2 && num1.Cmp(num2) == 0, nil
+		switch v2.(type) {
+		case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+			// Both v1 and v2 are numeric types
+			num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
+			num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
+			return ok1 && ok2 && num1.Cmp(num2) == 0, nil
+		default:
+			return false, nil
+		}
 	default:
 		return false, &kind.InvalidJsonValue{Value: v1}
 	}

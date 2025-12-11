@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"hash/maphash"
 	"testing"
 )
@@ -72,6 +73,7 @@ func TestEquals(t *testing.T) {
 	}{
 		{1.0, 1, true},
 		{-1.0, -1, true},
+		{json.Number("1"), "1", false},
 	}
 	for _, test := range tests {
 		got, k := equals(test.v1, test.v2)
