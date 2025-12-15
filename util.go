@@ -323,7 +323,6 @@ func equals(v1, v2 any) (bool, ErrorKind) {
 		if typeOf(v2) != numberType {
 			return false, nil
 		}
-		// Both v1 and v2 are numeric types
 		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
 		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
 		return ok1 && ok2 && num1.Cmp(num2) == 0, nil
