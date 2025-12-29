@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/santhosh-tekuri/jsonschema/v6"
-	"gopkg.in/yaml.v3"
+	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
+	yaml "go.yaml.in/yaml/v4"
 )
 
 func newLoader(mappings map[string]string, insecure bool, cacert string) (jsonschema.URLLoader, error) {
@@ -39,7 +39,8 @@ func newLoader(mappings map[string]string, insecure bool, cacert string) (jsonsc
 			"file":  FileLoader{},
 			"http":  &httpLoader,
 			"https": &httpLoader,
-		}}, nil
+		},
+	}, nil
 }
 
 // --
