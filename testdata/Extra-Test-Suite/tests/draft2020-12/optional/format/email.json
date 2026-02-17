@@ -25,6 +25,11 @@
                 "description": "backslash inside quoted",
                 "data": "\"a\\b\"@gmail.com",
                 "valid": false
+            },
+            {
+                "description": "unclosed quote in local part",
+                "data": "\"unclosed@example.com",
+                "valid": false
             }
         ]
     }
