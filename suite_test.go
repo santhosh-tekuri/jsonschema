@@ -37,6 +37,7 @@ func testFile(t *testing.T, suite, fpath string, draft *jsonschema.Draft) {
 			Description string
 			Data        any
 			Valid       bool
+			Errors      []string
 		}
 	}
 	dec := json.NewDecoder(file)
@@ -97,6 +98,15 @@ func testFile(t *testing.T, suite, fpath string, draft *jsonschema.Draft) {
 				data, _ := json.Marshal(test.Data)
 				t.Log("data:", string(data))
 				t.FailNow()
+			}
+			if err != nil && !test.Valid && len(test.Errors) > 0 {
+				got := fmt.Sprintf("%#v", err)
+				for _, want := range test.Errors {
+					if !strings.Contains(got, want) {
+						t.Errorf(" got %s", got)
+						t.Fatalf("want %s", want)
+					}
+				}
 			}
 		}
 	}
