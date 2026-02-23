@@ -1,0 +1,25 @@
+[
+    {
+        "description": "check index in error",
+        "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "prefixItems": [
+                { "type": "string" },
+                { "type": "string" }
+            ],
+            "items": {
+                "type": "boolean"
+            }
+        },
+        "tests": [
+            {
+                "description": "with fraction",
+                "data": [ "a", "b", "c" ],
+                "valid": false,
+                "errors": [
+                    "at '/2' [S#/items/type]: got string, want boolean"
+                ]
+            }
+        ]
+    }
+]
