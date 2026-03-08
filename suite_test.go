@@ -1,6 +1,7 @@
 package jsonschema_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -55,11 +56,11 @@ func testFile(t *testing.T, suite, fpath string, draft *jsonschema.Draft) {
 			c.AssertFormat()
 			c.AssertContent()
 		}
-		loader := jsonschema.SchemeURLLoader{
+		loader := jsonschema.SchemeURLLoaderContext{
 			"file": jsonschema.FileLoader{},
 			"http": suiteRemotes(suite),
 		}
-		c.UseLoader(loader)
+		c.UseLoaderContext(loader)
 
 		if err := c.AddResource(url, group.Schema); err != nil {
 			t.Fatalf("add resource failed: %v", err)
@@ -162,7 +163,7 @@ func TestSuites(t *testing.T) {
 
 type suiteRemotes string
 
-func (rl suiteRemotes) Load(url string) (any, error) {
+func (rl suiteRemotes) Load(ctx context.Context, url string) (any, error) {
 	if rem, ok := strings.CutPrefix(url, "http://localhost:1234/"); ok {
 		f, err := os.Open(path.Join(string(rl), "remotes", rem))
 		if err != nil {

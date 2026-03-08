@@ -1,6 +1,7 @@
 package jsonschema_test
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -13,9 +14,15 @@ import (
 
 type HTTPURLLoader http.Client
 
-func (l *HTTPURLLoader) Load(url string) (any, error) {
+func (l *HTTPURLLoader) Load(ctx context.Context, url string) (any, error) {
 	client := (*http.Client)(l)
-	resp, err := client.Get(url)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -44,14 +51,14 @@ func Example_fromHTTPS() {
 	schemaURL := "https://raw.githubusercontent.com/santhosh-tekuri/boon/main/tests/examples/schema.json"
 	instanceFile := "./testdata/examples/instance.json"
 
-	loader := jsonschema.SchemeURLLoader{
+	loader := jsonschema.SchemeURLLoaderContext{
 		"file":  jsonschema.FileLoader{},
 		"http":  newHTTPURLLoader(false),
 		"https": newHTTPURLLoader(false),
 	}
 
 	c := jsonschema.NewCompiler()
-	c.UseLoader(loader)
+	c.UseLoaderContext(loader)
 	sch, err := c.Compile(schemaURL)
 	if err != nil {
 		log.Fatal(err)

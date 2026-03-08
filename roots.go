@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -27,25 +28,25 @@ func newRoots() *roots {
 	}
 }
 
-func (rr *roots) orLoad(u url) (*root, error) {
+func (rr *roots) orLoad(ctx context.Context, u url) (*root, error) {
 	if r, ok := rr.roots[u]; ok {
 		return r, nil
 	}
-	doc, err := rr.loader.load(u)
+	doc, err := rr.loader.load(ctx, u)
 	if err != nil {
 		return nil, err
 	}
-	return rr.addRoot(u, doc)
+	return rr.addRoot(ctx, u, doc)
 }
 
-func (rr *roots) addRoot(u url, doc any) (*root, error) {
+func (rr *roots) addRoot(ctx context.Context, u url, doc any) (*root, error) {
 	r := &root{
 		url:                 u,
 		doc:                 doc,
 		resources:           map[jsonPointer]*resource{},
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := rr.collectResources(r, doc, u, "", dialect{rr.defaultDraft, nil}); err != nil {
+	if err := rr.collectResources(ctx, r, doc, u, "", dialect{rr.defaultDraft, nil}); err != nil {
 		return nil, err
 	}
 	if !strings.HasPrefix(u.String(), "http://json-schema.org/") &&
@@ -59,26 +60,26 @@ func (rr *roots) addRoot(u url, doc any) (*root, error) {
 	return r, nil
 }
 
-func (rr *roots) resolveFragment(uf urlFrag) (urlPtr, error) {
-	r, err := rr.orLoad(uf.url)
+func (rr *roots) resolveFragment(ctx context.Context, uf urlFrag) (urlPtr, error) {
+	r, err := rr.orLoad(ctx, uf.url)
 	if err != nil {
 		return urlPtr{}, err
 	}
 	return r.resolveFragment(uf.frag)
 }
 
-func (rr *roots) collectResources(r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (rr *roots) collectResources(ctx context.Context, r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	if _, ok := r.subschemasProcessed[schPtr]; ok {
 		return nil
 	}
-	if err := rr._collectResources(r, sch, base, schPtr, fallback); err != nil {
+	if err := rr._collectResources(ctx, r, sch, base, schPtr, fallback); err != nil {
 		return err
 	}
 	r.subschemasProcessed[schPtr] = struct{}{}
 	return nil
 }
 
-func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
+func (rr *roots) _collectResources(ctx context.Context, r *root, sch any, base url, schPtr jsonPointer, fallback dialect) error {
 	obj, ok := sch.(map[string]any)
 	if !ok {
 		if schPtr.isEmpty() {
@@ -97,7 +98,7 @@ func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointe
 		}
 	}
 
-	draft, err := rr.loader.getDraft(urlPtr{r.url, schPtr}, sch, fallback.draft, map[url]struct{}{})
+	draft, err := rr.loader.getDraft(ctx, urlPtr{r.url, schPtr}, sch, fallback.draft, map[url]struct{}{})
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,7 @@ func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointe
 		}
 		if !found {
 			if hasSchema {
-				vocabs, err := rr.loader.getMetaVocabs(sch, draft, rr.vocabularies)
+				vocabs, err := rr.loader.getMetaVocabs(ctx, sch, draft, rr.vocabularies)
 				if err != nil {
 					return err
 				}
@@ -182,7 +183,7 @@ func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointe
 		}
 	}
 	for ptr, v := range subschemas {
-		if err := rr.collectResources(r, v, base, ptr, baseRes.dialect); err != nil {
+		if err := rr.collectResources(ctx, r, v, base, ptr, baseRes.dialect); err != nil {
 			return err
 		}
 	}
@@ -190,8 +191,8 @@ func (rr *roots) _collectResources(r *root, sch any, base url, schPtr jsonPointe
 	return nil
 }
 
-func (rr *roots) ensureSubschema(up urlPtr) error {
-	r, err := rr.orLoad(up.url)
+func (rr *roots) ensureSubschema(ctx context.Context, up urlPtr) error {
+	r, err := rr.orLoad(ctx, up.url)
 	if err != nil {
 		return err
 	}
@@ -203,7 +204,7 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 		return err
 	}
 	rClone := r.clone()
-	if err := rr.addSubschema(rClone, up.ptr); err != nil {
+	if err := rr.addSubschema(ctx, rClone, up.ptr); err != nil {
 		return err
 	}
 	if err := rr.validate(rClone, v, up.ptr); err != nil {
@@ -213,14 +214,14 @@ func (rr *roots) ensureSubschema(up urlPtr) error {
 	return nil
 }
 
-func (rr *roots) addSubschema(r *root, ptr jsonPointer) error {
+func (rr *roots) addSubschema(ctx context.Context, r *root, ptr jsonPointer) error {
 	v, err := (&urlPtr{r.url, ptr}).lookup(r.doc)
 	if err != nil {
 		return err
 	}
 	base := r.resource(ptr)
 	baseURL := base.id
-	if err := rr.collectResources(r, v, baseURL, ptr, base.dialect); err != nil {
+	if err := rr.collectResources(ctx, r, v, baseURL, ptr, base.dialect); err != nil {
 		return err
 	}
 

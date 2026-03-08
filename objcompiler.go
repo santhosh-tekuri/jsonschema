@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -16,7 +17,7 @@ type objCompiler struct {
 	q   *queue
 }
 
-func (c *objCompiler) compile(s *Schema) error {
+func (c *objCompiler) compile(ctx context.Context, s *Schema) error {
 	// id --
 	if id := c.res.dialect.draft.getID(c.obj); id != "" {
 		s.ID = id
@@ -40,7 +41,7 @@ func (c *objCompiler) compile(s *Schema) error {
 		s.Anchor = c.string("$anchor")
 	}
 
-	if err := c.compileDraft4(s); err != nil {
+	if err := c.compileDraft4(ctx, s); err != nil {
 		return err
 	}
 	if s.DraftVersion >= 6 {
@@ -54,12 +55,12 @@ func (c *objCompiler) compile(s *Schema) error {
 		}
 	}
 	if s.DraftVersion >= 2019 {
-		if err := c.compileDraft2019(s); err != nil {
+		if err := c.compileDraft2019(ctx, s); err != nil {
 			return err
 		}
 	}
 	if s.DraftVersion >= 2020 {
-		if err := c.compileDraft2020(s); err != nil {
+		if err := c.compileDraft2020(ctx, s); err != nil {
 			return err
 		}
 	}
@@ -83,11 +84,11 @@ func (c *objCompiler) compile(s *Schema) error {
 	return nil
 }
 
-func (c *objCompiler) compileDraft4(s *Schema) error {
+func (c *objCompiler) compileDraft4(ctx context.Context, s *Schema) error {
 	var err error
 
 	if c.hasVocab("core") {
-		if s.Ref, err = c.enqueueRef("$ref"); err != nil {
+		if s.Ref, err = c.enqueueRef(ctx, "$ref"); err != nil {
 			return err
 		}
 		if s.DraftVersion < 2019 && s.Ref != nil {
@@ -262,11 +263,11 @@ func (c *objCompiler) compileDraft7(s *Schema) error {
 	return nil
 }
 
-func (c *objCompiler) compileDraft2019(s *Schema) error {
+func (c *objCompiler) compileDraft2019(ctx context.Context, s *Schema) error {
 	var err error
 
 	if c.hasVocab("core") {
-		if s.RecursiveRef, err = c.enqueueRef("$recursiveRef"); err != nil {
+		if s.RecursiveRef, err = c.enqueueRef(ctx, "$recursiveRef"); err != nil {
 			return err
 		}
 		s.RecursiveAnchor = c.boolean("$recursiveAnchor")
@@ -314,9 +315,9 @@ func (c *objCompiler) compileDraft2019(s *Schema) error {
 	return nil
 }
 
-func (c *objCompiler) compileDraft2020(s *Schema) error {
+func (c *objCompiler) compileDraft2020(ctx context.Context, s *Schema) error {
 	if c.hasVocab("core") {
-		sch, err := c.enqueueRef("$dynamicRef")
+		sch, err := c.enqueueRef(ctx, "$dynamicRef")
 		if err != nil {
 			return err
 		}
@@ -350,7 +351,7 @@ func (c *objCompiler) enqueuePtr(ptr jsonPointer) *Schema {
 	return c.c.enqueue(c.q, up)
 }
 
-func (c *objCompiler) enqueueRef(pname string) (*Schema, error) {
+func (c *objCompiler) enqueueRef(ctx context.Context, pname string) (*Schema, error) {
 	ref := c.strVal(pname)
 	if ref == nil {
 		return nil, nil
@@ -376,7 +377,7 @@ func (c *objCompiler) enqueueRefVal(ref string) (*Schema, error) {
 	}
 
 	// remote ref
-	up_, err := c.c.roots.resolveFragment(*uf)
+	up_, err := c.c.roots.resolveFragment(ctx, *uf)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -15,17 +16,32 @@ import (
 )
 
 // URLLoader knows how to load json from given url.
+//
+// Deprecated: use URLLoaderContext
 type URLLoader interface {
 	// Load loads json from given absolute url.
 	Load(url string) (any, error)
 }
 
+// URLLoaderContext knows how to load json from given url.
+type URLLoaderContext interface {
+	// Load loads json from given absolute url.
+	Load(ctx context.Context, url string) (any, error)
+}
+
 // --
+
+// contextAdapterLoader is adapter to convert [URLLoader] to [URLLoaderContext]
+type contextAdapterLoader struct{ loader URLLoader }
+
+func (l contextAdapterLoader) Load(ctx context.Context, url string) (any, error) {
+	return l.loader.Load(url)
+}
 
 // FileLoader loads json file url.
 type FileLoader struct{}
 
-func (l FileLoader) Load(url string) (any, error) {
+func (l FileLoader) Load(ctx context.Context, url string) (any, error) {
 	path, err := l.ToFile(url)
 	if err != nil {
 		return nil, err
@@ -59,6 +75,8 @@ func (l FileLoader) ToFile(url string) (string, error) {
 
 // SchemeURLLoader delegates to other [URLLoaders]
 // based on url scheme.
+//
+// Deprecated: use SchemeURLLoaderContext
 type SchemeURLLoader map[string]URLLoader
 
 func (l SchemeURLLoader) Load(url string) (any, error) {
@@ -71,6 +89,22 @@ func (l SchemeURLLoader) Load(url string) (any, error) {
 		return nil, &UnsupportedURLSchemeError{u.String()}
 	}
 	return ll.Load(url)
+}
+
+// SchemeURLLoader delegates to other [URLLoadersContext]
+// based on url scheme.
+type SchemeURLLoaderContext map[string]URLLoaderContext
+
+func (l SchemeURLLoaderContext) Load(ctx context.Context, url string) (any, error) {
+	u, err := gourl.Parse(url)
+	if err != nil {
+		return nil, err
+	}
+	ll, ok := l[u.Scheme]
+	if !ok {
+		return nil, &UnsupportedURLSchemeError{u.String()}
+	}
+	return ll.Load(ctx, url)
 }
 
 // --
@@ -128,7 +162,7 @@ func loadMeta(url string) (any, error) {
 
 type defaultLoader struct {
 	docs   map[url]any // docs loaded so far
-	loader URLLoader
+	loader URLLoaderContext
 }
 
 func (l *defaultLoader) add(url url, doc any) bool {
@@ -139,7 +173,7 @@ func (l *defaultLoader) add(url url, doc any) bool {
 	return true
 }
 
-func (l *defaultLoader) load(url url) (any, error) {
+func (l *defaultLoader) load(ctx context.Context, url url) (any, error) {
 	if doc, ok := l.docs[url]; ok {
 		return doc, nil
 	}
@@ -154,7 +188,7 @@ func (l *defaultLoader) load(url url) (any, error) {
 	if l.loader == nil {
 		return nil, &LoadURLError{url.String(), errors.New("no URLLoader set")}
 	}
-	doc, err = l.loader.Load(url.String())
+	doc, err = l.loader.Load(ctx, url.String())
 	if err != nil {
 		return nil, &LoadURLError{URL: url.String(), Err: err}
 	}
@@ -162,7 +196,7 @@ func (l *defaultLoader) load(url url) (any, error) {
 	return doc, nil
 }
 
-func (l *defaultLoader) getDraft(up urlPtr, doc any, defaultDraft *Draft, cycle map[url]struct{}) (*Draft, error) {
+func (l *defaultLoader) getDraft(ctx context.Context, up urlPtr, doc any, defaultDraft *Draft, cycle map[url]struct{}) (*Draft, error) {
 	obj, ok := doc.(map[string]any)
 	if !ok {
 		return defaultDraft, nil
@@ -186,14 +220,14 @@ func (l *defaultLoader) getDraft(up urlPtr, doc any, defaultDraft *Draft, cycle 
 		return nil, &MetaSchemaCycleError{schUrl.String()}
 	}
 	cycle[schUrl] = struct{}{}
-	doc, err := l.load(schUrl)
+	doc, err := l.load(ctx, schUrl)
 	if err != nil {
 		return nil, err
 	}
-	return l.getDraft(urlPtr{schUrl, ""}, doc, defaultDraft, cycle)
+	return l.getDraft(ctx, urlPtr{schUrl, ""}, doc, defaultDraft, cycle)
 }
 
-func (l *defaultLoader) getMetaVocabs(doc any, draft *Draft, vocabularies map[string]*Vocabulary) ([]string, error) {
+func (l *defaultLoader) getMetaVocabs(ctx context.Context, doc any, draft *Draft, vocabularies map[string]*Vocabulary) ([]string, error) {
 	obj, ok := doc.(map[string]any)
 	if !ok {
 		return nil, nil
@@ -210,7 +244,7 @@ func (l *defaultLoader) getMetaVocabs(doc any, draft *Draft, vocabularies map[st
 		return nil, &ParseURLError{sch, err}
 	}
 	schUrl := url(sch)
-	doc, err := l.load(schUrl)
+	doc, err := l.load(ctx, schUrl)
 	if err != nil {
 		return nil, err
 	}

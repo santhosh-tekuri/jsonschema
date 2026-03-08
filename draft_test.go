@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -77,7 +78,7 @@ func TestDraft_collectIds(t *testing.T) {
 		resources:           map[jsonPointer]*resource{},
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := rr.collectResources(&r, doc, u, jsonPointer(""), dialect{Draft4, nil}); err != nil {
+	if err := rr.collectResources(context.Background(), &r, doc, u, jsonPointer(""), dialect{Draft4, nil}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -124,7 +125,7 @@ func TestDraft_collectAnchors(t *testing.T) {
 		resources:           map[jsonPointer]*resource{},
 		subschemasProcessed: map[jsonPointer]struct{}{},
 	}
-	if err := rr.collectResources(&r, doc, u, jsonPointer(""), dialect{Draft2020, nil}); err != nil {
+	if err := rr.collectResources(context.Background(), &r, doc, u, jsonPointer(""), dialect{Draft2020, nil}); err != nil {
 		t.Fatal(err)
 	}
 

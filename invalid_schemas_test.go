@@ -1,6 +1,7 @@
 package jsonschema_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -34,11 +35,11 @@ func TestInvalidSchemas(t *testing.T) {
 		t.Log(test.Description)
 		url := "http://invalid-schemas.com/schema.json"
 		c := jsonschema.NewCompiler()
-		loader := jsonschema.SchemeURLLoader{
+		loader := jsonschema.SchemeURLLoaderContext{
 			"file": jsonschema.FileLoader{},
 			"http": invalidRemotes(test.Remotes),
 		}
-		c.UseLoader(loader)
+		c.UseLoaderContext(loader)
 		if err := c.AddResource(url, test.Schema); err != nil {
 			t.Fatalf("addResource failed: %v", err)
 		}
@@ -66,7 +67,7 @@ func TestInvalidSchemas(t *testing.T) {
 
 type invalidRemotes map[string]any
 
-func (l invalidRemotes) Load(url string) (any, error) {
+func (l invalidRemotes) Load(ctx context.Context, url string) (any, error) {
 	if v, ok := l[url]; ok {
 		return v, nil
 	}

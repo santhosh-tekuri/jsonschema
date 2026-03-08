@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -134,7 +135,13 @@ func (c *Compiler) AddResource(url string, doc any) error {
 
 // UseLoader overrides the default [URLLoader] used
 // to load schema resources.
+//
+// Deprecated: use URLLoaderContext
 func (c *Compiler) UseLoader(loader URLLoader) {
+	c.roots.loader.loader = contextAdapterLoader{loader}
+}
+
+func (c *Compiler) UseLoaderContext(loader URLLoaderContext) {
 	c.roots.loader.loader = loader
 }
 
@@ -175,26 +182,33 @@ func (c *Compiler) MustCompile(loc string) *Schema {
 }
 
 // Compile compiles json-schema at given loc.
+//
+// Deprecated: use [CompileContext]
 func (c *Compiler) Compile(loc string) (*Schema, error) {
+	return c.CompileContext(context.Background(), loc)
+}
+
+// CompileContext compiles json-schema at given loc.
+func (c *Compiler) CompileContext(ctx context.Context, loc string) (*Schema, error) {
 	uf, err := absolute(loc)
 	if err != nil {
 		return nil, err
 	}
-	up, err := c.roots.resolveFragment(*uf)
+	up, err := c.roots.resolveFragment(ctx, *uf)
 	if err != nil {
 		return nil, err
 	}
-	return c.doCompile(up)
+	return c.doCompile(ctx, up)
 }
 
-func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
+func (c *Compiler) doCompile(ctx context.Context, up urlPtr) (*Schema, error) {
 	q := &queue{}
 	compiled := 0
 
 	c.enqueue(q, up)
 	for q.len() > compiled {
 		sch := q.at(compiled)
-		if err := c.roots.ensureSubschema(sch.up); err != nil {
+		if err := c.roots.ensureSubschema(ctx, sch.up); err != nil {
 			return nil, err
 		}
 		r := c.roots.roots[sch.up.url]
@@ -202,7 +216,7 @@ func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := c.compileValue(v, sch, r, q); err != nil {
+		if err := c.compileValue(ctx, v, sch, r, q); err != nil {
 			return nil, err
 		}
 		compiled++
@@ -213,7 +227,7 @@ func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
 	return c.schemas[up], nil
 }
 
-func (c *Compiler) compileValue(v any, sch *Schema, r *root, q *queue) error {
+func (c *Compiler) compileValue(ctx context.Context, v any, sch *Schema, r *root, q *queue) error {
 	res := r.resource(sch.up.ptr)
 	sch.DraftVersion = res.dialect.draft.version
 
@@ -239,7 +253,7 @@ func (c *Compiler) compileValue(v any, sch *Schema, r *root, q *queue) error {
 	case bool:
 		sch.Bool = &v
 	case map[string]any:
-		if err := c.compileObject(v, sch, r, q); err != nil {
+		if err := c.compileObject(ctx, v, sch, r, q); err != nil {
 			return err
 		}
 	}
@@ -261,7 +275,7 @@ func (c *Compiler) compileValue(v any, sch *Schema, r *root, q *queue) error {
 	return nil
 }
 
-func (c *Compiler) compileObject(obj map[string]any, sch *Schema, r *root, q *queue) error {
+func (c *Compiler) compileObject(ctx context.Context, obj map[string]any, sch *Schema, r *root, q *queue) error {
 	if len(obj) == 0 {
 		b := true
 		sch.Bool = &b
@@ -275,7 +289,7 @@ func (c *Compiler) compileObject(obj map[string]any, sch *Schema, r *root, q *qu
 		res: r.resource(sch.up.ptr),
 		q:   q,
 	}
-	return oc.compile(sch)
+	return oc.compile(ctx, sch)
 }
 
 // queue --
