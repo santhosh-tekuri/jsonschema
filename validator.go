@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"reflect"
 	"slices"
 	"strconv"
 	"unicode/utf8"
@@ -166,6 +167,24 @@ func (vd *validator) validate() (*uneval, error) {
 		vd.strValidate(v)
 	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		vd.numValidate(v)
+	default:
+		rv := reflect.ValueOf(v)
+		switch rv.Kind() {
+		case reflect.Slice, reflect.Array:
+			arr := make([]any, rv.Len())
+			for i := range arr {
+				arr[i] = rv.Index(i).Interface()
+			}
+			vd.arrValidate(arr)
+		case reflect.Map:
+			if rv.Type().Key().Kind() == reflect.String {
+				obj := make(map[string]any, rv.Len())
+				for _, key := range rv.MapKeys() {
+					obj[key.String()] = rv.MapIndex(key).Interface()
+				}
+				vd.objValidate(obj)
+			}
+		}
 	}
 
 	if len(vd.errors) == 0 || !vd.boolResult {
@@ -930,6 +949,27 @@ func unevalFrom(v any, sch *Schema, callerNeeds bool) *uneval {
 			uneval.items = map[int]struct{}{}
 			for i := sch.numItemsEvaluated; i < len(v); i++ {
 				uneval.items[i] = struct{}{}
+			}
+		}
+	default:
+		rv := reflect.ValueOf(v)
+		switch rv.Kind() {
+		case reflect.Map:
+			if rv.Type().Key().Kind() == reflect.String {
+				if !sch.allPropsEvaluated && (callerNeeds || sch.UnevaluatedProperties != nil) {
+					uneval.props = map[string]struct{}{}
+					for _, key := range rv.MapKeys() {
+						uneval.props[key.String()] = struct{}{}
+					}
+				}
+			}
+		case reflect.Slice, reflect.Array:
+			l := rv.Len()
+			if !sch.allItemsEvaluated && (callerNeeds || sch.UnevaluatedItems != nil) && sch.numItemsEvaluated < l {
+				uneval.items = map[int]struct{}{}
+				for i := sch.numItemsEvaluated; i < l; i++ {
+					uneval.items[i] = struct{}{}
+				}
 			}
 		}
 	}
