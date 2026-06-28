@@ -10,7 +10,7 @@ jobs:
         go: [1.21]
     steps:
     - name: setup go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ matrix.go }}
     - name: checkout
@@ -22,7 +22,7 @@ jobs:
       run: echo "MallocNanoZone=0" >> $GITHUB_ENV
       if: runner.os == 'macOS'
     - name: test
-      run: go test -race -coverprofile coverage.txt -covermode atomic
+      run: go test -ldflags="-linkmode=external" -race -coverprofile coverage.txt -covermode atomic
     - name: upload coverage
       uses: codecov/codecov-action@v3
       with:
