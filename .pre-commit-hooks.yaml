@@ -5,3 +5,11 @@
   language: golang
   additional_dependencies:
   - ./cmd/jv
+
+- id: govendor
+  name: govendor
+  description: ensure cmd/jv/govendor.toml is in sync with cmd/jv/go.mod
+  entry: govendor --check ./cmd/jv
+  language: golang
+  files: (^|/)go\.mod$
+  pass_filenames: false
