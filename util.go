@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/maphash"
+	"math"
 	"math/big"
 	gourl "net/url"
 	"path/filepath"
@@ -270,8 +271,21 @@ func strVal(obj map[string]any, prop string) (string, bool) {
 }
 
 func isInteger(num any) bool {
-	rat, ok := new(big.Rat).SetString(fmt.Sprint(num))
-	return ok && rat.IsInt()
+	switch n := num.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return true
+	case float32:
+		f := float64(n)
+		return !math.IsInf(f, 0) && !math.IsNaN(f) && f == math.Trunc(f)
+	case float64:
+		return !math.IsInf(n, 0) && !math.IsNaN(n) && n == math.Trunc(n)
+	case json.Number:
+		rat, ok := new(big.Rat).SetString(string(n))
+		return ok && rat.IsInt()
+	default:
+		rat, ok := new(big.Rat).SetString(fmt.Sprint(num))
+		return ok && rat.IsInt()
+	}
 }
 
 // quote returns single-quoted string.
