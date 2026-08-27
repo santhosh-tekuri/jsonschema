@@ -24,6 +24,21 @@ func (k *InvalidJsonValue) LocalizedString(p *message.Printer) string {
 
 // --
 
+type InvalidNumberLength struct {
+	Len   int
+	Limit int
+}
+
+func (*InvalidNumberLength) KeywordPath() []string {
+	return nil
+}
+
+func (k *InvalidNumberLength) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("number token length %d exceeds limit %d", k.Len, k.Limit)
+}
+
+// --
+
 type Schema struct {
 	Location string
 }
