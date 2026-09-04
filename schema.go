@@ -33,6 +33,8 @@ type Schema struct {
 	allItemsEvaluated bool
 	numItemsEvaluated int
 
+	oneOfDiscriminator *oneOfDiscriminator
+
 	DraftVersion int
 	Location     string
 
