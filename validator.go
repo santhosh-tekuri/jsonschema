@@ -293,7 +293,7 @@ func (vd *validator) objValidate(obj map[string]any) {
 			}
 			if err := sch.validate(pname, vd.regexpEngine, meta, resources, vd.assertVocabs, vd.vocabularies); err != nil {
 				verr := err.(*ValidationError)
-				verr.InstanceLocation = vd.vloc
+				verr.InstanceLocation = vd.instanceLocation()
 				verr.SchemaURL = s.PropertyNames.Location
 				verr.ErrorKind = &kind.PropertyNames{Property: pname}
 				vd.addErr(verr)
@@ -504,7 +504,7 @@ func (vd *validator) strValidate(str string) {
 		}
 		if err = sch.validate(*deserialized, vd.regexpEngine, meta, resources, vd.assertVocabs, vd.vocabularies); err != nil {
 			verr := err.(*ValidationError)
-			verr.InstanceLocation = vd.vloc
+			verr.InstanceLocation = vd.instanceLocation()
 			verr.SchemaURL = s.Location
 			verr.ErrorKind = &kind.ContentSchema{}
 			vd.addErr(verr)
