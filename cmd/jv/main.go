@@ -169,13 +169,16 @@ func main() {
 		if !*quiet {
 			fmt.Println()
 		}
-		inst, err := func() (any, error) {
+		insts, err := func() ([]any, error) {
 			if instance == "-" {
 				var inst any
 				err := stdinDecoder.Decode(&inst)
-				return inst, err
+				if err != nil {
+					return nil, err
+				}
+				return []any{inst}, nil
 			}
-			return loadFile(instance)
+			return loadDocuments(instance)
 		}()
 		if err != nil {
 			fmt.Printf("instance %s: failed\n", instance)
@@ -186,31 +189,37 @@ func main() {
 			continue
 		}
 
-		err = sch.Validate(inst)
-		if err != nil {
-			fmt.Printf("instance %s: failed\n", instance)
-			if !*quiet {
-				if verr, ok := err.(*jsonschema.ValidationError); ok {
-					switch *output {
-					case "simple":
-						fmt.Printf("%v\n", verr)
-					case "alt":
-						fmt.Printf("%#v\n", verr)
-					case "flag":
-						printJSON(verr.FlagOutput())
-					case "basic":
-						printJSON(verr.BasicOutput())
-					case "detailed":
-						printJSON(verr.DetailedOutput())
-					}
-				} else {
-					fmt.Println(err)
-				}
+		for i, inst := range insts {
+			name := instance
+			if len(insts) > 1 {
+				name = fmt.Sprintf("%s document %d", instance, i+1)
 			}
-			allValid = false
-			continue
+			err = sch.Validate(inst)
+			if err != nil {
+				fmt.Printf("instance %s: failed\n", name)
+				if !*quiet {
+					if verr, ok := err.(*jsonschema.ValidationError); ok {
+						switch *output {
+						case "simple":
+							fmt.Printf("%v\n", verr)
+						case "alt":
+							fmt.Printf("%#v\n", verr)
+						case "flag":
+							printJSON(verr.FlagOutput())
+						case "basic":
+							printJSON(verr.BasicOutput())
+						case "detailed":
+							printJSON(verr.DetailedOutput())
+						}
+					} else {
+						fmt.Println(err)
+					}
+				}
+				allValid = false
+				continue
+			}
+			fmt.Printf("instance %s: ok\n", name)
 		}
-		fmt.Printf("instance %s: ok\n", instance)
 	}
 	if !allValid {
 		os.Exit(1)
