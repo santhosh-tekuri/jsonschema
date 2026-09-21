@@ -599,25 +599,7 @@ func (vd *validator) condValidate() {
 
 	// oneOf
 	if len(s.OneOf) > 0 {
-		var matched = -1
-		var errors []*ValidationError
-		for i, sch := range s.OneOf {
-			if err := vd.validateSelf(sch, "", matched != -1); err != nil {
-				if matched == -1 {
-					errors = append(errors, err.(*ValidationError))
-				}
-			} else {
-				if matched == -1 {
-					matched = i
-				} else {
-					vd.addError(&kind.OneOf{Subschemas: []int{matched, i}})
-					break
-				}
-			}
-		}
-		if matched == -1 {
-			vd.addErrors(errors, &kind.OneOf{Subschemas: nil})
-		}
+		vd.oneOfValidate()
 	}
 
 	// if, then, else --
@@ -630,6 +612,51 @@ func (vd *validator) condValidate() {
 			vd.addErr(vd.validateSelf(s.Else, "", false))
 		}
 	}
+}
+
+func (vd *validator) oneOfValidate() {
+	s := vd.sch
+	if discriminator := s.oneOfDiscriminator; discriminator != nil {
+		if value, ok := discriminator.value(vd.v); ok {
+			matched, _, duplicate := vd.validateOneOfBranches(discriminator, value)
+			if duplicate || matched != -1 {
+				return
+			}
+			// No candidate matched. Validate every branch again so an invalid
+			// instance retains the complete diagnostics produced without this
+			// optimization. Failed candidate validation cannot alter unevaluated
+			// property/item tracking in the parent validator.
+		}
+	}
+
+	matched, errors, _ := vd.validateOneOfBranches(nil, "")
+	if matched == -1 {
+		vd.addErrors(errors, &kind.OneOf{Subschemas: nil})
+	}
+}
+
+// validateOneOfBranches skips branches excluded by discriminator, or evaluates
+// every branch when discriminator is nil. It returns the first match, errors
+// preceding that match, and whether a second match made the oneOf invalid.
+func (vd *validator) validateOneOfBranches(discriminator *oneOfDiscriminator, value string) (int, []*ValidationError, bool) {
+	matched := -1
+	var errors []*ValidationError
+	for i, sch := range vd.sch.OneOf {
+		if discriminator != nil && discriminator.excludes(i, value) {
+			continue
+		}
+		if err := vd.validateSelf(sch, "", matched != -1); err != nil {
+			if matched == -1 {
+				errors = append(errors, err.(*ValidationError))
+			}
+		} else if matched == -1 {
+			matched = i
+		} else {
+			vd.addError(&kind.OneOf{Subschemas: []int{matched, i}})
+			return matched, errors, true
+		}
+	}
+	return matched, errors, false
 }
 
 func (vd *validator) unevalValidate() {
