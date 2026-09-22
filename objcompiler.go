@@ -126,14 +126,16 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 		}
 		s.AdditionalProperties = c.enqueueAdditional("additionalProperties")
 
-		if m := c.objVal("dependencies"); m != nil {
-			s.Dependencies = map[string]any{}
-			for pname, pvalue := range m {
-				if arr, ok := pvalue.([]any); ok {
-					s.Dependencies[pname] = toStrings(arr)
-				} else {
-					ptr := c.up.ptr.append2("dependencies", pname)
-					s.Dependencies[pname] = c.enqueuePtr(ptr)
+		if s.DraftVersion < 2019 {
+			if m := c.objVal("dependencies"); m != nil {
+				s.Dependencies = map[string]any{}
+				for pname, pvalue := range m {
+					if arr, ok := pvalue.([]any); ok {
+						s.Dependencies[pname] = toStrings(arr)
+					} else {
+						ptr := c.up.ptr.append2("dependencies", pname)
+						s.Dependencies[pname] = c.enqueuePtr(ptr)
+					}
 				}
 			}
 		}
