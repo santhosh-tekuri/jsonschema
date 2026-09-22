@@ -731,12 +731,7 @@ func (vd *validator) metaResource(sch *Schema) *resource {
 	if sch != vd.meta {
 		return nil
 	}
-	ptr := ""
-	for _, tok := range vd.instanceLocation() {
-		ptr += "/"
-		ptr += escape(tok)
-	}
-	return vd.resources[jsonPointer(ptr)]
+	return vd.resources[jsonPointer(jsonPtr(vd.vloc))]
 }
 
 func (vd *validator) handleMeta() {
