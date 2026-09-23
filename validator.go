@@ -285,18 +285,15 @@ func (vd *validator) objValidate(obj map[string]any) {
 	// propertyNames --
 	if s.PropertyNames != nil {
 		for pname := range obj {
-			sch, meta, resources := s.PropertyNames, vd.meta, vd.resources
-			res := vd.metaResource(sch)
-			if res != nil {
-				meta = res.dialect.getSchema(vd.assertVocabs, vd.vocabularies)
-				sch = meta
-			}
-			if err := sch.validate(pname, vd.regexpEngine, meta, resources, vd.assertVocabs, vd.vocabularies); err != nil {
+			if err := vd.validatePropertyName(s.PropertyNames, pname); err != nil {
 				verr := err.(*ValidationError)
-				verr.InstanceLocation = vd.vloc
-				verr.SchemaURL = s.PropertyNames.Location
-				verr.ErrorKind = &kind.PropertyNames{Property: pname}
-				vd.addErr(verr)
+				var causes []*ValidationError
+				if _, ok := verr.ErrorKind.(*kind.Group); ok {
+					causes = verr.Causes
+				} else {
+					causes = []*ValidationError{verr}
+				}
+				vd.addErrors(causes, &kind.PropertyNames{Property: pname})
 			}
 		}
 	}
@@ -691,6 +688,27 @@ func (vd *validator) validateVal(sch *Schema, v any, vtok string) error {
 		sch:          sch,
 		scp:          scp,
 		uneval:       uneval,
+		errors:       nil,
+		boolResult:   vd.boolResult,
+		regexpEngine: vd.regexpEngine,
+		meta:         vd.meta,
+		resources:    vd.resources,
+		assertVocabs: vd.assertVocabs,
+		vocabularies: vd.vocabularies,
+	}
+	subvd.handleMeta()
+	_, err := subvd.validate()
+	return err
+}
+
+func (vd *validator) validatePropertyName(sch *Schema, pname string) error {
+	scp := vd.scp.child(sch, "", vd.scp.vid+1)
+	subvd := validator{
+		v:            pname,
+		vloc:         vd.vloc,
+		sch:          sch,
+		scp:          scp,
+		uneval:       unevalFrom(pname, sch, false),
 		errors:       nil,
 		boolResult:   vd.boolResult,
 		regexpEngine: vd.regexpEngine,
