@@ -1,0 +1,63 @@
+[
+    {
+        "description": "validation of uri strings",
+        "schema": { "format": "uri" },
+        "tests": [
+            {
+                "description": "ok",
+                "data": "https://example.org/",
+                "valid": true
+            },
+            {
+                "description": "invalid userinfo",
+                "data": "https://[@example.org/test.txt",
+                "valid": false
+            },
+            {
+                "description": "unescaped non US-ASCII characters",
+                "data": "https://example.org/foobar®.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid backslash character",
+                "data": "https://example.org/foobar\\.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid \" character",
+                "data": "https://example.org/foobar\".txt",
+                "valid": false
+            },
+            {
+                "description": "invalid <> characters",
+                "data": "https://example.org/foobar<>.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid {} characters",
+                "data": "https://example.org/foobar{}.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid ^ character",
+                "data": "https://example.org/foobar^.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid ` character",
+                "data": "https://example.org/foobar`.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid SPACE character",
+                "data": "https://example.org/foo bar.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid | character",
+                "data": "https://example.org/foobar|.txt",
+                "valid": false
+            }
+        ]
+    }
+]

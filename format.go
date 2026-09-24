@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // Format defined specific format.
@@ -31,9 +32,9 @@ var formats = map[string]*Format{
 	"time":                  {"time", validateTime},
 	"date-time":             {"date-time", validateDateTime},
 	"uri":                   {"uri", validateURI},
-	"iri":                   {"iri", validateURI},
+	"iri":                   {"iri", validateIRI},
 	"uri-reference":         {"uri-reference", validateURIReference},
-	"iri-reference":         {"iri-reference", validateURIReference},
+	"iri-reference":         {"iri-reference", validateIRIReference},
 	"uri-template":          {"uri-template", validateURITemplate},
 	"semver":                {"semver", validateSemver},
 }
@@ -533,30 +534,56 @@ func parseURL(s string) (*gourl.URL, error) {
 }
 
 func validateURI(v any) error {
+	return validateRI(v, false, false)
+}
+
+func validateIRI(v any) error {
+	return validateRI(v, true, false)
+}
+
+func validateURIReference(v any) error {
+	return validateRI(v, false, true)
+}
+
+func validateIRIReference(v any) error {
+	return validateRI(v, true, true)
+}
+
+func validateRI(v any, international bool, reference bool) error {
 	s, ok := v.(string)
 	if !ok {
 		return nil
 	}
+
+	if !international {
+		// rfc3986: 2.  Characters
+		//   [..] The ABNF notation defines its terminal values to be
+		//   non-negative integers (codepoints) based on the US-ASCII coded
+		//   character set
+		for _, r := range s {
+			if r > unicode.MaxASCII {
+				return LocalizableError("has unescaped non-ASCII characters")
+			}
+		}
+		// rfc3986 does not list a number of ASCII chars, they are not allowed
+		// its sister RFC lists them explicitely:
+		// rfc3987: 3.1.  Mapping of IRIs to URIs
+		//   [..] Systems accepting IRIs MAY also deal with the printable
+		//   characters in US-ASCII that are not allowed in URIs, namely "<",
+		//   ">", '"', space, "{", "}", "|", "\", "^", and "`" [..]
+		if strings.ContainsAny(s, "<>\" {}|\\^`") {
+			return LocalizableError(`has illegal ASCII characters`)
+		}
+	}
+
 	u, err := parseURL(s)
 	if err != nil {
 		return err
 	}
-	if !u.IsAbs() {
+	if !reference && !u.IsAbs() {
 		return LocalizableError("relative url")
 	}
 	return nil
-}
-
-func validateURIReference(v any) error {
-	s, ok := v.(string)
-	if !ok {
-		return nil
-	}
-	if strings.Contains(s, `\`) {
-		return LocalizableError(`contains \`)
-	}
-	_, err := parseURL(s)
-	return err
 }
 
 func validateURITemplate(v any) error {
