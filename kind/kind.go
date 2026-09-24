@@ -361,6 +361,9 @@ func (*AdditionalProperties) KeywordPath() []string {
 }
 
 func (k *AdditionalProperties) LocalizedString(p *message.Printer) string {
+	if len(k.Properties) == 1 {
+		return p.Sprintf("additional property %s not allowed", quote(k.Properties[0]))
+	}
 	return p.Sprintf("additional properties %s not allowed", joinQuoted(k.Properties, ", "))
 }
 
