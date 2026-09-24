@@ -12,6 +12,16 @@ import (
 	"golang.org/x/text/message"
 )
 
+// maxNumberTokenLen bounds the character length of a JSON number token that
+// numValidate will convert to a big.Rat. big.Rat parsing cost is superlinear in
+// the digit count, so an oversized attacker-controlled token can force
+// avoidable CPU/allocation work on any endpoint validating numeric keywords
+// (minimum/maximum/multipleOf). The limit is far larger than any real-world
+// number (the largest IEEE-754 double is ~309 digits; RFC 8259 sets no bound
+// but practical numbers are tiny by comparison), so legitimate input is
+// unaffected. See issue #261.
+const maxNumberTokenLen = 4096
+
 func (sch *Schema) Validate(v any) error {
 	return sch.validate(v, nil, nil, nil, false, nil)
 }
@@ -514,6 +524,20 @@ func (vd *validator) strValidate(str string) {
 
 func (vd *validator) numValidate(v any) {
 	s := vd.sch
+
+	// Guard against unbounded big.Rat work: a numeric keyword forces the
+	// attacker-controlled token to be parsed into an arbitrary-precision
+	// big.Rat, whose cost is superlinear in the number of digits. A json.Number
+	// preserves the original token text (via UseNumber), so an oversized token
+	// (e.g. "0.111...1" with 100k+ digits) can be sent to any endpoint that
+	// validates against minimum/maximum/multipleOf and forces avoidable CPU and
+	// allocation work. Reject tokens longer than a generous limit before the
+	// conversion; the limit is far above any real-world number, so legitimate
+	// input is unaffected. See issue #261.
+	if num, ok := v.(json.Number); ok && len(num) > maxNumberTokenLen {
+		vd.addError(&kind.InvalidNumberLength{Len: len(num), Limit: maxNumberTokenLen})
+		return
+	}
 
 	var numVal *big.Rat
 	num := func() *big.Rat {
