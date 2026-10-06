@@ -30,6 +30,11 @@
                 "description": "unclosed quote in local part",
                 "data": "\"unclosed@example.com",
                 "valid": false
+            },
+            {
+                "description": "empty local part",
+                "data": "@example.com",
+                "valid": false
             }
         ]
     }

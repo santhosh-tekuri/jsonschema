@@ -313,6 +313,10 @@ func validateEmail(v any) error {
 	}
 	local, domain := s[:at], s[at+1:]
 
+	if local == "" {
+		return LocalizableError("missing local part")
+	}
+
 	// local part may be up to 64 characters long
 	if len(local) > 64 {
 		return LocalizableError("local part more than 64 characters long")
