@@ -143,3 +143,49 @@ func TestOutputSuites(t *testing.T) {
 	testOuputSuite(t, "./testdata/JSON-Schema-Test-Suite")
 	testOuputSuite(t, "./testdata/Extra-Test-Suite")
 }
+
+func TestBasicOutputRef(t *testing.T) {
+	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{
+		"$defs": {
+			"pt": {
+				"allOf": [{
+					"properties": {
+						"x": {"type": "integer"},
+						"y": {"type": "integer"}
+					}
+				}]
+			}
+		},
+		"properties": {"a": {"$ref": "#/$defs/pt"}}
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource("http://example.com/schema.json", schema); err != nil {
+		t.Fatal(err)
+	}
+	sch, err := c.Compile("http://example.com/schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inst := map[string]any{"a": map[string]any{"x": "s", "y": "t"}}
+	verr, ok := sch.Validate(inst).(*jsonschema.ValidationError)
+	if !ok {
+		t.Fatal("want validation error")
+	}
+
+	var got []string
+	for _, unit := range verr.BasicOutput().Errors {
+		got = append(got, unit.KeywordLocation+": "+unit.Error.String())
+	}
+	want := []string{
+		"/properties/a/$ref/allOf: 'allOf' failed",
+		"/properties/a/$ref/allOf/0: validation failed",
+		"/properties/a/$ref/allOf/0/properties/x/type: got string, want integer",
+		"/properties/a/$ref/allOf/0/properties/y/type: got string, want integer",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("BasicOutput errors:\ngot:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+}
