@@ -1,8 +1,11 @@
 package jsonschema
 
 import (
+	"os"
+	"os/exec"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -160,5 +163,53 @@ func TestDraft_collectAnchors(t *testing.T) {
 	}
 	if !reflect.DeepEqual(res.anchors, want) {
 		t.Fatalf("anchors for /$defs/s2/items/1:\n got: %v\nwant: %v", res.anchors, want)
+	}
+}
+
+// TestDraftMetaCompiledOnFirstUse runs in a fresh process, where no draft
+// metaschema has been compiled yet: compiling a 2020-12 schema from several
+// goroutines must compile only draft 2020-12's metaschemas.
+func TestDraftMetaCompiledOnFirstUse(t *testing.T) {
+	if os.Getenv("JSONSCHEMA_TEST_FRESH_PROCESS") != "1" {
+		cmd := exec.Command(os.Args[0], "-test.run=^TestDraftMetaCompiledOnFirstUse$", "-test.count=1")
+		cmd.Env = append(os.Environ(), "JSONSCHEMA_TEST_FRESH_PROCESS=1")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+		return
+	}
+
+	drafts := []*Draft{Draft4, Draft6, Draft7, Draft2019, Draft2020}
+	for _, d := range drafts {
+		if d.sch != nil {
+			t.Fatalf("%s metaschema compiled before first use", d)
+		}
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c := NewCompiler()
+			sch := map[string]any{"$schema": Draft2020.url, "type": "string"}
+			if err := c.AddResource("schema.json", sch); err != nil {
+				t.Error(err)
+				return
+			}
+			if _, err := c.Compile("schema.json"); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	for _, d := range drafts {
+		if compiled := d.sch != nil; compiled != (d == Draft2020) {
+			t.Errorf("%s metaschema compiled = %v", d, compiled)
+		}
+	}
+	if len(Draft2020.vocabSchema) != len(Draft2020.allVocabs) {
+		t.Errorf("got %d vocab metaschemas, want %d", len(Draft2020.vocabSchema), len(Draft2020.allVocabs))
 	}
 }
