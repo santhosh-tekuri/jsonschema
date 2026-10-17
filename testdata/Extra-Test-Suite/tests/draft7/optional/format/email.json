@@ -1,0 +1,25 @@
+[
+	{
+		"description": "validation of e-mail addresses",
+		"schema": {
+			"format": "email"
+		},
+		"tests": [
+			{
+				"description": "valid email",
+				"data": "a@b.com",
+				"valid": true
+			},
+			{
+				"description": "valid IPv4 address literal",
+				"data": "a@[1.2.3.4]",
+				"valid": true
+			},
+			{
+				"description": "leading plus sign in IPv4 address literal",
+				"data": "a@[1.2.3.+4]",
+				"valid": false
+			}
+		]
+	}
+]

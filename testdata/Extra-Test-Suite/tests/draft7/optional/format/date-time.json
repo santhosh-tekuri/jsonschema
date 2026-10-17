@@ -1,0 +1,20 @@
+[
+	{
+		"description": "validation of date-time strings",
+		"schema": {
+			"format": "date-time"
+		},
+		"tests": [
+			{
+				"description": "valid date-time",
+				"data": "2020-01-01T12:30:00Z",
+				"valid": true
+			},
+			{
+				"description": "leading plus sign in hour",
+				"data": "2020-01-01T+9:30:00Z",
+				"valid": false
+			}
+		]
+	}
+]

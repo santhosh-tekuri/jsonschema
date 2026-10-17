@@ -209,20 +209,12 @@ func validateDuration(v any) error {
 	return nil
 }
 
-// isAllDigits reports whether s is non-empty and consists solely of ASCII
-// digits. strconv.Atoi accepts a leading '+' or '-' sign, but the RFC 3339
-// time and dotted-quad IPv4 grammars are digit-only, so numeric tokens are
-// checked with this before parsing.
-func isAllDigits(s string) bool {
-	if s == "" {
-		return false
+// atoi is like strconv.Atoi, but ensures no leading '+' or '-' sign.
+func atoi(s string) (int, error) {
+	if s != "" && (s[0] == '+' || s[0] == '-') {
+		return 0, &strconv.NumError{Func: "Atoi", Num: s, Err: strconv.ErrSyntax}
 	}
-	for i := 0; i < len(s); i++ {
-		if s[i] < '0' || s[i] > '9' {
-			return false
-		}
-	}
-	return true
+	return strconv.Atoi(s)
 }
 
 func validateIPV4(v any) error {
@@ -238,10 +230,7 @@ func validateIPV4(v any) error {
 		if len(group) > 1 && group[0] == '0' {
 			return LocalizableError("leading zeros")
 		}
-		if !isAllDigits(group) {
-			return LocalizableError("decimal must contain only digits")
-		}
-		n, err := strconv.Atoi(group)
+		n, err := atoi(group)
 		if err != nil {
 			return err
 		}
@@ -422,10 +411,7 @@ func validateTime(v any) error {
 	// parse hh:mm:ss
 	var hms []int
 	for _, tok := range strings.SplitN(str[:8], ":", 3) {
-		if !isAllDigits(tok) {
-			return LocalizableError("invalid hour/min/sec")
-		}
-		i, err := strconv.Atoi(tok)
+		i, err := atoi(tok)
 		if err != nil {
 			return LocalizableError("invalid hour/min/sec")
 		}
@@ -480,10 +466,7 @@ func validateTime(v any) error {
 
 		var zhm []int
 		for _, tok := range strings.SplitN(str, ":", 2) {
-			if !isAllDigits(tok) {
-				return LocalizableError("invalid hour/min in offset")
-			}
-			i, err := strconv.Atoi(tok)
+			i, err := atoi(tok)
 			if err != nil {
 				return LocalizableError("invalid hour/min in offset")
 			}
