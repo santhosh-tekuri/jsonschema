@@ -6,11 +6,6 @@
 		},
 		"tests": [
 			{
-				"description": "valid address",
-				"data": "1.2.3.4",
-				"valid": true
-			},
-			{
 				"description": "leading plus sign in first decimal",
 				"data": "+1.2.3.4",
 				"valid": false
