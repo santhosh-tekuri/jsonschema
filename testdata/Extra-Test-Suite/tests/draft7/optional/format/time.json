@@ -1,0 +1,30 @@
+[
+	{
+		"description": "validation of time strings",
+		"schema": {
+			"format": "time"
+		},
+		"tests": [
+			{
+				"description": "leading plus sign in hour",
+				"data": "+9:30:00Z",
+				"valid": false
+			},
+			{
+				"description": "leading plus sign in minute",
+				"data": "12:+9:00Z",
+				"valid": false
+			},
+			{
+				"description": "leading minus sign in second",
+				"data": "12:00:-0Z",
+				"valid": false
+			},
+			{
+				"description": "leading plus sign in offset minute",
+				"data": "12:00:00+09:+0",
+				"valid": false
+			}
+		]
+	}
+]

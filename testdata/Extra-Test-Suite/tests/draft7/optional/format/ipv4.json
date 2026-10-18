@@ -1,0 +1,25 @@
+[
+	{
+		"description": "validation of IPv4 addresses",
+		"schema": {
+			"format": "ipv4"
+		},
+		"tests": [
+			{
+				"description": "leading plus sign in first decimal",
+				"data": "+1.2.3.4",
+				"valid": false
+			},
+			{
+				"description": "leading plus sign in last decimal",
+				"data": "1.2.3.+4",
+				"valid": false
+			},
+			{
+				"description": "leading minus sign",
+				"data": "1.2.3.-0",
+				"valid": false
+			}
+		]
+	}
+]
