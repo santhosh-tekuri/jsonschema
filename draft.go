@@ -4,18 +4,22 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 )
 
 // A Draft represents json-schema specification.
 type Draft struct {
 	version       int
 	url           string
-	sch           *Schema
-	id            string             // property name used to represent id
-	subschemas    []SchemaPath       // locations of subschemas
-	vocabPrefix   string             // prefix used for vocabulary
-	allVocabs     map[string]*Schema // names of supported vocabs with its schemas
-	defaultVocabs []string           // names of default vocabs
+	id            string       // property name used to represent id
+	subschemas    []SchemaPath // locations of subschemas
+	vocabPrefix   string       // prefix used for vocabulary
+	allVocabs     []string     // names of supported vocabs
+	defaultVocabs []string     // names of default vocabs
+
+	metaOnce    sync.Once
+	sch         *Schema            // metaschema, compiled on first use
+	vocabSchema map[string]*Schema // metaschema of each vocab, compiled on first use
 }
 
 // String returns the specification url.
@@ -46,7 +50,7 @@ var (
 			schemaPath("dependencies/*"),
 		},
 		vocabPrefix:   "",
-		allVocabs:     map[string]*Schema{},
+		allVocabs:     []string{},
 		defaultVocabs: []string{},
 	}
 
@@ -59,7 +63,7 @@ var (
 			schemaPath("contains"),
 		),
 		vocabPrefix:   "",
-		allVocabs:     map[string]*Schema{},
+		allVocabs:     []string{},
 		defaultVocabs: []string{},
 	}
 
@@ -73,7 +77,7 @@ var (
 			schemaPath("else"),
 		),
 		vocabPrefix:   "",
-		allVocabs:     map[string]*Schema{},
+		allVocabs:     []string{},
 		defaultVocabs: []string{},
 	}
 
@@ -88,15 +92,8 @@ var (
 			schemaPath("unevaluatedItems"),
 			schemaPath("contentSchema"),
 		),
-		vocabPrefix: "https://json-schema.org/draft/2019-09/vocab/",
-		allVocabs: map[string]*Schema{
-			"core":       nil,
-			"applicator": nil,
-			"validation": nil,
-			"meta-data":  nil,
-			"format":     nil,
-			"content":    nil,
-		},
+		vocabPrefix:   "https://json-schema.org/draft/2019-09/vocab/",
+		allVocabs:     []string{"core", "applicator", "validation", "meta-data", "format", "content"},
 		defaultVocabs: []string{"core", "applicator", "validation"},
 	}
 
@@ -108,15 +105,9 @@ var (
 			schemaPath("prefixItems/[]"),
 		),
 		vocabPrefix: "https://json-schema.org/draft/2020-12/vocab/",
-		allVocabs: map[string]*Schema{
-			"core":              nil,
-			"applicator":        nil,
-			"unevaluated":       nil,
-			"validation":        nil,
-			"meta-data":         nil,
-			"format-annotation": nil,
-			"format-assertion":  nil,
-			"content":           nil,
+		allVocabs: []string{
+			"core", "applicator", "unevaluated", "validation",
+			"meta-data", "format-annotation", "format-assertion", "content",
 		},
 		defaultVocabs: []string{"core", "applicator", "unevaluated", "validation"},
 	}
@@ -124,15 +115,20 @@ var (
 	draftLatest = Draft2020
 )
 
-func init() {
-	c := NewCompiler()
-	c.AssertFormat()
-	for _, d := range []*Draft{Draft4, Draft6, Draft7, Draft2019, Draft2020} {
+// meta returns the draft's metaschema and the metaschema of each of its
+// vocabs. They are compiled on first use rather than in init, so a program
+// pays only for the drafts it uses, and nothing if it compiles no schema.
+func (d *Draft) meta() (*Schema, map[string]*Schema) {
+	d.metaOnce.Do(func() {
+		c := NewCompiler()
+		c.AssertFormat()
 		d.sch = c.MustCompile(d.url)
-		for name := range d.allVocabs {
-			d.allVocabs[name] = c.MustCompile(strings.TrimSuffix(d.url, "schema") + "meta/" + name)
+		d.vocabSchema = make(map[string]*Schema, len(d.allVocabs))
+		for _, name := range d.allVocabs {
+			d.vocabSchema[name] = c.MustCompile(strings.TrimSuffix(d.url, "schema") + "meta/" + name)
 		}
-	}
+	})
+	return d.sch, d.vocabSchema
 }
 
 func draftFromURL(url string) *Draft {
@@ -202,7 +198,7 @@ func (d *Draft) getVocabs(url url, doc any, vocabularies map[string]*Vocabulary)
 		}
 		name, ok := strings.CutPrefix(vocab, d.vocabPrefix)
 		if ok {
-			if _, ok := d.allVocabs[name]; ok {
+			if slices.Contains(d.allVocabs, name) {
 				if !slices.Contains(vocabs, name) {
 					vocabs = append(vocabs, name)
 					continue
@@ -264,14 +260,15 @@ func (d *dialect) activeVocabs(assertVocabs bool, vocabularies map[string]*Vocab
 }
 
 func (d *dialect) getSchema(assertVocabs bool, vocabularies map[string]*Vocabulary) *Schema {
+	draftSch, vocabSchema := d.draft.meta()
 	vocabs := d.activeVocabs(assertVocabs, vocabularies)
 	if vocabs == nil {
-		return d.draft.sch
+		return draftSch
 	}
 
 	var allOf []*Schema
 	for _, vocab := range vocabs {
-		sch := d.draft.allVocabs[vocab]
+		sch := vocabSchema[vocab]
 		if sch == nil {
 			if v, ok := vocabularies[vocab]; ok {
 				sch = v.Schema
@@ -282,9 +279,9 @@ func (d *dialect) getSchema(assertVocabs bool, vocabularies map[string]*Vocabula
 		}
 	}
 	if !slices.Contains(vocabs, "core") {
-		sch := d.draft.allVocabs["core"]
+		sch := vocabSchema["core"]
 		if sch == nil {
-			sch = d.draft.sch
+			sch = draftSch
 		}
 		allOf = append(allOf, sch)
 	}
