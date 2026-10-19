@@ -195,6 +195,12 @@ func (e *ValidationError) output(flatten, inRef bool, schemaURL, kwLoc string, p
 	for _, cause := range e.Causes {
 		causeOut := cause.output(flatten, inRef, schemaURL, kwLoc, p)
 		if cause.skip() {
+			if flatten {
+				// causeOut.Errors is already the flattened list of every
+				// error under the $ref, so keep all of them.
+				out.Errors = append(out.Errors, causeOut.Errors...)
+				continue
+			}
 			causeOut = causeOut.Errors[0]
 		}
 		if flatten {
