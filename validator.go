@@ -438,17 +438,19 @@ func (vd *validator) strValidate(str string) {
 		strLen = utf8.RuneCount([]byte(str))
 	}
 
+	exactLen := s.MinLength != nil && s.MaxLength != nil && *s.MinLength == *s.MaxLength
+
 	// minLength --
 	if s.MinLength != nil {
 		if strLen < *s.MinLength {
-			vd.addError(&kind.MinLength{Got: strLen, Want: *s.MinLength})
+			vd.addError(&kind.MinLength{Got: strLen, Want: *s.MinLength, Exact: exactLen})
 		}
 	}
 
 	// maxLength --
 	if s.MaxLength != nil {
 		if strLen > *s.MaxLength {
-			vd.addError(&kind.MaxLength{Got: strLen, Want: *s.MaxLength})
+			vd.addError(&kind.MaxLength{Got: strLen, Want: *s.MaxLength, Exact: exactLen})
 		}
 	}
 
