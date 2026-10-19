@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -65,11 +66,48 @@ func loadFile(path string) (any, error) {
 	}
 	defer f.Close()
 	if ext := filepath.Ext(path); ext == ".yaml" || ext == ".yml" {
-		var v any
-		err := yaml.NewDecoder(f).Decode(&v)
-		return v, err
+		return decodeYAML(f)
 	}
 	return jsonschema.UnmarshalJSON(f)
+}
+
+// decodeYAML unmarshals YAML and converts values jsonschema can validate.
+// gopkg.in/yaml.v3 turns timestamps into time.Time, which is not JSON.
+func decodeYAML(r io.Reader) (any, error) {
+	var v any
+	if err := yaml.NewDecoder(r).Decode(&v); err != nil {
+		return nil, err
+	}
+	return yamlToJSON(v), nil
+}
+
+func yamlToJSON(v any) any {
+	switch x := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, val := range x {
+			out[k] = yamlToJSON(val)
+		}
+		return out
+	case map[any]any:
+		out := make(map[string]any, len(x))
+		for k, val := range x {
+			out[fmt.Sprint(k)] = yamlToJSON(val)
+		}
+		return out
+	case []any:
+		for i, val := range x {
+			x[i] = yamlToJSON(val)
+		}
+		return x
+	case time.Time:
+		if x.Nanosecond() == 0 {
+			return x.Format(time.RFC3339)
+		}
+		return x.Format(time.RFC3339Nano)
+	default:
+		return v
+	}
 }
 
 // --
@@ -106,9 +144,7 @@ func (l *HTTPLoader) Load(url string) (any, error) {
 		isYAML = strings.HasSuffix(ctype, "/yaml") || strings.HasSuffix(ctype, "-yaml")
 	}
 	if isYAML {
-		var v any
-		err := yaml.NewDecoder(resp.Body).Decode(&v)
-		return v, err
+		return decodeYAML(resp.Body)
 	}
 	return jsonschema.UnmarshalJSON(resp.Body)
 }
