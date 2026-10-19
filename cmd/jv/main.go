@@ -124,6 +124,7 @@ func main() {
 
 	// setup compiler
 	c := jsonschema.NewCompiler()
+	c.UseRegexpEngine(ecmaCompile)
 	if draft != nil {
 		c.DefaultDraft(draft)
 	}
