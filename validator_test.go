@@ -30,3 +30,45 @@ func TestInvalidFloats(t *testing.T) {
 		}
 	}
 }
+
+func TestIssue275_UnparseableNumberNoPanic(t *testing.T) {
+	schemas := []string{
+		`{"minimum": 0}`,
+		`{"maximum": 10}`,
+		`{"exclusiveMinimum": 0}`,
+		`{"exclusiveMaximum": 10}`,
+		`{"multipleOf": 3}`,
+	}
+	for _, schemaJSON := range schemas {
+		t.Run(schemaJSON, func(t *testing.T) {
+			c := jsonschema.NewCompiler()
+			doc, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaJSON))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := c.AddResource("schema.json", doc); err != nil {
+				t.Fatal(err)
+			}
+			sch, err := c.Compile("schema.json")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			inst, err := jsonschema.UnmarshalJSON(strings.NewReader(`1e9999999`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := sch.Validate(inst); err == nil {
+				t.Fatalf("Validate(1e9999999) = nil, want error")
+			}
+
+			okInst, err := jsonschema.UnmarshalJSON(strings.NewReader(`3`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := sch.Validate(okInst); err != nil {
+				t.Fatalf("Validate(3) = %v, want nil", err)
+			}
+		})
+	}
+}
