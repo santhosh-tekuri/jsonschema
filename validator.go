@@ -463,6 +463,10 @@ func (vd *validator) strValidate(str string) {
 		return
 	}
 
+	if s.ContentEncoding == nil && s.ContentMediaType == nil {
+		return
+	}
+
 	var err error
 
 	// contentEncoding --
