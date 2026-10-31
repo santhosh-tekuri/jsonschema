@@ -24,6 +24,20 @@ func (k *InvalidJsonValue) LocalizedString(p *message.Printer) string {
 
 // --
 
+type LargeNumber struct {
+	Value any
+}
+
+func (*LargeNumber) KeywordPath() []string {
+	return nil
+}
+
+func (k *LargeNumber) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("number too large to parse %T", k.Value)
+}
+
+// --
+
 type Schema struct {
 	Location string
 }
