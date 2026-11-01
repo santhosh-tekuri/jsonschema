@@ -33,7 +33,7 @@ func (*LargeNumber) KeywordPath() []string {
 }
 
 func (k *LargeNumber) LocalizedString(p *message.Printer) string {
-	return p.Sprintf("number too large to parse %T", k.Value)
+	return p.Sprintf("number too large to parse %v", k.Value)
 }
 
 // --
