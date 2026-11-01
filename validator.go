@@ -466,17 +466,20 @@ func (vd *validator) strValidate(str string) {
 	var err error
 
 	// contentEncoding --
-	decoded := []byte(str)
+	var decoded []byte
+	var decodeErr error = nil
 	if s.ContentEncoding != nil {
-		decoded, err = s.ContentEncoding.Decode(str)
-		if err != nil {
-			decoded = nil
-			vd.addError(&kind.ContentEncoding{Want: s.ContentEncoding.Name, Err: err})
+		decoded, decodeErr = s.ContentEncoding.Decode(str)
+		if decodeErr != nil {
+			vd.addError(&kind.ContentEncoding{Want: s.ContentEncoding.Name, Err: decodeErr})
 		}
 	}
 
 	var deserialized *any
-	if decoded != nil && s.ContentMediaType != nil {
+	if decodeErr == nil && s.ContentMediaType != nil {
+		if decoded == nil {
+			decoded = []byte(str)
+		}
 		if s.ContentSchema == nil {
 			err = s.ContentMediaType.Validate(decoded)
 		} else {
