@@ -1,0 +1,72 @@
+[
+	{
+		"description": "minimum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"minimum": 0
+		},
+		"tests": [
+			{
+				"description": "large exponent",
+				"data": 1e9999999,
+				"valid": false
+			}
+		]
+	},
+	{
+		"description": "maximum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"maximum": 0
+		},
+		"tests": [
+			{
+				"description": "large exponent",
+				"data": 1e9999999,
+				"valid": false
+			}
+		]
+	},
+	{
+		"description": "exclusiveMinimum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"exclusiveMinimum": 0
+		},
+		"tests": [
+			{
+				"description": "large exponent",
+				"data": 1e9999999,
+				"valid": false
+			}
+		]
+	},
+	{
+		"description": "exclusiveMaximum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"exclusiveMaximum": 10
+		},
+		"tests": [
+			{
+				"description": "large exponent",
+				"data": 1e9999999,
+				"valid": false
+			}
+		]
+	},
+	{
+		"description": "multipleOf",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"multipleOf": 10
+		},
+		"tests": [
+			{
+				"description": "large exponent",
+				"data": 1e9999999,
+				"valid": false
+			}
+		]
+	}
+]
