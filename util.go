@@ -388,12 +388,16 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		slices.Sort(props)
 		for _, prop := range props {
 			writeHash(prop, h)
-			writeHash(v[prop], h)
+			if k := writeHash(v[prop], h); k != nil {
+				return k
+			}
 		}
 	case []any:
 		_ = h.WriteByte(1)
 		for _, item := range v {
-			writeHash(item, h)
+			if k := writeHash(item, h); k != nil {
+				return k
+			}
 		}
 	case nil:
 		_ = h.WriteByte(2)
@@ -409,7 +413,11 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		_, _ = h.WriteString(v)
 	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		_ = h.WriteByte(5)
-		num, _ := new(big.Rat).SetString(fmt.Sprint(v))
+		num, ok := new(big.Rat).SetString(fmt.Sprint(v))
+		if !ok {
+			return &kind.LargeNumber{Value: v}
+		}
+		_ = h.WriteByte(byte(num.Sign() + 1)) // Bytes ignores sign
 		_, _ = h.Write(num.Num().Bytes())
 		_, _ = h.Write(num.Denom().Bytes())
 	default:
