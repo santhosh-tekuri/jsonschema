@@ -35,6 +35,11 @@
                 "description": "empty local part",
                 "data": "@example.com",
                 "valid": false
+            },
+            {
+                "description": "empty quoted local part",
+                "data": "\"\"@example.com",
+                "valid": false
             }
         ]
     }

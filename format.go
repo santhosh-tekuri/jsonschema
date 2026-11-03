@@ -314,7 +314,7 @@ func validateEmail(v any) error {
 	local, domain := s[:at], s[at+1:]
 
 	if local == "" {
-		return LocalizableError("missing local part")
+		return LocalizableError("empty local part")
 	}
 
 	// local part may be up to 64 characters long
@@ -325,6 +325,9 @@ func validateEmail(v any) error {
 	if len(local) > 1 && strings.HasPrefix(local, `"`) && strings.HasSuffix(local, `"`) {
 		// quoted
 		local := local[1 : len(local)-1]
+		if local == "" {
+			return LocalizableError("empty local part")
+		}
 		if strings.IndexByte(local, '\\') != -1 || strings.IndexByte(local, '"') != -1 {
 			return LocalizableError("backslash and quote are not allowed within quoted local part")
 		}
