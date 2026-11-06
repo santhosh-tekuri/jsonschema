@@ -1,0 +1,13 @@
+[
+    {
+        "description": "validation of iri strings",
+        "schema": { "format": "iri" },
+        "tests": [
+            {
+                "description": "ok unescaped non US-ASCII characters",
+                "data": "https://example.org/foobar®.txt",
+                "valid": true
+            }
+        ]
+    }
+]

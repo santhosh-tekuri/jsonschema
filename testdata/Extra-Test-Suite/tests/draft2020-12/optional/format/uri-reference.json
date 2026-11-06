@@ -1,0 +1,28 @@
+[
+    {
+        "description": "validation of uri-reference strings",
+        "schema": { "format": "uri-reference" },
+        "tests": [
+            {
+                "description": "ok absolute",
+                "data": "https://example.org/",
+                "valid": true
+            },
+            {
+                "description": "ok relative",
+                "data": "/test.txt",
+                "valid": true
+            },
+            {
+                "description": "unescaped non US-ASCII characters",
+                "data": "/foobar®.txt",
+                "valid": false
+            },
+            {
+                "description": "invalid backslash character",
+                "data": "https://example.org/foobar\\.txt",
+                "valid": false
+            }
+        ]
+    }
+]
