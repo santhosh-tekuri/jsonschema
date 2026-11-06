@@ -208,6 +208,7 @@ func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
 		compiled++
 	}
 	for _, sch := range *q {
+		sch.prepareOneOfDiscriminator()
 		c.schemas[sch.up] = sch
 	}
 	return c.schemas[up], nil
