@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"reflect"
 )
 
 // Schema is the representation of a compiled
@@ -151,6 +152,15 @@ func typeOf(v any) jsonType {
 	case map[string]any:
 		return objectType
 	default:
+		rv := reflect.ValueOf(v)
+		switch rv.Kind() {
+		case reflect.Slice, reflect.Array:
+			return arrayType
+		case reflect.Map:
+			if rv.Type().Key().Kind() == reflect.String {
+				return objectType
+			}
+		}
 		return invalidType
 	}
 }
