@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -59,17 +60,46 @@ func (l *JVLoader) Load(url string) (any, error) {
 }
 
 func loadFile(path string) (any, error) {
+	docs, err := loadDocuments(path)
+	if err != nil {
+		return nil, err
+	}
+	return docs[0], nil
+}
+
+func loadDocuments(path string) ([]any, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 	if ext := filepath.Ext(path); ext == ".yaml" || ext == ".yml" {
-		var v any
-		err := yaml.NewDecoder(f).Decode(&v)
-		return v, err
+		return decodeYAML(f)
 	}
-	return jsonschema.UnmarshalJSON(f)
+	v, err := jsonschema.UnmarshalJSON(f)
+	if err != nil {
+		return nil, err
+	}
+	return []any{v}, nil
+}
+
+func decodeYAML(r io.Reader) ([]any, error) {
+	dec := yaml.NewDecoder(r)
+	var docs []any
+	for {
+		var v any
+		if err := dec.Decode(&v); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+		docs = append(docs, v)
+	}
+	if len(docs) == 0 {
+		return nil, io.EOF
+	}
+	return docs, nil
 }
 
 // --
@@ -106,9 +136,11 @@ func (l *HTTPLoader) Load(url string) (any, error) {
 		isYAML = strings.HasSuffix(ctype, "/yaml") || strings.HasSuffix(ctype, "-yaml")
 	}
 	if isYAML {
-		var v any
-		err := yaml.NewDecoder(resp.Body).Decode(&v)
-		return v, err
+		docs, err := decodeYAML(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return docs[0], nil
 	}
 	return jsonschema.UnmarshalJSON(resp.Body)
 }
