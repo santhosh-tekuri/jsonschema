@@ -116,20 +116,20 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 		s.Properties = c.enqueueMap("properties")
 		if m := c.enqueueMap("patternProperties"); m != nil {
 			s.PatternProperties = map[Regexp]*Schema{}
-			for pname, sch := range m {
+			for _, pname := range sortedKeys(m) {
 				re, err := c.c.roots.regexpEngine(pname)
 				if err != nil {
 					return &InvalidRegexError{c.up.format("patternProperties"), pname, err}
 				}
-				s.PatternProperties[re] = sch
+				s.PatternProperties[re] = m[pname]
 			}
 		}
 		s.AdditionalProperties = c.enqueueAdditional("additionalProperties")
 
 		if m := c.objVal("dependencies"); m != nil {
 			s.Dependencies = map[string]any{}
-			for pname, pvalue := range m {
-				if arr, ok := pvalue.([]any); ok {
+			for _, pname := range sortedKeys(m) {
+				if arr, ok := m[pname].([]any); ok {
 					s.Dependencies[pname] = toStrings(arr)
 				} else {
 					ptr := c.up.ptr.append2("dependencies", pname)
@@ -410,7 +410,7 @@ func (c *objCompiler) enqueueMap(pname string) map[string]*Schema {
 		return nil
 	}
 	sch := make(map[string]*Schema)
-	for k := range obj {
+	for _, k := range sortedKeys(obj) {
 		ptr := c.up.ptr.append2(pname, k)
 		sch[k] = c.enqueuePtr(ptr)
 	}
