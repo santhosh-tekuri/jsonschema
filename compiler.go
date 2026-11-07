@@ -223,9 +223,9 @@ func (c *Compiler) compileValue(v any, sch *Schema, r *root, q *queue) error {
 	// if resource, enqueue dynamic anchors for compilation
 	if sch.DraftVersion >= 2020 && sch.up == sch.resource.up {
 		res := r.resource(sch.up.ptr)
-		for anchor, anchorPtr := range res.anchors {
+		for _, anchor := range sortedKeys(res.anchors) {
 			if slices.Contains(res.dynamicAnchors, anchor) {
-				up := urlPtr{sch.up.url, anchorPtr}
+				up := urlPtr{sch.up.url, res.anchors[anchor]}
 				danchorSch := c.enqueue(q, up)
 				if sch.dynamicAnchors == nil {
 					sch.dynamicAnchors = map[string]*Schema{}
