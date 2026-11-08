@@ -5,10 +5,9 @@ schema = 3
 [mod]
   [mod."github.com/santhosh-tekuri/jsonschema/v6"]
     version = "v6.0.3"
-    hash = "sha256-niJw4+4FPOSKrJGiZK8bSeICviQdmk/maZHeHSAcpcU="
+    hash = "sha256-r/1mhajjfamfJZpu+CeUYr7bTQGQEkmF2f4UcSQZEbA="
     go = "1.21"
     packages = ["github.com/santhosh-tekuri/jsonschema/v6", "github.com/santhosh-tekuri/jsonschema/v6/kind"]
-    local = "../.."
   [mod."github.com/spf13/pflag"]
     version = "v1.0.5"
     hash = "sha256-w9LLYzxxP74WHT4ouBspH/iQZXjuAh2WQCHsuvyEjAw="
