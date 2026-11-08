@@ -1,6 +1,8 @@
 package jsonschema_test
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -239,5 +241,29 @@ func TestNonJSONResource(t *testing.T) {
 	_, err = c.Compile("schema.json")
 	if err == nil {
 		t.Fatal("compile must fail")
+	}
+}
+
+func TestCompileLargeNumberInUniqueItems(t *testing.T) {
+	// the metaschema validates "type" and "required" with uniqueItems,
+	// which hashes arrays of more than 20 items
+	items := make([]string, 0, 22)
+	for i := 0; i <= 20; i++ {
+		items = append(items, strconv.Itoa(i))
+	}
+	items = append(items, "1e1000001")
+	for _, kw := range []string{"type", "required"} {
+		doc, err := jsonschema.UnmarshalJSON(strings.NewReader(fmt.Sprintf(`{%q: [%s]}`, kw, strings.Join(items, ","))))
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := jsonschema.NewCompiler()
+		c.DefaultDraft(jsonschema.Draft2020)
+		if err := c.AddResource("schema.json", doc); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := c.Compile("schema.json"); err == nil {
+			t.Errorf("%s: compile succeeded, want error", kw)
+		}
 	}
 }
