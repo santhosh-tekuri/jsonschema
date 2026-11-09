@@ -1,0 +1,41 @@
+[
+    {
+        "description": "validation of URI references",
+        "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "format": "uri-reference"
+        },
+        "tests": [
+            {
+                "description": "a valid relative reference with percent-encoding",
+                "data": "../a%20b#frag",
+                "valid": true
+            },
+            {
+                "description": "a single space",
+                "data": " ",
+                "valid": false
+            },
+            {
+                "description": "space inside",
+                "data": "us er@example.com",
+                "valid": false
+            },
+            {
+                "description": "non-ascii character",
+                "data": "üser@example.com",
+                "valid": false
+            },
+            {
+                "description": "trailing space",
+                "data": "1.2.3.4 ",
+                "valid": false
+            },
+            {
+                "description": "percent sign without two hex digits",
+                "data": "fe80::1%eth0",
+                "valid": false
+            }
+        ]
+    }
+]

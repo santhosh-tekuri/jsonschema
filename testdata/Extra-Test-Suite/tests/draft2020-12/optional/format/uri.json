@@ -1,0 +1,56 @@
+[
+    {
+        "description": "validation of URIs",
+        "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "format": "uri"
+        },
+        "tests": [
+            {
+                "description": "a valid URI with a scheme-only path",
+                "data": "a:",
+                "valid": true
+            },
+            {
+                "description": "a valid URI with percent-encoded octets",
+                "data": "http://example.com/a%20b?q=%E2%9C%93",
+                "valid": true
+            },
+            {
+                "description": "space in path",
+                "data": "http://example.com/a b",
+                "valid": false
+            },
+            {
+                "description": "non-ascii character in path",
+                "data": "http://example.com/é",
+                "valid": false
+            },
+            {
+                "description": "backslash in path",
+                "data": "http://example.com/a\\b",
+                "valid": false
+            },
+            {
+                "description": "percent sign without two hex digits",
+                "data": "fe80::1%eth0",
+                "valid": false
+            },
+            {
+                "description": "percent sign at the end",
+                "data": "http://example.com/%",
+                "valid": false
+            },
+            {
+                "description": "characters outside the URI character set",
+                "data": "http://example.com/{x}|y",
+                "valid": false
+            },
+            {
+                "description": "double quote in query",
+                "data": "http://example.com/?q=\"x\"",
+                "valid": false
+            }
+        ]
+    }
+]

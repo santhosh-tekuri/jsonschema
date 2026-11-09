@@ -1,0 +1,50 @@
+[
+    {
+        "description": "validation of IRIs",
+        "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "format": "iri"
+        },
+        "tests": [
+            {
+                "description": "non-ascii characters are allowed",
+                "data": "http://example.com/é?q=✓",
+                "valid": true
+            },
+            {
+                "description": "space is still not allowed",
+                "data": "http://example.com/a b",
+                "valid": false
+            },
+            {
+                "description": "percent sign without two hex digits",
+                "data": "http://example.com/%zz",
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "validation of IRI references",
+        "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "format": "iri-reference"
+        },
+        "tests": [
+            {
+                "description": "non-ascii relative reference",
+                "data": "âππ",
+                "valid": true
+            },
+            {
+                "description": "backslash",
+                "data": "\\\\WINDOWS\\filëßåré",
+                "valid": false
+            },
+            {
+                "description": "space",
+                "data": "a b",
+                "valid": false
+            }
+        ]
+    }
+]

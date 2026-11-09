@@ -31,9 +31,9 @@ var formats = map[string]*Format{
 	"time":                  {"time", validateTime},
 	"date-time":             {"date-time", validateDateTime},
 	"uri":                   {"uri", validateURI},
-	"iri":                   {"iri", validateURI},
+	"iri":                   {"iri", validateIRI},
 	"uri-reference":         {"uri-reference", validateURIReference},
-	"iri-reference":         {"iri-reference", validateURIReference},
+	"iri-reference":         {"iri-reference", validateIRIReference},
 	"uri-template":          {"uri-template", validateURITemplate},
 	"semver":                {"semver", validateSemver},
 }
@@ -547,10 +547,51 @@ func parseURL(s string) (*gourl.URL, error) {
 	return u, nil
 }
 
+// validateURIChars checks that s only contains characters allowed in a
+// URI (RFC 3986 section 2: unreserved, reserved and percent-encoded octets),
+// which gourl does not enforce. IRIs (RFC 3987) additionally allow
+// non-ASCII characters.
+func validateURIChars(s string, allowNonASCII bool) error {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 0x80:
+			if !allowNonASCII {
+				return LocalizableError("non-ascii character %q", c)
+			}
+		case c == '%':
+			if i+2 >= len(s) || !isHex(s[i+1]) || !isHex(s[i+2]) {
+				return LocalizableError("invalid percent encoding at %d", i)
+			}
+			i += 2
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9':
+		case strings.IndexByte("-._~:/?#[]@!$&'()*+,;=", c) >= 0:
+		default:
+			return LocalizableError("invalid character %q", c)
+		}
+	}
+	return nil
+}
+
+func isHex(c byte) bool {
+	return c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'
+}
+
 func validateURI(v any) error {
+	return validateURIOrIRI(v, false)
+}
+
+func validateIRI(v any) error {
+	return validateURIOrIRI(v, true)
+}
+
+func validateURIOrIRI(v any, allowNonASCII bool) error {
 	s, ok := v.(string)
 	if !ok {
 		return nil
+	}
+	if err := validateURIChars(s, allowNonASCII); err != nil {
+		return err
 	}
 	u, err := parseURL(s)
 	if err != nil {
@@ -563,12 +604,20 @@ func validateURI(v any) error {
 }
 
 func validateURIReference(v any) error {
+	return validateURIOrIRIReference(v, false)
+}
+
+func validateIRIReference(v any) error {
+	return validateURIOrIRIReference(v, true)
+}
+
+func validateURIOrIRIReference(v any, allowNonASCII bool) error {
 	s, ok := v.(string)
 	if !ok {
 		return nil
 	}
-	if strings.Contains(s, `\`) {
-		return LocalizableError(`contains \`)
+	if err := validateURIChars(s, allowNonASCII); err != nil {
+		return err
 	}
 	_, err := parseURL(s)
 	return err
