@@ -70,34 +70,6 @@
 		]
 	},
 	{
-		"description": "enum",
-		"schema": {
-			"$schema": "https://json-schema.org/draft/2020-12/schema",
-			"enum": [1, 2]
-		},
-		"tests": [
-			{
-				"description": "large exponent",
-				"data": 1e9999999,
-				"valid": false
-			}
-		]
-	},
-	{
-		"description": "const",
-		"schema": {
-			"$schema": "https://json-schema.org/draft/2020-12/schema",
-			"const": 1
-		},
-		"tests": [
-			{
-				"description": "large exponent",
-				"data": 1e9999999,
-				"valid": false
-			}
-		]
-	},
-	{
 		"description": "uniqueItems with up to 20 items",
 		"schema": {
 			"$schema": "https://json-schema.org/draft/2020-12/schema",

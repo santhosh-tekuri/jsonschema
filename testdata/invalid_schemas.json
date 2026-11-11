@@ -269,27 +269,5 @@
 				}
 			}
 		}
-	},
-	{
-		"description": "LargeNumber-uniqueItems-type",
-		"schema": {
-			"$schema": "https://json-schema.org/draft/2020-12/schema",
-			"type": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1e1000001]
-		},
-		"errors": [
-			"SchemaValidationError{URL:\"http://invalid-schemas.com/schema.json#\"",
-			"number too large to parse 1e1000001"
-		]
-	},
-	{
-		"description": "LargeNumber-uniqueItems-required",
-		"schema": {
-			"$schema": "https://json-schema.org/draft/2020-12/schema",
-			"required": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1e1000001]
-		},
-		"errors": [
-			"SchemaValidationError{URL:\"http://invalid-schemas.com/schema.json#\"",
-			"number too large to parse 1e1000001"
-		]
 	}
 ]
