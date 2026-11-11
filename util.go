@@ -337,12 +337,12 @@ func equals(v1, v2 any) (bool, ErrorKind) {
 		if typeOf(v2) != numberType {
 			return false, nil
 		}
-		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
-		if !ok1 {
+		num1, ok := new(big.Rat).SetString(fmt.Sprint(v1))
+		if !ok {
 			return false, &kind.LargeNumber{Value: v1}
 		}
-		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
-		if !ok2 {
+		num2, ok := new(big.Rat).SetString(fmt.Sprint(v2))
+		if !ok {
 			return false, &kind.LargeNumber{Value: v2}
 		}
 		return num1.Cmp(num2) == 0, nil
