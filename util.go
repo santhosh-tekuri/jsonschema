@@ -337,9 +337,15 @@ func equals(v1, v2 any) (bool, ErrorKind) {
 		if typeOf(v2) != numberType {
 			return false, nil
 		}
-		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
-		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
-		return ok1 && ok2 && num1.Cmp(num2) == 0, nil
+		num1, ok := new(big.Rat).SetString(fmt.Sprint(v1))
+		if !ok {
+			return false, &kind.LargeNumber{Value: v1}
+		}
+		num2, ok := new(big.Rat).SetString(fmt.Sprint(v2))
+		if !ok {
+			return false, &kind.LargeNumber{Value: v2}
+		}
+		return num1.Cmp(num2) == 0, nil
 	default:
 		return false, &kind.InvalidJsonValue{Value: v1}
 	}
@@ -361,7 +367,9 @@ func duplicates(arr []any) (int, int, ErrorKind) {
 	h := new(maphash.Hash)
 	for i, item := range arr {
 		h.Reset()
-		writeHash(item, h)
+		if k := writeHash(item, h); k != nil {
+			return -1, -1, k
+		}
 		hash := h.Sum64()
 		indexes, ok := m[hash]
 		if ok {
