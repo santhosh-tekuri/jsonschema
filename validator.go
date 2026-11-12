@@ -117,7 +117,7 @@ func (vd *validator) validate() (*uneval, error) {
 		matched := s.Enum.types.contains(typeOf(v))
 		if matched {
 			matched = false
-			for _, item := range s.Enum.Values {
+			for _, item := range s.Enum.candidates(v) {
 				ok, k := equals(v, item)
 				if k != nil {
 					return nil, vd.error(k)
