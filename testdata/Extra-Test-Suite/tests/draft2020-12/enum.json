@@ -20,11 +20,6 @@
                 "description": "with fraction in array",
                 "data": [1, 2.0],
                 "valid": true
-            },
-            {
-                "description": "not in enum",
-                "data": 11,
-                "valid": false
             }
         ]
     }

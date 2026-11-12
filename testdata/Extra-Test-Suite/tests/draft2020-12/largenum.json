@@ -108,7 +108,8 @@
 			{
 				"description": "large exponent",
 				"data": 1e9999999,
-				"valid": false
+				"valid": false,
+				"errors": ["number too large to parse 1e9999999"]
 			}
 		]
 	}
