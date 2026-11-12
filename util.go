@@ -337,9 +337,15 @@ func equals(v1, v2 any) (bool, ErrorKind) {
 		if typeOf(v2) != numberType {
 			return false, nil
 		}
-		num1, ok1 := new(big.Rat).SetString(fmt.Sprint(v1))
-		num2, ok2 := new(big.Rat).SetString(fmt.Sprint(v2))
-		return ok1 && ok2 && num1.Cmp(num2) == 0, nil
+		num1, ok := new(big.Rat).SetString(fmt.Sprint(v1))
+		if !ok {
+			return false, &kind.LargeNumber{Value: v1}
+		}
+		num2, ok := new(big.Rat).SetString(fmt.Sprint(v2))
+		if !ok {
+			return false, &kind.LargeNumber{Value: v2}
+		}
+		return num1.Cmp(num2) == 0, nil
 	default:
 		return false, &kind.InvalidJsonValue{Value: v1}
 	}
@@ -361,7 +367,9 @@ func duplicates(arr []any) (int, int, ErrorKind) {
 	h := new(maphash.Hash)
 	for i, item := range arr {
 		h.Reset()
-		writeHash(item, h)
+		if k := writeHash(item, h); k != nil {
+			return -1, -1, k
+		}
 		hash := h.Sum64()
 		indexes, ok := m[hash]
 		if ok {
@@ -388,12 +396,16 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		slices.Sort(props)
 		for _, prop := range props {
 			writeHash(prop, h)
-			writeHash(v[prop], h)
+			if k := writeHash(v[prop], h); k != nil {
+				return k
+			}
 		}
 	case []any:
 		_ = h.WriteByte(1)
 		for _, item := range v {
-			writeHash(item, h)
+			if k := writeHash(item, h); k != nil {
+				return k
+			}
 		}
 	case nil:
 		_ = h.WriteByte(2)
@@ -409,7 +421,10 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		_, _ = h.WriteString(v)
 	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		_ = h.WriteByte(5)
-		num, _ := new(big.Rat).SetString(fmt.Sprint(v))
+		num, ok := new(big.Rat).SetString(fmt.Sprint(v))
+		if !ok {
+			return &kind.LargeNumber{Value: v}
+		}
 		_, _ = h.Write(num.Num().Bytes())
 		_, _ = h.Write(num.Denom().Bytes())
 	default:
