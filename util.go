@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"hash/maphash"
@@ -268,6 +269,17 @@ func strVal(obj map[string]any, prop string) (string, bool) {
 	}
 	s, ok := v.(string)
 	return s, ok
+}
+
+// sortedKeys returns keys of m in sorted order.
+// used to compile subschemas in deterministic order.
+func sortedKeys[K cmp.Ordered, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	return keys
 }
 
 func isInteger(num any) bool {
