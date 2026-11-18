@@ -81,7 +81,7 @@ var (
 		version: 2019,
 		url:     "https://json-schema.org/draft/2019-09/schema",
 		id:      "$id",
-		subschemas: joinSubschemas(Draft7.subschemas,
+		subschemas: joinSubschemas(withoutSubschemaKeyword(Draft7.subschemas, "dependencies"),
 			schemaPath("$defs/*"),
 			schemaPath("dependentSchemas/*"),
 			schemaPath("unevaluatedProperties"),
@@ -357,4 +357,17 @@ func joinSubschemas(a1 []SchemaPath, a2 ...SchemaPath) []SchemaPath {
 	a = append(a, a1...)
 	a = append(a, a2...)
 	return a
+}
+
+func withoutSubschemaKeyword(paths []SchemaPath, keyword Prop) []SchemaPath {
+	filtered := make([]SchemaPath, 0, len(paths))
+	for _, path := range paths {
+		if len(path) > 0 {
+			if property, ok := path[0].(Prop); ok && property == keyword {
+				continue
+			}
+		}
+		filtered = append(filtered, path)
+	}
+	return filtered
 }
