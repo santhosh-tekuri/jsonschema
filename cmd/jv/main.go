@@ -13,6 +13,21 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+var version = "devel"
+
+type config struct {
+	help          bool
+	version       bool
+	quiet         bool
+	draftVersion  int
+	output        string
+	assertFormat  bool
+	assertContent bool
+	insecure      bool
+	cacert        string
+	maps          []string
+}
+
 func main() {
 	flag.Usage = func() {
 		eprintln("Usage: jv [OPTIONS] SCHEMA [INSTANCE...]")
@@ -20,29 +35,34 @@ func main() {
 		eprintln("Options:")
 		flag.PrintDefaults()
 	}
-	help := flag.BoolP("help", "h", false, "Print help information")
-	version := flag.BoolP("version", "v", false, "Print build information")
-	quiet := flag.BoolP("quiet", "q", false, "Do not print errors")
-	draftVersion := flag.IntP("draft", "d", 2020, "Draft `version` used when '$schema' is missing. Valid values 4, 6, 7, 2019, 2020")
-	output := flag.StringP("output", "o", "simple", "Output `format`. Valid values simple, alt, flag, basic, detailed")
-	assertFormat := flag.BoolP("assert-format", "f", false, "Enable format assertions with draft >= 2019")
-	assertContent := flag.BoolP("assert-content", "c", false, "Enable content assertions with draft >= 7")
-	insecure := flag.BoolP("insecure", "k", false, "Use insecure TLS connection")
-	cacert := flag.String("cacert", "", "Use the specified `pem-file` to verify the peer. The file may contain multiple CA certificates")
-	maps := flag.StringArrayP("map", "m", nil, "load url with prefix from given directory. Syntax `url_prefix=/path/to/dir`")
+
+	config := &config{}
+	flag.BoolVarP(&config.help, "help", "h", false, "Print help information")
+	flag.BoolVarP(&config.version, "version", "v", false, "Print build information")
+	flag.BoolVarP(&config.quiet, "quiet", "q", false, "Do not print errors")
+	flag.IntVarP(&config.draftVersion, "draft", "d", 2020, "Draft `version` used when '$schema' is missing. Valid values 4, 6, 7, 2019, 2020")
+	flag.StringVarP(&config.output, "output", "o", "simple", "Output `format`. Valid values simple, alt, flag, basic, detailed")
+	flag.BoolVarP(&config.assertFormat, "assert-format", "f", false, "Enable format assertions with draft >= 2019")
+	flag.BoolVarP(&config.assertContent, "assert-content", "c", false, "Enable content assertions with draft >= 7")
+	flag.BoolVarP(&config.insecure, "insecure", "k", false, "Use insecure TLS connection")
+	flag.StringVar(&config.cacert, "cacert", "", "Use the specified `pem-file` to verify the peer. The file may contain multiple CA certificates")
+	flag.StringArrayVarP(&config.maps, "map", "m", nil, "load url with prefix from given directory. Syntax `url_prefix=/path/to/dir`")
 	flag.CommandLine.SortFlags = false
+
 	flag.Parse()
 
 	// help --
-	if *help {
+	if config.help {
 		flag.Usage()
 		os.Exit(0)
 	}
 
-	if *version {
+	// version --
+	if config.version {
+		fmt.Printf("jv version %s\n", version)
+
 		bi, ok := debug.ReadBuildInfo()
 		if ok {
-			fmt.Println(bi.Main.Path, bi.Main.Version)
 			for _, dep := range bi.Deps {
 				fmt.Println(dep.Path, dep.Version)
 			}
@@ -54,7 +74,7 @@ func main() {
 
 	// draft --
 	var draft *jsonschema.Draft
-	switch *draftVersion {
+	switch config.draftVersion {
 	case 4:
 		draft = jsonschema.Draft4
 	case 6:
@@ -66,15 +86,15 @@ func main() {
 	case 2020:
 		draft = jsonschema.Draft2020
 	default:
-		eprintln("invalid draft: %v", *draftVersion)
+		eprintln("invalid draft: %v", config.draftVersion)
 		eprintln("")
 		flag.Usage()
 		os.Exit(2)
 	}
 
 	// output --
-	if !slices.Contains([]string{"simple", "alt", "flag", "basic", "detailed"}, *output) {
-		eprintln("invalid output: %v", *output)
+	if !slices.Contains([]string{"simple", "alt", "flag", "basic", "detailed"}, config.output) {
+		eprintln("invalid output: %v", config.output)
 		eprintln("")
 		flag.Usage()
 		os.Exit(2)
@@ -83,7 +103,7 @@ func main() {
 	// maps --
 	mappings, err := func() (map[string]string, error) {
 		mappings := map[string]string{}
-		for _, m := range *maps {
+		for _, m := range config.maps {
 			equal := strings.IndexByte(m, '=')
 			if equal == -1 {
 				return nil, fmt.Errorf("invalid map: %v", m)
@@ -127,13 +147,13 @@ func main() {
 	if draft != nil {
 		c.DefaultDraft(draft)
 	}
-	if *assertFormat {
+	if config.assertFormat {
 		c.AssertFormat()
 	}
-	if *assertContent {
+	if config.assertContent {
 		c.AssertContent()
 	}
-	loader, err := newLoader(mappings, *insecure, *cacert)
+	loader, err := newLoader(mappings, config.insecure, config.cacert)
 	if err != nil {
 		eprintln("%v", err)
 		os.Exit(2)
@@ -156,7 +176,7 @@ func main() {
 	}()
 	if err != nil {
 		fmt.Printf("schema %s: failed\n", schema)
-		if !*quiet {
+		if !config.quiet {
 			fmt.Println(err)
 		}
 		os.Exit(1)
@@ -166,7 +186,7 @@ func main() {
 	// validate
 	allValid := true
 	for _, instance := range flag.Args()[1:] {
-		if !*quiet {
+		if !config.quiet {
 			fmt.Println()
 		}
 		inst, err := func() (any, error) {
@@ -179,7 +199,7 @@ func main() {
 		}()
 		if err != nil {
 			fmt.Printf("instance %s: failed\n", instance)
-			if !*quiet {
+			if !config.quiet {
 				fmt.Println(err)
 			}
 			allValid = false
@@ -189,9 +209,9 @@ func main() {
 		err = sch.Validate(inst)
 		if err != nil {
 			fmt.Printf("instance %s: failed\n", instance)
-			if !*quiet {
+			if !config.quiet {
 				if verr, ok := err.(*jsonschema.ValidationError); ok {
-					switch *output {
+					switch config.output {
 					case "simple":
 						fmt.Printf("%v\n", verr)
 					case "alt":
