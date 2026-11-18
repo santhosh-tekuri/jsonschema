@@ -1,0 +1,26 @@
+[
+    {
+        "description": "more than 20 values, zero fraction",
+        "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "enum": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, [1, 2]]
+        },
+        "tests": [
+            {
+                "description": "with fraction",
+                "data": 2.0,
+                "valid": true
+            },
+            {
+                "description": "without fraction",
+                "data": 2,
+                "valid": true
+            },
+            {
+                "description": "with fraction in array",
+                "data": [1, 2.0],
+                "valid": true
+            }
+        ]
+    }
+]

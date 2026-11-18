@@ -19,6 +19,7 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"hash/maphash"
 	"math"
 	"math/big"
 )
@@ -259,6 +260,8 @@ func (tt Types) String() string {
 type Enum struct {
 	Values []any
 	types  Types
+	seed   maphash.Seed
+	index  map[uint64][]any // values by hash; nil if not used
 }
 
 func newEnum(arr []any) *Enum {
@@ -266,7 +269,36 @@ func newEnum(arr []any) *Enum {
 	for _, item := range arr {
 		types.add(typeOf(item))
 	}
-	return &Enum{arr, types}
+	e := &Enum{Values: arr, types: types}
+	if len(arr) > 20 {
+		e.seed = maphash.MakeSeed()
+		e.index = map[uint64][]any{}
+		var h maphash.Hash
+		h.SetSeed(e.seed)
+		for _, item := range arr {
+			h.Reset()
+			if writeHash(item, &h) != nil {
+				e.index = nil
+				break
+			}
+			sum := h.Sum64()
+			e.index[sum] = append(e.index[sum], item)
+		}
+	}
+	return e
+}
+
+// candidates returns the values that v may be equal to.
+func (e *Enum) candidates(v any) []any {
+	if e.index == nil {
+		return e.Values
+	}
+	var h maphash.Hash
+	h.SetSeed(e.seed)
+	if writeHash(v, &h) != nil {
+		return e.Values
+	}
+	return e.index[h.Sum64()]
 }
 
 // --

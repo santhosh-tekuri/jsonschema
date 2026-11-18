@@ -425,6 +425,7 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		if !ok {
 			return &kind.LargeNumber{Value: v}
 		}
+		_ = h.WriteByte(byte(num.Sign() + 1)) // Bytes ignores sign
 		_, _ = h.Write(num.Num().Bytes())
 		_, _ = h.Write(num.Denom().Bytes())
 	default:
