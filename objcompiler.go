@@ -146,20 +146,30 @@ func (c *objCompiler) compileDraft4(s *Schema) error {
 		if arr := c.arrVal("enum"); arr != nil {
 			s.Enum = newEnum(arr)
 		}
-		s.MultipleOf = c.numVal("multipleOf")
-		s.Maximum = c.numVal("maximum")
+		if s.MultipleOf, err = c.number("multipleOf"); err != nil {
+			return err
+		}
+		if s.Maximum, err = c.number("maximum"); err != nil {
+			return err
+		}
 		if c.boolean("exclusiveMaximum") {
 			s.ExclusiveMaximum = s.Maximum
 			s.Maximum = nil
 		} else {
-			s.ExclusiveMaximum = c.numVal("exclusiveMaximum")
+			if s.ExclusiveMaximum, err = c.number("exclusiveMaximum"); err != nil {
+				return err
+			}
 		}
-		s.Minimum = c.numVal("minimum")
+		if s.Minimum, err = c.number("minimum"); err != nil {
+			return err
+		}
 		if c.boolean("exclusiveMinimum") {
 			s.ExclusiveMinimum = s.Minimum
 			s.Minimum = nil
 		} else {
-			s.ExclusiveMinimum = c.numVal("exclusiveMinimum")
+			if s.ExclusiveMinimum, err = c.number("exclusiveMinimum"); err != nil {
+				return err
+			}
 		}
 
 		s.MinLength = c.intVal("minLength")
@@ -482,6 +492,14 @@ func (c *objCompiler) string(pname string) string {
 	return ""
 }
 
+func (c *objCompiler) number(pname string) (*big.Rat, error) {
+	n := c.numVal(pname)
+	if v, ok := c.obj[pname]; ok && n == nil && typeOf(v) == numberType {
+		return nil, &LargeNumberError{c.up.format(pname), v}
+	}
+	return n, nil
+}
+
 func (c *objCompiler) numVal(pname string) *big.Rat {
 	v, ok := c.obj[pname]
 	if !ok {
@@ -538,6 +556,17 @@ type InvalidRegexError struct {
 
 func (e *InvalidRegexError) Error() string {
 	return fmt.Sprintf("invalid regex %q at %q: %v", e.Regex, e.URL, e.Err)
+}
+
+// --
+
+type LargeNumberError struct {
+	URL   string
+	Value any
+}
+
+func (e *LargeNumberError) Error() string {
+	return fmt.Sprintf("number too large to parse %v at %q", e.Value, e.URL)
 }
 
 // --

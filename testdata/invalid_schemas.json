@@ -269,5 +269,45 @@
 				}
 			}
 		}
+	},
+	{
+		"description": "LargeNumber-minimum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"minimum": 1e1000001
+		},
+		"errors": [
+			"LargeNumberError{URL:\"http://invalid-schemas.com/schema.json#/minimum\", Value:\"1e1000001\"}"
+		]
+	},
+	{
+		"description": "LargeNumber-maximum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"maximum": 1e1000001
+		},
+		"errors": [
+			"LargeNumberError{URL:\"http://invalid-schemas.com/schema.json#/maximum\", Value:\"1e1000001\"}"
+		]
+	},
+	{
+		"description": "LargeNumber-exclusiveMinimum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"exclusiveMinimum": 1e1000001
+		},
+		"errors": [
+			"LargeNumberError{URL:\"http://invalid-schemas.com/schema.json#/exclusiveMinimum\", Value:\"1e1000001\"}"
+		]
+	},
+	{
+		"description": "LargeNumber-exclusiveMaximum",
+		"schema": {
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
+			"exclusiveMaximum": 1e1000001
+		},
+		"errors": [
+			"LargeNumberError{URL:\"http://invalid-schemas.com/schema.json#/exclusiveMaximum\", Value:\"1e1000001\"}"
+		]
 	}
 ]
