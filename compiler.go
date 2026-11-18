@@ -188,7 +188,7 @@ func (c *Compiler) Compile(loc string) (*Schema, error) {
 }
 
 func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
-	q := &queue{}
+	q := &queue{index: map[urlPtr]*Schema{}}
 	compiled := 0
 
 	c.enqueue(q, up)
@@ -207,7 +207,7 @@ func (c *Compiler) doCompile(up urlPtr) (*Schema, error) {
 		}
 		compiled++
 	}
-	for _, sch := range *q {
+	for _, sch := range q.schemas {
 		c.schemas[sch.up] = sch
 	}
 	return c.schemas[up], nil
@@ -280,26 +280,26 @@ func (c *Compiler) compileObject(obj map[string]any, sch *Schema, r *root, q *qu
 
 // queue --
 
-type queue []*Schema
+type queue struct {
+	schemas []*Schema
+	index   map[urlPtr]*Schema // avoids linear search in get
+}
 
 func (q *queue) append(sch *Schema) {
-	*q = append(*q, sch)
+	q.schemas = append(q.schemas, sch)
+	q.index[sch.up] = sch
 }
 
 func (q *queue) at(i int) *Schema {
-	return (*q)[i]
+	return q.schemas[i]
 }
 
 func (q *queue) len() int {
-	return len(*q)
+	return len(q.schemas)
 }
 
 func (q *queue) get(up urlPtr) *Schema {
-	i := slices.IndexFunc(*q, func(sch *Schema) bool { return sch.up == up })
-	if i != -1 {
-		return (*q)[i]
-	}
-	return nil
+	return q.index[up]
 }
 
 // regexp --
