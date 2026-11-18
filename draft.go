@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 )
 
 // A Draft represents json-schema specification.
@@ -124,8 +125,11 @@ var (
 	draftLatest = Draft2020
 )
 
-func init() {
-	c := NewCompiler()
+// loadDrafts compiles the draft metaschemas on first NewCompiler call,
+// rather than in init, so that programs which import this package but
+// never compile a schema do not pay for it at startup.
+var loadDrafts = sync.OnceFunc(func() {
+	c := newCompiler()
 	c.AssertFormat()
 	for _, d := range []*Draft{Draft4, Draft6, Draft7, Draft2019, Draft2020} {
 		d.sch = c.MustCompile(d.url)
@@ -133,7 +137,7 @@ func init() {
 			d.allVocabs[name] = c.MustCompile(strings.TrimSuffix(d.url, "schema") + "meta/" + name)
 		}
 	}
-}
+})
 
 func draftFromURL(url string) *Draft {
 	u, frag := split(url)

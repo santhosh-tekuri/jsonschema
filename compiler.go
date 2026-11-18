@@ -19,6 +19,11 @@ type Compiler struct {
 
 // NewCompiler create Compiler Object.
 func NewCompiler() *Compiler {
+	loadDrafts()
+	return newCompiler()
+}
+
+func newCompiler() *Compiler {
 	return &Compiler{
 		schemas:       map[urlPtr]*Schema{},
 		roots:         newRoots(),
