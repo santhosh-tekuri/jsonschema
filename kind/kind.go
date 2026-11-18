@@ -24,6 +24,18 @@ func (k *InvalidJsonValue) LocalizedString(p *message.Printer) string {
 
 // --
 
+type DepthLimit struct{}
+
+func (*DepthLimit) KeywordPath() []string {
+	return nil
+}
+
+func (k *DepthLimit) LocalizedString(p *message.Printer) string {
+	return p.Sprintf("depth limit exceeded")
+}
+
+// --
+
 type LargeNumber struct {
 	Value any
 }

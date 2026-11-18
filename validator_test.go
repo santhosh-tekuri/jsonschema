@@ -30,3 +30,27 @@ func TestInvalidFloats(t *testing.T) {
 		}
 	}
 }
+
+func TestDepthLimit(t *testing.T) {
+	c := jsonschema.NewCompiler()
+	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(`{"items": { "$ref": "#"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.AddResource("schema.json", doc); err != nil {
+		t.Fatal(err)
+	}
+	sch, err := c.Compile("schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v := []any{}
+	for i := 0; i < 200000; i++ {
+		v = []any{v}
+	}
+	err = sch.Validate(v)
+	if err == nil {
+		t.Errorf("Validate(%v) = nil, want error", v)
+	}
+}

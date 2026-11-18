@@ -68,6 +68,9 @@ type validator struct {
 }
 
 func (vd *validator) validate() (*uneval, error) {
+	if len(vd.vloc) > 10000 {
+		return nil, vd.error(&kind.DepthLimit{})
+	}
 	s := vd.sch
 	v := vd.v
 
