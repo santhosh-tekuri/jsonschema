@@ -111,6 +111,53 @@ func TestCompileNonStd(t *testing.T) {
 	}
 }
 
+func TestCompileErrorIsDeterministic(t *testing.T) {
+	// subschemas held in a map must be compiled in the same order
+	// every time, so that the first error is the same every time
+	schemas := []string{
+		`{"properties": {"a": {"$ref": "#/x"}, "b": {"$ref": "#/y"}, "c": {"$ref": "#/z"}}}`,
+		`{
+			"$schema": "http://json-schema.org/draft-07/schema#",
+			"dependencies": {"a": {"$ref": "#/x"}, "b": {"$ref": "#/y"}, "c": {"$ref": "#/z"}}
+		}`,
+		`{
+			"$defs": {
+				"a": {"$dynamicAnchor": "a", "$ref": "#/x"},
+				"b": {"$dynamicAnchor": "b", "$ref": "#/y"},
+				"c": {"$dynamicAnchor": "c", "$ref": "#/z"}
+			}
+		}`,
+		`{
+			"$schema": "http://json-schema.org/draft-04/schema#",
+			"patternProperties": {"(a": {}, "(b": {}, "(c": {}}
+		}`,
+	}
+	for _, schema := range schemas {
+		doc, err := jsonschema.UnmarshalJSON(strings.NewReader(schema))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var want string
+		for i := 0; i < 50; i++ {
+			c := jsonschema.NewCompiler()
+			if err := c.AddResource("schema.json", doc); err != nil {
+				t.Fatal(err)
+			}
+			_, err := c.Compile("schema.json")
+			if err == nil {
+				t.Fatal("want compilation to fail")
+			}
+			if i == 0 {
+				want = err.Error()
+			} else if got := err.Error(); got != want {
+				t.Log(schema)
+				t.Errorf(" got %s", got)
+				t.Fatalf("want %s", want)
+			}
+		}
+	}
+}
+
 func TestCustomVocabValidation(t *testing.T) {
 	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(`{"uniqueKeys": 1}`))
 	if err != nil {
