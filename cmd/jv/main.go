@@ -7,13 +7,41 @@ import (
 	"os"
 	"runtime/debug"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	flag "github.com/spf13/pflag"
 )
 
+var (
+	validDrafts = map[int]*jsonschema.Draft{
+		4:    jsonschema.Draft4,
+		6:    jsonschema.Draft6,
+		7:    jsonschema.Draft7,
+		2019: jsonschema.Draft2019,
+		2020: jsonschema.Draft2020,
+	}
+	validOutputs = []string{"simple", "alt", "flag", "basic", "detailed"}
+)
+
 func main() {
+	drafts := func() string {
+		ds := make([]int, 0, len(validDrafts))
+		for d := range validDrafts {
+			ds = append(ds, d)
+		}
+		sort.Ints(ds)
+		var b strings.Builder
+		for i, d := range ds {
+			if i != 0 {
+				b.WriteString(", ")
+			}
+			fmt.Fprintf(&b, "%d", d)
+		}
+		return b.String()
+	}()
+
 	flag.Usage = func() {
 		eprintln("Usage: jv [OPTIONS] SCHEMA [INSTANCE...]")
 		eprintln("")
@@ -23,8 +51,8 @@ func main() {
 	help := flag.BoolP("help", "h", false, "Print help information")
 	version := flag.BoolP("version", "v", false, "Print build information")
 	quiet := flag.BoolP("quiet", "q", false, "Do not print errors")
-	draftVersion := flag.IntP("draft", "d", 2020, "Draft `version` used when '$schema' is missing. Valid values 4, 6, 7, 2019, 2020")
-	output := flag.StringP("output", "o", "simple", "Output `format`. Valid values simple, alt, flag, basic, detailed")
+	draftVersion := flag.IntP("draft", "d", 2020, "Draft `version` used when '$schema' is missing. Valid values "+drafts)
+	output := flag.StringP("output", "o", "simple", "Output `format`. Valid values "+strings.Join(validOutputs, ", "))
 	assertFormat := flag.BoolP("assert-format", "f", false, "Enable format assertions with draft >= 2019")
 	assertContent := flag.BoolP("assert-content", "c", false, "Enable content assertions with draft >= 7")
 	insecure := flag.BoolP("insecure", "k", false, "Use insecure TLS connection")
@@ -54,18 +82,8 @@ func main() {
 
 	// draft --
 	var draft *jsonschema.Draft
-	switch *draftVersion {
-	case 4:
-		draft = jsonschema.Draft4
-	case 6:
-		draft = jsonschema.Draft6
-	case 7:
-		draft = jsonschema.Draft7
-	case 2019:
-		draft = jsonschema.Draft2019
-	case 2020:
-		draft = jsonschema.Draft2020
-	default:
+	var ok bool
+	if draft, ok = validDrafts[*draftVersion]; !ok {
 		eprintln("invalid draft: %v", *draftVersion)
 		eprintln("")
 		flag.Usage()
@@ -73,7 +91,7 @@ func main() {
 	}
 
 	// output --
-	if !slices.Contains([]string{"simple", "alt", "flag", "basic", "detailed"}, *output) {
+	if !slices.Contains(validOutputs, *output) {
 		eprintln("invalid output: %v", *output)
 		eprintln("")
 		flag.Usage()
