@@ -470,6 +470,9 @@ func (k *MaxContains) LocalizedString(p *message.Printer) string {
 
 type MinLength struct {
 	Got, Want int
+	// Exact is true when minLength and maxLength are the same value, so
+	// "want N" means exactly N rather than at least N.
+	Exact bool
 }
 
 func (*MinLength) KeywordPath() []string {
@@ -477,6 +480,9 @@ func (*MinLength) KeywordPath() []string {
 }
 
 func (k *MinLength) LocalizedString(p *message.Printer) string {
+	if k.Exact {
+		return p.Sprintf("minLength: got %d, want exactly %d", k.Got, k.Want)
+	}
 	return p.Sprintf("minLength: got %d, want %d", k.Got, k.Want)
 }
 
@@ -484,6 +490,9 @@ func (k *MinLength) LocalizedString(p *message.Printer) string {
 
 type MaxLength struct {
 	Got, Want int
+	// Exact is true when minLength and maxLength are the same value, so
+	// "want N" means exactly N rather than at most N.
+	Exact bool
 }
 
 func (*MaxLength) KeywordPath() []string {
@@ -491,6 +500,9 @@ func (*MaxLength) KeywordPath() []string {
 }
 
 func (k *MaxLength) LocalizedString(p *message.Printer) string {
+	if k.Exact {
+		return p.Sprintf("maxLength: got %d, want exactly %d", k.Got, k.Want)
+	}
 	return p.Sprintf("maxLength: got %d, want %d", k.Got, k.Want)
 }
 
