@@ -94,6 +94,14 @@ func TestHashEquals(t *testing.T) {
 	}{
 		{1.0, 1, true},
 		{-1.0, -1, true},
+		{json.Number("2.50"), 2.5, true},
+		{map[string]any{"a": 1, "b": "x"}, map[string]any{"b": "x", "a": 1.0}, true},
+		{1, -1, false},
+		{json.Number("0.5"), json.Number("-0.5"), false},
+		{[]any{1, -1}, []any{-1, 1}, false},
+		{[]any{"a\x04a"}, []any{"a", "a"}, false},
+		{[]any{[]any{1}, []any{}}, []any{[]any{}, []any{1}}, false},
+		{map[string]any{"a": "\x04"}, map[string]any{"a\x04": ""}, false},
 	}
 	hash := new(maphash.Hash)
 	for _, test := range tests {
