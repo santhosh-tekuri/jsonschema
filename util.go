@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"hash/maphash"
@@ -385,10 +386,18 @@ func duplicates(arr []any) (int, int, ErrorKind) {
 	return -1, -1, nil
 }
 
+// writeLen writes n as a uvarint, so that each variable-length part of the
+// hashed stream is framed and two different values never write the same bytes.
+func writeLen(h *maphash.Hash, n int) {
+	var buf [binary.MaxVarintLen64]byte
+	_, _ = h.Write(buf[:binary.PutUvarint(buf[:], uint64(n))])
+}
+
 func writeHash(v any, h *maphash.Hash) ErrorKind {
 	switch v := v.(type) {
 	case map[string]any:
 		_ = h.WriteByte(0)
+		writeLen(h, len(v))
 		props := make([]string, 0, len(v))
 		for prop := range v {
 			props = append(props, prop)
@@ -402,6 +411,7 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		}
 	case []any:
 		_ = h.WriteByte(1)
+		writeLen(h, len(v))
 		for _, item := range v {
 			if k := writeHash(item, h); k != nil {
 				return k
@@ -418,6 +428,7 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		}
 	case string:
 		_ = h.WriteByte(4)
+		writeLen(h, len(v))
 		_, _ = h.WriteString(v)
 	case json.Number, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		_ = h.WriteByte(5)
@@ -425,8 +436,12 @@ func writeHash(v any, h *maphash.Hash) ErrorKind {
 		if !ok {
 			return &kind.LargeNumber{Value: v}
 		}
-		_, _ = h.Write(num.Num().Bytes())
-		_, _ = h.Write(num.Denom().Bytes())
+		_ = h.WriteByte(byte(num.Sign() + 1))
+		numBytes, denomBytes := num.Num().Bytes(), num.Denom().Bytes()
+		writeLen(h, len(numBytes))
+		_, _ = h.Write(numBytes)
+		writeLen(h, len(denomBytes))
+		_, _ = h.Write(denomBytes)
 	default:
 		return &kind.InvalidJsonValue{Value: v}
 	}
